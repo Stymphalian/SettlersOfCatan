@@ -1,0 +1,110 @@
+/*
+Settlers of Catan Specifications
+For every extension level ( every 2 player increment ) 
+- add level*6 more tiles
+- add 4 special dev cards ( monopoly, market, victory-point card, year of plenty
+- add 4 more soldier
+- add 5 of every resource to the bank
+- add 1 desert card
+- add 2 of every resource tile
+
+Dev cards
+monopoly - announce one resource, all other players must give you that resoures
+market - 1 victory point
+university of catan-  1 victory point
+year of plenty - take 2 resources form bank and add it to your hande
+road building - build any two roads
+soldiers - move the thief
+
+Tiles:
+	sheepx4, woodx4, orex3, brickx3, wheatx4, 
+	desertx1, 
+	4x 3-1 ports
+	one of each resource 2-1 port
+
+Thief 
+	- start of the game it starts on a desert tile
+	- deny the tile's resource to any of the 3 possible places
+	- moved by rolling 7, steal a resource form one of the players, 
+	- every player with more than > 7 cards, must discard half of their hand( round down)
+
+Rules:
+	settlements are placed on the vertices of betwen each hexagonal tile 
+	roads are places on the faces of each hexagonal tile
+	city  ->	 x__			___
+				/   \		  /   * <- road
+				\___/		  \___/
+
+
+	on your turn you roll
+	whatever numer that is rolled, each player which has access to that resource picks up the resource
+		- for each settlement, pick up 1
+		- for each city , pick up 2
+	
+	Phases:
+		Roll,
+			- do thief thing.
+		Player builds,initiates trade ( with players or bank)
+		all other players can do any building
+
+	Dev cards can only be used in the turn after it was picked up 
+		!Exception - victory point cards are autmatically assigned.
+		- Only 1 dev card can be played per turn
+
+	A road must be connected to either an existing road or out of a settlement ( player owned )
+	Settlements/citys must be 2 faces apart from each other
+	settlements/citys can only be built if there is a road connecting them to a player owned settlement/city
+
+3-1 port ( 3 of any card for 1 )
+2-1 port on specific resource
+4-1 bank exchange ( 4 cards for one)
+longest road = 2 victory point ( have atleast 5 connected roads)
+largest army = 2 vicotry points ( have atleast three soldiers)
+
+number of cards:
+2 monopoly dev 
+2 road buliding dev
+2 year of plenty dev
+4 victory cards dev
+20 soldier dev cards
+19 of every resource ( sheep, brick, ore, wook wheat )
+12 + 6 resource tile cards
+4 4-1 ports
+5 2-1 ports ( resource specific)
+
+buildings, and costs:
+road- wood, brick
+settlement- wheat,brick, sheep, wood
+city - 2 wheat, 3 ore
+dev card = wheat, sheep, ore
+
+Number of buildings per player
+road  x 15
+settlement x 5
+city x 4
+
+
+Goal of the game: Get 10 victory points
+
+
+// start game
+settlement + road x2, moving clockwise
+pick up one of each resource around settlement
+first player gets to position the thief ( on a desert)
+
+questions?
+Limits on resource?
+limits on dev cards -- yes
+how to facilitate trade between players?
+	-Players can control how many resources the have
+		they just assign a number to the number of resources they have
+		A hand showing them what cards they have, or just a text box.
+What happens when some of the spcial dev cards are used?
+	are they recycled back into the deck?
+
+** just show the game board and the placement of the pieces. ( seems to simple and stupid )
+Shell of the game. Pieces don't really matter, this would be much simpler to code,because all it is
+	are the graphics of each item. No need to keep track of how many points or any information like that
+
+*/
+
