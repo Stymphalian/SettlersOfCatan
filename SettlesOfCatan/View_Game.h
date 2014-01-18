@@ -32,53 +32,65 @@ public:
 	int x, y;
 	Uint8 buttons;
 	Collision hitbox;
-	Mouse(){hitbox.hook(&x, &y);hitbox.add_rect(0, 0, 1, 1);}
+	Mouse(){hitbox.hook(&x, &y);hitbox.add_rect(0, 0,0, 1, 1);}
 	void update(){buttons = SDL_GetMouseState(&x, &y);}
 };
 class pane_t{
 public:
 	Collision hitbox;
-	int x, y, w, h;
+	int x, y,z, w, h;
 	int padding;
-	pane_t(){}
-	void init(int x, int y, int w, int h, int padding = 0){
-		this->x = x;this->y = y;
+	
+	pane_t(){
+		x = y = z = w = h = padding =0;
+		setVisible(false);
+	}
+	void init(int x, int y,int z, int w, int h, int padding = 0){
+		this->x = x; this->y = y; this->z = z;
 		this->w = w ;this->h  = h;
 		this->padding = padding;
 		hitbox.rects.clear();
-		hitbox.hook(&this->x,&this->y);
-		hitbox.add_rect(0,0, this->w, this->h);
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "pane_t(x=%d,y=%d,w=%d,h=%d,internal_padding=%d)",
-			this->x, this->y, this->w, this->h,this->padding);
+		hitbox.hook(&this->x,&this->y,&this->z);
+		hitbox.add_rect(0,0,0, this->w, this->h);
+		setVisible(true);
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "pane_t(x=%d,y=%d,z=%d,w=%d,h=%d,internal_padding=%d)",
+			this->x, this->y,this->z, this->w, this->h,this->padding);
 	}
+	bool isVisible(){ return visible; }
+	void setVisible(bool value){
+		visible = value;
+		hitbox.active = value;
+	}
+private:
+	bool visible;
 };
 
 class Tile_intersect{
 public:
-	int x, y;
+	int x, y,z;
 	int col, row;
 	int w, h;
 	Collision hitbox;
 
-	void init(int x, int y, int w, int h, int col, int row){
-		this->x = x; this->y = y;
+	void init(int x, int y,int z, int w, int h, int col, int row){
+		this->x = x; this->y = y; this->z = z;
 		this->w = w; this->h = h;
 		this->col = col;this->row = row;			
-		hitbox.hook(&this->x,&this->y);
-		hitbox.add_rect(0,0,this->w, this->h);
+		hitbox.hook(&this->x,&this->y,&this->z);
+		hitbox.add_rect(0,0,0,this->w, this->h);
 	}
 	virtual ~Tile_intersect(){}
 };
 class vertex_face_t_intersect{
 public:
-	int x, y, w, h, num;
+	int x, y,z, w, h, num;
 	Collision hitbox;
-	void init(int x, int y, int w, int h, int num){
-		this->x = x; this->y = y;
+	void init(int x, int y,int z, int w, int h, int num){
+		this->x = x; this->y = y; this->z = z;
 		this->w = w; this->h = h;
 		this->num = num;
-		this->hitbox.hook(&this->x, &this->y);
-		this->hitbox.add_rect(0, 0, this->w, this->h);
+		this->hitbox.hook(&this->x, &this->y,&this->z);
+		this->hitbox.add_rect(0, 0,0, this->w, this->h);
 	}
 	virtual ~vertex_face_t_intersect(){};
 };

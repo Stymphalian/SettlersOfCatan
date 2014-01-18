@@ -9,8 +9,8 @@
 #include "View_Game.h"
 
 Button::Button(){ hit_flag = false; }
-Button::Button(const char* text,int x, int y,int w, int h){
-	init(text, x, y, w, h);
+Button::Button(const char* text, int x, int y, int z, int w, int h){
+	init(text, x, y, z,w, h);
 }
 Button::~Button(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Button destructor");
@@ -27,22 +27,25 @@ void Button::set_action(Button::button_action baction){
 void Button::unset_action(){
 	baction = nullptr;
 }
-void Button::init(const char* text, int x, int y, int w, int h){
+void Button::init(const char* text, int x, int y, int z,int w, int h){
 	this->text = text;
 	this->x = x;
 	this->y = y;
+	this->z = z;
 	this->w = w;
 	this->h = h;
+	// HACK! the 10 is a hardcoded value for the width of the text which is
+	// displayed in the button.
 	if(this->w < (int)this->text.length() * 10){
 		this->w = this->text.length() * 10;
 	}
 	this->pad_x = 0;
 	this->pad_y = 0;
-	hitbox.add_rect(0,0, this->w,this->h);
-	hitbox.hook(&this->x, &this->y);
+	hitbox.add_rect(0,0,0,this->w,this->h);
+	hitbox.hook(&this->x, &this->y,&this->z);
 	hit_flag = false;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Button::init(text=%s,x=%d,y=%d,w=%d,h=&d,hitflag=%d)",
-		this->text.c_str(), this->x, this->y, this->w, this->h, this->hit_flag);
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Button::init(text=%s,x=%d,y=%d,z=%d,w=%d,h=&d,hitflag=%d)",
+		this->text.c_str(), this->x, this->y,this->z, this->w, this->h, this->hit_flag);
 }
 void Button::set_pad(int pad_x, int pad_y){
 	this->pad_x = pad_x;

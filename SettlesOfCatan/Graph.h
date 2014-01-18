@@ -2,7 +2,7 @@
 #include <list>
 
 template<class T>
-class GraphVertex{
+class GraphVertex {
 public:
 	int visited;
 

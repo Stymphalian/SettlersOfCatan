@@ -15,18 +15,18 @@ public:
 	// variables
 	std::string text;
 	Collision hitbox;
-	int x, y, w, h;
+	int x, y,z, w, h;
 	int pad_x, pad_y;
 	bool hit_flag;
 	
 	// constructor and destructor
 	Button();
-	Button(const char* text, int x, int y,int w, int h);
+	Button(const char* text, int x, int y, int z, int w, int h);
 	virtual ~Button(); 
 	void action(View_Game& view, Model& model);
 	void set_action(Button::button_action baction);
 	void unset_action();
-	void init(const char* text, int x, int y, int w, int h);
+	void init(const char* text, int x, int y,int z, int w, int h);
 	void set_pad(int padx, int pady);
 private:
 	button_action baction;

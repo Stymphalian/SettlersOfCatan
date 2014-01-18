@@ -7,20 +7,25 @@
 #include "Collision.h"
 
 Collision::Collision(){
-	x = y = nullptr;
+	active = true;
+	x = y = z = nullptr;
 }
 Collision::~Collision(){
 	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Collision destructor");
 	rects.clear();
-	x = y = nullptr;;
+	x = y = z =nullptr;;
+	active = false;
 }
 
-void Collision::hook(int* x, int* y){
+void Collision::hook(int* x, int* y,int* z){
 	this->x = x;
 	this->y = y;
+	this->z = z;
 }
 void Collision::unhook(){
-	this->x =  this->y = nullptr;
+	this->x = nullptr;
+	this->y = nullptr;
+	this->z = nullptr;
 }
 int Collision::getx(){
 	if(x != nullptr){ return *x; }
@@ -30,7 +35,17 @@ int Collision::gety(){
 	if(y != nullptr){ return *y; }
 	return 0;
 }
+int Collision::getz(){
+	if(z != nullptr){ return *z; }
+	return 0;
+}
 
+
+/*
+Checks if Colllsions 'A' intersects with one of OUR collision hitboxes.
+For now, this only supports rectangle collision
+For now, this ignores z values of the Rectangles.
+*/
 bool Collision::collides(Collision& A){
 	std::vector<SDL_Rect>::iterator it;
 	std::vector<SDL_Rect>::iterator it2;
@@ -53,11 +68,18 @@ bool Collision::collides(Collision& A){
 	}
 	return false;
 }
-void Collision::add_rect(int x, int y, int w, int h){
+
+/*
+for now, the z value is ignored.
+*/
+void Collision::add_rect(int x, int y,int z, int w, int h){
 	SDL_Rect r = { x, y, w, h };
 	rects.push_back(r);
 }
-bool Collision::remove_rect(int x, int y, int w, int h){
+/*
+for now, the z values is ignored.
+*/
+bool Collision::remove_rect(int x, int y,int z, int w, int h){
 	std::vector<SDL_Rect>::iterator  it;
 	for(it = rects.begin(); it != rects.end(); ++it){
 		if(it->x == x  && it->y == y && it->w == w  && it->h == h){

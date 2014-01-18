@@ -9,23 +9,24 @@ public:
 class Collision{
 public:
 	//variables		
+	bool active;
 	std::vector<SDL_Rect> rects;
 	// constructor and destructor
 	Collision();
 	virtual ~Collision();
 	// methods
 	bool collides(Collision& A);
-	void add_rect(int x, int y, int w, int h); // these rects are relative to the origin point
-	bool remove_rect(int x, int y, int w, int h);
-	int getx(); int gety();
-	void hook(int* x, int* y);
+	void add_rect(int x, int y, int z, int w, int h ); // these rects are relative to the origin point
+	bool remove_rect(int x, int y,int z, int w, int h);
+	int getx(); int gety(); int getz();
+	void hook(int* x, int* y, int* z=nullptr);
 	void unhook();
 	// static methods
 	static bool intersect_rect_rect(SDL_Rect* A, SDL_Rect*B,SDL_Rect* result= nullptr);
 	static bool intersect_circle_circle(circle_t* A, circle_t* B);
 	static bool intersect_circle_rect(circle_t* A, SDL_Rect* B);
 private:
-	int *x, *y;	
+	int *x, *y, *z;
 };
 /*
 #include <vector>

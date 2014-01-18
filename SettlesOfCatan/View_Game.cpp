@@ -56,21 +56,24 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	// setup the three static panes to be used for this view
 	int offset_x = 0;
 	int offset_y = 0;
+	int offset_z = 0;
 	int padding = 0;
 	getPixelPosFromTilePos(0,4, &offset_x, &offset_y);		
-	this->top_pane.init(0, 0, disp_w, offset_y);
+	this->top_pane.init(0, 0,offset_z,disp_w, offset_y);
 
 	int board_x, board_y;
 	getPixelPosFromTilePos(model.m_board_width + 1, model.m_board_height + 1, &board_x, &board_y);
 	offset_x = 0;
 	offset_y = top_pane.h ; 
+	offset_z = 0;
 	padding = vertex_hit_w*2; // 20 px internal padding( i.e. 10 on each side (top, bottom, left, right))
-	this->mid_pane.init(offset_x,offset_y,board_x-tile_w/2+ padding,board_y-tile_h/2 + padding,padding);
+	this->mid_pane.init(offset_x,offset_y,offset_z,board_x-tile_w/2+ padding,board_y-tile_h/2 + padding,padding);
 
 		//static sized bottom bar
 	offset_x = 0;
 	offset_y = disp_h - 240;
-	this->bot_pane.init(offset_x, offset_y, disp_w, 240 );
+	offset_z = 1;
+	this->bot_pane.init(offset_x, offset_y,offset_z, disp_w, 240 );
 
 	// loading textures, music, fonts, and clips
 	// all the new and mallocs are here.
@@ -238,7 +241,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 			getPixelPosFromTilePos(col, row, &x, &y);
 			
 			tiles.push_back(temp);
-			tiles[tiles.size()-1].init(x + pane.padding/2, y + pane.padding/2, tile_w, tile_h, col, row);
+			tiles[tiles.size()-1].init(x + pane.padding/2, y + pane.padding/2,0, tile_w, tile_h, col, row);
 		}
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() tiles.size() = %d", tiles.size());
@@ -263,7 +266,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 
 		// get the pixel pos of the given tile.
 		getPixelPosFromTilePos(col, row, &tile_x, &tile_y);
-		vertices[vertices.size() - 1].init(tile_x+x,tile_y+y,vertex_hit_w, vertex_hit_h,pos);
+		vertices[vertices.size() - 1].init(tile_x+x,tile_y+y,0,vertex_hit_w, vertex_hit_h,pos);
 		pos++;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() vertices.size() = %d", vertices.size());
@@ -289,7 +292,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 
 		// get the pixel pos of the given tile
 		getPixelPosFromTilePos(col, row, &tile_x, &tile_y);
-		faces[faces.size() - 1].init(tile_x + x, tile_y + y, face_hit_w, face_hit_h,pos);
+		faces[faces.size() - 1].init(tile_x + x, tile_y + y,0, face_hit_w, face_hit_h,pos);
 		pos++;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() faces.size() = %d", faces.size());
@@ -343,31 +346,31 @@ bool View_Game::setup_buttons(pane_t& pane){
 	off_x = horiz_pad;
 	off_y = vert_pad;
 	// the first row of buttons
-	exit_button.init("EXIT",off_x, off_y, but_w, but_h);
+	exit_button.init("EXIT",off_x, off_y,0, but_w, but_h);
 	off_x += exit_button.w + horiz_pad;
-	end_turn_button.init("End Turn", off_x, off_y, but_w, but_h);
+	end_turn_button.init("End Turn", off_x, off_y,0, but_w, but_h);
 	off_x += end_turn_button.w + horiz_pad;
-	roll_button.init("Roll", off_x, off_y, but_w, but_h);
+	roll_button.init("Roll", off_x, off_y,0, but_w, but_h);
 	off_x += roll_button.w + horiz_pad;
 	
 	off_x = horiz_pad;
 	off_y += but_h + vert_pad;
 	// second row of buttons
-	add_road_button.init("Build Road", off_x, off_y, but_w, but_h);
+	add_road_button.init("Build Road", off_x, off_y,0, but_w, but_h);
 	off_x += add_road_button.w + horiz_pad;
-	add_settlement_button.init("Build Settlement", off_x, off_y, but_w, but_h);
+	add_settlement_button.init("Build Settlement", off_x, off_y,0, but_w, but_h);
 	off_x += add_settlement_button.w + horiz_pad;
-	add_city_button.init("Build City", off_x, off_y, but_w, but_h);
+	add_city_button.init("Build City", off_x, off_y,0, but_w, but_h);
 	off_x += add_city_button.w + horiz_pad;
-	buy_dev_card_button.init("Buy Dev Card", off_x, off_y, but_w, but_h);
+	buy_dev_card_button.init("Buy Dev Card", off_x, off_y,0, but_w, but_h);
 	off_x += buy_dev_card_button.w + horiz_pad;
 	
 	off_x = horiz_pad;
 	off_y += but_h + vert_pad;
 	// the third row of buttons
-	play_dev_card_button.init("Play Dev Card", off_x , off_y, but_w, but_h);
+	play_dev_card_button.init("Play Dev Card", off_x , off_y,0, but_w, but_h);
 	off_x += play_dev_card_button.w + horiz_pad;
-	trade_button.init("Trade", off_x, off_y, but_w, but_h);
+	trade_button.init("Trade", off_x, off_y,0, but_w, but_h);
 	off_x += trade_button.w + horiz_pad;
 
 	// set the actions for all the button
@@ -565,7 +568,7 @@ void View_Game::update(SDL_Event& e){
 	if(ready == false){
 		ready = true;
 		rel_mouse_hitbox.hook(&x, &y);
-		rel_mouse_hitbox.add_rect(0, 0, 1, 1);
+		rel_mouse_hitbox.add_rect(0, 0,0, 1, 1);
 	}	
 	x = mouse.x;
 	y = mouse.y;
@@ -818,7 +821,7 @@ void View_Game::render_model(pane_t& pane){
 								selected_vertex->h };
 		Util::render_rectangle(&ren, &rect, Util::colour_blue());
 	}
-	// highlight the selecet face
+	// highlight the seleceted face
 	if(draw_face && selected_face != nullptr){
 		SDL_Rect rect = { selected_face->x + pane.x,
 								selected_face->y + pane.y,
