@@ -55,7 +55,8 @@ Model::Model(int num_players){
 	// Create all the players
 	this->m_num_players = num_players;
 	m_current_player = 0;
-	m_players = new Player[num_players]();
+	this->m_players = new Player[num_players]();
+	init_players(m_players,m_num_players);
 
 	// set-up the game board
 	establish_board_dimensions(num_players);
@@ -104,6 +105,19 @@ void Model::establish_board_dimensions(int num_players){
 	Logger::getLog("Jordan.log").log(Logger::DEBUG, "Model::establish_board_dimensions m_board_size=%d", m_board_size);
 	Logger::getLog("Jordan.log").log(Logger::DEBUG, "Model::establish_board_dimensions m_num_game_tiles=%d", m_num_game_tiles);
 	Logger::getLog("Jordan.log").log(Logger::DEBUG, "Model::establish_board_dimensions m_num_water_tiles=%d", m_num_water_tiles);
+}
+
+void Model::init_players(Player* players, int num_players){
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::init_players()");
+	resource_t start_resources;
+	start_resources.zero_out();
+	for(int i = 0; i < num_players; ++i){
+		players[i].init(
+			"Player", {255,255,0,255},
+			0,start_resources,0,0,
+			config.buildings_cap
+		);
+	}
 }
 
 bool Model::fill_board(Tiles* board, int size,int num_levels){

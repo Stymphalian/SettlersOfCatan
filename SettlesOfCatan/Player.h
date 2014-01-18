@@ -23,9 +23,16 @@ public:
 	Player();
 	virtual ~Player();
 	//methods
-	void init(std::string name,SDL_Color color);
 	bool add_resource(int type, int amount);
 	int get_hand_size();
+	void init(std::string name,
+		SDL_Color color,
+		int hand_size,
+		resource_t start_resources,
+		int victory_points,
+		int num_soldiers,
+		int start_building_cap[building_t::NUM_OF_BUILDINGS]
+		);
 };
 
 /*

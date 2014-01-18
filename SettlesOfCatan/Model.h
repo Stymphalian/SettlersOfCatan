@@ -84,6 +84,7 @@ private:
 	
 	// methods
 	void establish_board_dimensions(int num_players);
+	void init_players(Player* players, int num_players);
 	bool fill_board(Tiles* board, int size,int num_levels);
 	bool fill_deck(int* default_dev_cards_cap,int size);
 

@@ -3,14 +3,19 @@
 
 Player::Player()
 {
-	init("Player", { 255, 0, 0,255 });
-	this->hand_size = 0;
+	this->name = "Player";
+	this->color = { 255, 0, 0, 255 };
+	this->hand_size = 0;	
 	this->resources.zero_out();
+	dev_cards.clear();
+	buildings.clear();
+	roads.clear();
 	this->victory_points = 0;
 	this->num_soldiers = 0;
 	for(int i = 0; i < building_t::NUM_OF_BUILDINGS; ++i){
 		this->building_cap[i] = 0;
 	}
+	
 }
 
 Player::~Player(){
@@ -20,9 +25,26 @@ Player::~Player(){
 	roads.clear();
 }
 
-void Player::init(std::string name, SDL_Color color){
+void Player::init(std::string name,
+						SDL_Color color,
+						int hand_size,
+						resource_t start_resources,
+						int victory_points,
+						int num_soldiers,
+						int start_building_cap[building_t::NUM_OF_BUILDINGS]
+						)
+{
 	this->name = name;
-	this->color = color;	
+	this->color = color;
+	this->hand_size = hand_size;
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		this->resources.res[i] = start_resources.res[i];
+	}
+	this->victory_points = victory_points;
+	this->num_soldiers = num_soldiers;
+	for(int i = 0; i < building_t::NUM_OF_BUILDINGS; ++i){
+		this->building_cap[i] = start_building_cap[i];
+	}	
 }
 
 int Player::get_hand_size(){

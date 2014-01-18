@@ -621,5 +621,142 @@ vertex_pos[5][1] = 0;
 
 
 
+void run_dfs_bfs_test(){
+//test dfs
+Graph<int>* g = new Graph<int>();
+std::vector<GraphVertex<int>*> V;
+std::list<GraphVertex<int>*> rs;
+std::list<GraphVertex<int>*>::iterator it;
+int dfs[8][8] = {
+0, 1, 1, 0, 0, 0, 0, 1,
+1, 0, 0, 1, 0, 0, 0, 0,
+1, 0, 0, 1, 0, 0, 0, 0,
+0, 1, 0, 0, 1, 1, 0, 0,
+0, 0, 0, 1, 0, 1, 1, 0,
+0, 0, 0, 1, 1, 0, 0, 0,
+0, 0, 0, 0, 1, 0, 0, 0,
+1, 0, 0, 0, 0, 0, 0, 0,
+};
+
+for(int i = 0; i < 8; ++i){
+V.push_back(g->insertVertex(i));
+}
+for(int row = 0; row <8; ++row){
+for(int col = row+1; col <8; ++col){
+if(dfs[row][col] == 1){
+g->insertEdge(*V[row],*V[col],row*col);
+}
+
+}
+}
+rs = g->dfs(V[0]);
+for(it = rs.begin(); it != rs.end(); ++it){
+printf("dfs vertex=%llu,data=%d,num_edges=%d\n", (*it)->getKey(),(*it)->getData(),(*it)->getNumEdges());
+}
+rs.clear();
+V.clear();
+g->clear();
+
+// test bfs
+int bfs[10][10] = {
+0, 1, 1, 1, 0, 0, 0, 0, 1, 0,
+1, 0, 1, 0, 1, 1, 0, 0, 0, 0,
+1, 1, 0, 0, 0, 0, 1, 1, 1, 1,
+1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 1, 0, 0, 0, 0, 1, 0, 0, 1,
+0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+0, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+1, 0, 1, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 1, 0, 0, 1, 0, 0, 0, 0
+};
+
+for(int i = 0; i < 10; ++i){
+V.push_back(g->insertVertex(i));
+}
+for(int row = 0; row <10; ++row){
+for(int col = row + 1; col <10; ++col){
+if(bfs[row][col] == 1){
+g->insertEdge(*V[row], *V[col], row*col);
+}
+
+}
+}
+rs = g->bfs(V[0]);
+for(it = rs.begin(); it != rs.end(); ++it){
+printf("bfs vertex=%llu,data=%d,num_edges=%d\n", (*it)->getKey(), (*it)->getData(), (*it)->getNumEdges());
+}
+rs.clear();
+V.clear();
+g->clear();
+
+delete g;
+}
+void run_graph_test(){
+Graph<int> g;
+int graph[4][4] = {
+0, 1, 0, 0,
+0, 0, 1, 0,
+0, 0, 0, 1,
+0, 0, 0, 0
+};
+std::vector<GraphVertex<int>*> V;
+std::vector<GraphEdge<int>*> E;
+std::list<GraphEdge<int>*> elist;
+std::list<GraphVertex<int>*> vlist;
+std::list<GraphEdge<int>*>::iterator eit;
+std::list<GraphVertex<int>*>::iterator vit;
+
+// create all the vertices
+V.push_back(g.insertVertex(10));
+V.push_back(g.insertVertex(20));
+V.push_back(g.insertVertex(30));
+V.push_back(g.insertVertex(40));
+// add all the necessary edges
+for(int row = 0; row < 4; ++row){
+for(int col = row; col < 4; ++col){
+if(graph[row][col] == 1){
+E.push_back(g.insertEdge(*V[col], *V[row], row*col));
+}
+}
+}
+
+g.numVertices();
+g.numEdges();
+for(int i = 0; i < 4; ++i){
+g.degree(*V[i]);
+}
+for(int row = 0; row < 4; ++row){
+for(int col = 0; col < 4; ++col){
+g.areAdjacent(*V[col], *V[row]);
+}
+}
+elist = g.edges();
+for(eit = elist.begin(); eit != elist.end(); eit++){
+Logger::getLog("jordan.log").log("g.edges() edge_key=%llu", (*eit)->getKey());
+}
+for(int i = 0; i < 4; ++i){
+elist = g.incidentEdges(*V[i]);
+for(eit = elist.begin(); eit != elist.end(); eit++){
+Logger::getLog("jordan.log").log("g.getIncident() vertex=%llu,edge_key=%llu", V[i]->getKey(), (*eit)->getKey());
+}
+}
+vlist = g.vertices();
+for(vit = vlist.begin(); vit != vlist.end(); vit++){
+Logger::getLog("jordan.log").log(Logger::DEBUG, "g.vertices() vertex = %llu", (*vit)->getKey());
+
+}
+for(int i = 0; i < 4; ++i){
+vlist = g.adjacentVertices(*V[i]);
+for(vit = vlist.begin(); vit != vlist.end(); vit++){
+Logger::getLog("jordan.log").log(Logger::DEBUG, "g.adjacentVertices() original=%llu,vertex = %llu", V[i]->getKey(), (*vit)->getKey());
+
+}
+}
+g.removeEdge(*E[2]);
+g.removeVertex(*V[1]);
+}
+
+
 
 */

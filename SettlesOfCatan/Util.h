@@ -4,19 +4,40 @@
 #include <SDL_ttf.h>
 #include <vector>
 
-#define UTIL_DISP_W 640
-#define UTIL_DISP_H 640
-#define UTIL_VERTEX_HITBOX_W 12
-#define UTIL_VERTEX_HITBOX_H 12
-#define UTIL_HEXTILE_W 40
-#define UTIL_HEXTILE_H 40
-#define UTIL_SPRITE_SMALL_W 20
-#define UTIL_SPRITE_SMALL_H 20
-#define UTIL_SPRITE_MEDIUM_W 40
-#define UTIL_SPRITE_MEDIUM_H 40
-#define UTIL_SPRITE_LARGE_W 64
-#define UTIL_SPRITE_LARGE_H 64
-#define UTIL_FPS 30
+#define GAME_SMALL
+#ifdef GAME_SMALL
+	#define UTIL_DISP_W 640
+	#define UTIL_DISP_H 640
+	#define UTIL_VERTEX_HITBOX_W 12
+	#define UTIL_VERTEX_HITBOX_H 12
+	#define UTIL_HEXTILE_W 40
+	#define UTIL_HEXTILE_H 40
+	#define UTIL_SPRITE_SMALL_W 20
+	#define UTIL_SPRITE_SMALL_H 20
+	#define UTIL_SPRITE_MEDIUM_W 40
+	#define UTIL_SPRITE_MEDIUM_H 40
+	#define UTIL_SPRITE_LARGE_W 64
+	#define UTIL_SPRITE_LARGE_H 64
+	#define UTIL_SPRITE_FACE_W 20
+	#define UTIL_SPRITE_FACE_H 10
+	#define UTIL_FPS 30
+#else 
+	#define UTIL_DISP_W 1200
+	#define UTIL_DISP_H 640
+	#define UTIL_VERTEX_HITBOX_W 24
+	#define UTIL_VERTEX_HITBOX_H 24
+	#define UTIL_HEXTILE_W 80
+	#define UTIL_HEXTILE_H 80
+	#define UTIL_SPRITE_SMALL_W 40
+	#define UTIL_SPRITE_SMALL_H 40
+	#define UTIL_SPRITE_MEDIUM_W 80
+	#define UTIL_SPRITE_MEDIUM_H 80
+	#define UTIL_SPRITE_LARGE_W 128
+	#define UTIL_SPRITE_LARGE_H 128
+	#define UTIL_SPRITE_FACE_W 40
+	#define UTIL_SPRITE_FACE_H 20
+	#define UTIL_FPS 30
+#endif
 
 class Util{
 public:

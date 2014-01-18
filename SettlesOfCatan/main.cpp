@@ -4,6 +4,7 @@
 #include <SDL_mixer.h>
 #include "Game.h"
 #include "Logger.h"
+#include "Graph.h"
 
 bool init();
 void shutdown();
@@ -18,8 +19,10 @@ int main(int argc, char** argv){
 
 bool init(){
 	Logger& logger = Logger::getLog("jordan.log");
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "SDL init");
-
+	logger.set_level(Logger::DEBUG);
+	logger.set_deepest_level_allowed(Logger::DEBUG);	
+	logger.log(Logger::DEBUG, "SDL init");
+	
 	// initialize SDL for using modules
 	if(SDL_Init(SDL_INIT_EVERYTHING)){
 		logger.SDL_log(logger.ERROR, "SDL_INIT_EVERYTHING");
