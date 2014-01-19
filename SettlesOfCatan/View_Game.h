@@ -81,6 +81,7 @@ public:
 	}
 	virtual ~Tile_intersect(){}
 };
+
 class vertex_face_t_intersect{
 public:
 	int x, y,z, w, h, num;
@@ -95,11 +96,9 @@ public:
 	virtual ~vertex_face_t_intersect(){};
 };
 
-
 class View_Game : public IView{
-	enum hexpos_e {HEXORIG, HEXNE,HEXSE,HEXSW,HEXNW};
-	
 public:
+	static std::string view_game_model_error_strings[Model::NUM_model_error_codes_e];
 	enum state_e {
 		NONE, PLACE_ROAD, PLACE_SETTLEMENT, PLACE_CITY, PLACE_THEIF,
 		PLAYING_DEV_CARD, TRADING, NUM_OF_state_e
@@ -134,12 +133,6 @@ public:
 	int face_hit_w;
 	int face_hit_h;
 	int draw_face;
-
-	/*
-	int selected_face;
-	int tilehex_face_pos;
-	bool draw_face;
-	*/
 	
 	//constructor and destructor
 	View_Game(Model& model, SDL_Window& win, SDL_Renderer& ren);
@@ -163,7 +156,7 @@ private:
 	SDL_Surface* hextile_face_surface;
 	Mix_Music* music;
 	Mix_Chunk* sound1;
-	Timer* fps_timer;
+	Timer* fps_timer;	
 	TTF_Font* font_carbon_12;
 	SDL_Color font_carbon_12_colour;
 	SDL_Rect hextile_clips[Tiles::NUM_OF_TILES];
@@ -173,7 +166,9 @@ private:
 	Uint8 *vertex_covered;
 	Uint8 *face_covered;
 	pane_t top_pane, mid_pane, bot_pane;
+	pane_t misc_pane, message_pane;
 	int total_frame_count;
+	int message_timeout;
 	int face_size[2];
 	int sprite_small[2]; // w and h of small sprites
 	int sprite_medium[2]; // w and h of medium sprites
@@ -199,8 +194,16 @@ private:
 	bool setup_board_pane(pane_t& pane);
 	bool setup_buttons(pane_t& pane);
 	void render_model(pane_t& pane);
+	void render_model_board_tiles(pane_t& pane);
+	void render_model_face_vertex_tiles(pane_t& pane);
+	void render_model_selected(pane_t& pane);
+	void render_model_debug(pane_t& pane);	
 	void render_buttons(pane_t& pane);
 	void render_bottom_text(pane_t& pane);
+	void update_check_for_collisions();
+	void update_top_pane(pane_t& pane, Collision& rel_mouse_hitbox);
+	void update_mid_pane(pane_t& pane, Collision& rel_mouse_hitbox);
+	void update_bot_pane(pane_t& pane, Collision& rel_mouse_hitbox);
 	void getTilePosFromPixelPos(int px, int py, int* tile_x, int* tile_y);
 	void getPixelPosFromTilePos(int tile_col, int tile_row, int* px, int* py);
 	int getTilehexDir(int px, int py);
@@ -210,3 +213,5 @@ private:
 	//bool rect_intersect(SDL_Rect* A, SDL_Rect* B, SDL_Rect* result);
 	//bool rect_intersect(int ax, int ay, int aw, int ah,int bx, int by, int bw, int bh,int* rs_x, int* rs_y, int* rs_w, int* rs_h);
 };
+
+

@@ -9,6 +9,30 @@
 #include "View_Game.h"
 #include "Player.h"
 
+std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_codes_e] = {
+	"",
+	"Error",
+	"Not enough bank resources.Not enough brick.",
+	"Not enough bank resources.Not enough ore.",
+	"Not enough bank resources.Not enough sheep",
+	"Not enough bank resources.Not enough wheat.",
+	"Not enough bank resources.Not enough wood",
+	"Not enough bank resources.No more dev cards",
+	"Not enough resources.Not enough brick.",
+	"Not enough resources.Not enough ore.",
+	"Not enough resources.Not enough sheep.",
+	"Not enough resources.Not enough wheat.",
+	"Not enough resources.Not enough wood.",
+	"Not enough resources.Not enough buildings.",
+	"Can't place thief.",
+	"Can't placde settlement.",
+	"Can't place city.",
+	"Can't place road.",
+	"Can't play dev card.",
+	"Inavlid tile.",
+	"Invalid face.",
+	"Invalid vertex."
+};
 
 View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 : model(_model),IView(win,ren)
@@ -53,7 +77,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->face_hit_h = UTIL_VERTEX_HITBOX_H;
 	this->draw_face = false;
 
-	// setup the three static panes to be used for this view
+	// setup the static panes to be used for this view
 	int offset_x = 0;
 	int offset_y = 0;
 	int offset_z = 0;
@@ -74,6 +98,20 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	offset_y = disp_h - 240;
 	offset_z = 1;
 	this->bot_pane.init(offset_x, offset_y,offset_z, disp_w, 240 );
+
+	// the misc pane to be used by whatever ...?
+	offset_x = disp_w/8;
+	offset_y = disp_h/8;
+	offset_z = 2;
+	this->misc_pane.init(offset_x, offset_y, offset_z,disp_w - (disp_w / 4), disp_h - (disp_h / 4));
+	this->misc_pane.setVisible(false);
+
+	// the message pane
+	offset_x = disp_w/8;
+	offset_y = this->mid_pane.y + this->mid_pane.h;
+	offset_z = 3;
+	this->message_pane.init(offset_x, offset_y, offset_z, disp_w - 2*(disp_w/8),18);
+	this->message_pane.setVisible(false);
 
 	// loading textures, music, fonts, and clips
 	// all the new and mallocs are here.
@@ -451,6 +489,18 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 		if(move_mouse){
 			SDL_WarpMouseInWindow(&win, x, y);
 		}
+
+	
+		// cycle through the error codes
+		if(keyboard[SDL_SCANCODE_1] ){
+			message_timeout = desired_fps*1.5;
+			message_pane.setVisible(true);
+			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
+			int code = (model.get_error() + dir);
+			if(code < 0){code = Model::NUM_model_error_codes_e + code;
+			} else{code %= Model::NUM_model_error_codes_e;}
+			model.set_error((Model::model_error_codes_e)code);
+		}
 	} else if(e.type == SDL_KEYUP){
 
 	}
@@ -467,7 +517,6 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 				(*it)->action(*this, model);
 			}
 		}
-
 		draw_tile = true;
 		draw_vertex = true;
 		draw_face = true;
@@ -476,19 +525,37 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 		draw_vertex = false;
 		draw_face = false;
 	} else if(e.type == SDL_MOUSEMOTION){
+
 	}
 }
 
 void View_Game::handle_user_events(SDL_Event& e){
 	if(e.type >= SDL_USEREVENT){		
 		// check for the fps timer events
-		if(e.user.type == TimerFactory::get().event_type()){			
-			draw_flag = true;
-			fps.update();
-		}
+		if(e.user.type == TimerFactory::get().event_type()){
+			if((Timer*)e.user.data1 == fps_timer){
+				draw_flag = true;
+				fps.update();
+
+				// time-out any messages on the screen.
+				if(message_timeout == 1){
+					message_timeout = 0;
+					message_pane.setVisible(false);
+					model.set_error(Model::MODEL_ERROR_NONE);
+				} else{
+					message_timeout--;
+				}
+			}
+		} 
 	}
 }
 
+
+/*
+Almost Obsolete.
+Given a pixelx and pixel y determine the tile col and row;
+it assumes that x=0,y=0 is start of the rect for tile col=0, row=0.
+*/
 void View_Game::getTilePosFromPixelPos(int px, int py, int* tile_x, int* tile_y){
 	//*tile_y = ((int)(py*1.25) / tile_h);
 	//*tile_y = ((int)(py / 0.875) / tile_h);
@@ -502,6 +569,10 @@ void View_Game::getTilePosFromPixelPos(int px, int py, int* tile_x, int* tile_y)
 		*tile_x = px / tile_w;
 	}
 }
+/*
+returns the pixel position of the tile given the col and row
+the pixel position is relative to a x=0,y=0 origin point for tile col=0, row = 0
+*/
 void View_Game::getPixelPosFromTilePos(int tile_col, int tile_row, int* px, int* py){
 	*px = (int)(tile_col*tile_w + (tile_row % 2 == 1)*(tile_w / 2));
 	*py = (int)(tile_row*(tile_h*0.75));
@@ -562,17 +633,21 @@ void View_Game::get_mid_point_from_face(int face, int* x, int* y){
 
 // Update all the objects with information from the keyboard and mouse;
 void View_Game::update(SDL_Event& e){
-	static int x,y;
+	update_check_for_collisions();
+	// animations and such	
+}
+void View_Game::update_check_for_collisions(){
+	static int x, y;
 	static Collision rel_mouse_hitbox;
 	static bool ready = false;
 	if(ready == false){
 		ready = true;
 		rel_mouse_hitbox.hook(&x, &y);
-		rel_mouse_hitbox.add_rect(0, 0,0, 1, 1);
-	}	
+		rel_mouse_hitbox.add_rect(0, 0, 0, 1, 1);
+	}
 	x = mouse.x;
 	y = mouse.y;
-	
+
 	//	Logger::getLog("jordan.log").log(Logger::DEBUG, "mouse.hitbox(%d,%d)", mouse.hitbox.getx(), mouse.hitbox.gety());
 	// TODO: Need a better way to tell which button is being hit
 	std::vector<Button*>::iterator it;
@@ -587,85 +662,22 @@ void View_Game::update(SDL_Event& e){
 	if(top_pane.hitbox.collides(mouse.hitbox)){
 		// Handle top-pane instructions
 		selected_pane = &top_pane;
-		x -= top_pane.x;
-		y -= top_pane.y;
+		x -= selected_pane->x;
+		y -= selected_pane->y;
+		update_top_pane(top_pane, rel_mouse_hitbox);
 	} else if(mid_pane.hitbox.collides(mouse.hitbox)){
 		// Handle mid-pane intersections
 		selected_pane = &mid_pane;
-		x -= mid_pane.x;
-		y -= mid_pane.y;
-		
-		// see if we intersect with a tile
-		int px, py;
-		selected_tile = nullptr;		
-		std::vector<Tile_intersect>::iterator it;		
-		for(it = tiles.begin(); it != tiles.end(); ++it){	
-			if(it->hitbox.collides(rel_mouse_hitbox)){
-				selected_tile = &(*it);
-
-				// check if we want an adjacent tile due to our mouse positioning
-				// ! We need to account for the affects of padding in the pane				
-				getPixelPosFromTilePos(it->col, it->row, &px, &py);
-				px = x - px - mid_pane.padding / 2;
-				py = y - py - mid_pane.padding / 2;
-				tilehex_pos = getTilehexDir(px, py);
-				if(tilehex_pos != -1){
-					getTilePosFromDirection(tilehex_pos, it->col, it->row, &tile_col, &tile_row);
-					if(model.get_tile(tile_col, tile_row) == nullptr ||
-						model.get_tile(tile_col, tile_row)->active == 0)
-					{
-						//if(tile_col < 0 || tile_row < 0 || tile_col >= model.m_board_width || tile_row >= model.m_board_height){
-						// tile does not exist on the game board, therefore
-						// clear the selection and stop looking
-						selected_tile = nullptr;
-						tile_col = -1;
-						tile_row = -1;
-						break;
-					} else{
-						selected_tile = &tiles[tile_col + tile_row*model.m_board_width];
-					}
-				}
-
-				// set the selectred col and row
-				tile_col = selected_tile->col;
-				tile_row = selected_tile->row;
-
-				break;
-			}
-		}
-
-		// see if we intersect with one of the vertices
-		do{
-			selected_vertex = nullptr;
-			std::vector<vertex_face_t_intersect>::iterator it;
-			for(it = vertices.begin(); it != vertices.end(); ++it){
-				if(it->hitbox.collides(rel_mouse_hitbox)){
-					selected_vertex = &(*it);
-				}
-			}
-		} while(false);
-
-		// see if we intersect with one of the face intersects
-		do{
-			selected_face = nullptr;
-			std::vector<vertex_face_t_intersect>::iterator it;
-			for(it = faces.begin(); it != faces.end(); ++it){
-				if(it->hitbox.collides(rel_mouse_hitbox)){
-					selected_face = &(*it);
-				}
-			}
-		} while(false);
-
+		x -= selected_pane->x;
+		y -= selected_pane->y;
+		update_mid_pane(mid_pane, rel_mouse_hitbox);
 	} else if(bot_pane.hitbox.collides(mouse.hitbox)){
 		// Handle bot-pane intersections
 		// update the model state
 		selected_pane = &bot_pane;
-		x -= bot_pane.x;
-		y -= bot_pane.y;
-		std::vector<Button*>::iterator it;
-		for(it = button_list.begin(); it != button_list.end(); ++it){
-			(*it)->hit_flag = ((*it)->hitbox.collides(rel_mouse_hitbox));
-		}
+		x -= selected_pane->x;
+		y -= selected_pane->y;
+		update_bot_pane(bot_pane, rel_mouse_hitbox);
 	} else{
 		// No Pane was selected
 		selected_pane = nullptr;
@@ -674,31 +686,100 @@ void View_Game::update(SDL_Event& e){
 	}
 }
 
+void View_Game::update_top_pane(pane_t& pane, Collision& rel_mouse_hitbox){
+	// do nothing?
+}
+void View_Game::update_mid_pane(pane_t& pane, Collision& rel_mouse_hitbox){
+	// see if we intersect with a tile
+	int px, py;
+	this->selected_tile = nullptr;
+	std::vector<Tile_intersect>::iterator it;
+	for(it = tiles.begin(); it != tiles.end(); ++it){
+		if(it->hitbox.collides(rel_mouse_hitbox)){
+			this->selected_tile = &(*it);
+
+			// check if we want an adjacent tile due to our mouse positioning
+			// ! We need to account for the affects of padding in the pane				
+			getPixelPosFromTilePos(it->col, it->row, &px, &py);
+			px = rel_mouse_hitbox.getx() - px - mid_pane.padding / 2;
+			py = rel_mouse_hitbox.gety() - py - mid_pane.padding / 2;
+			tilehex_pos = getTilehexDir(px, py);
+			if(this->tilehex_pos != -1){
+				getTilePosFromDirection(tilehex_pos, it->col, it->row, &this->tile_col, &this->tile_row);
+				if(model.get_tile(this->tile_col, this->tile_row) == nullptr ||
+					model.get_tile(this->tile_col, this->tile_row)->active == 0)
+				{
+					// tile does not exist on the game board, therefore
+					// clear the selection and stop looking
+					this->selected_tile = nullptr;
+					this->tile_col = -1;
+					this->tile_row = -1;
+					break;
+				} else{
+					this->selected_tile = &tiles[this->tile_col + this->tile_row*model.m_board_width];
+				}
+			}
+
+			// set the selectred col and row
+			this->tile_col = selected_tile->col;
+			this->tile_row = selected_tile->row;
+			break;
+		}
+	}
+
+	// see if we intersect with one of the vertices
+	do{
+		selected_vertex = nullptr;
+		std::vector<vertex_face_t_intersect>::iterator it;
+		for(it = vertices.begin(); it != vertices.end(); ++it){
+			if(it->hitbox.collides(rel_mouse_hitbox)){
+				selected_vertex = &(*it);
+			}
+		}
+	} while(false);
+
+	// see if we intersect with one of the face intersects
+	do{
+		selected_face = nullptr;
+		std::vector<vertex_face_t_intersect>::iterator it;
+		for(it = faces.begin(); it != faces.end(); ++it){
+			if(it->hitbox.collides(rel_mouse_hitbox)){
+				selected_face = &(*it);
+			}
+		}
+	} while(false);
+}
+
+void View_Game::update_bot_pane(pane_t& pane, Collision& rel_mouse_hitbox){
+	std::vector<Button*>::iterator it;
+	for(it = button_list.begin(); it != button_list.end(); ++it){
+		(*it)->hit_flag = ((*it)->hitbox.collides(rel_mouse_hitbox));
+	}
+}
+
+
 // screen offset in pixels
 void View_Game::render_model(pane_t& pane){
-	int screen_offset_x = pane.x+ pane.padding/2;
-	int screen_offset_y = pane.y+ pane.padding/2;
-	memset(vertex_covered, 0, model.vertex_array.size()*sizeof(Uint8));
-	memset(face_covered, 0, model.face_array.size()*sizeof(Uint8));
-
-	int height_overlap = (int)(tile_h*0.75);
-	int c_offset = (int)(tile_w/2 - 5);
-	int r_offset = (int)(tile_h/2 - 5);
-	SDL_Color black = { 0, 0, 0,255 };
-	bool good_draw_tile = false;
-	int type, roll;
-	int target;
+	render_model_board_tiles(pane);
+	render_model_face_vertex_tiles(pane);
+	render_model_debug(pane);
+	render_model_selected(pane);
+}
+void View_Game::render_model_board_tiles(pane_t& pane){
+	SDL_Color black = { 0, 0, 0, 255 };
+	int screen_offset_x = pane.x + pane.padding / 2;
+	int screen_offset_y = pane.y + pane.padding / 2;
+	int c_offset = tile_w / 2 - 5;
+	int r_offset = tile_h / 2 - 5;
 	int c, r;
-	int i;
+	int type, roll;
 
 	// render all the game tiles
 	for(int row = 0; row < model.m_board_height; ++row){
-		for(int col = 0; col < model.m_board_width; ++col){			
+		for(int col = 0; col < model.m_board_width; ++col){
 			getPixelPosFromTilePos(col, row, &c, &r);
 			r += screen_offset_y;
 			c += screen_offset_x;
-			//r = row*height_overlap + screen_offset_y;
-			//c = col*tile_w + (row % 2 == 1)*(tile_w / 2) + screen_offset_x;
 			type = model.get_type_from_tile(col, row);
 			roll = model.get_roll_from_tile(col, row);
 
@@ -706,55 +787,35 @@ void View_Game::render_model(pane_t& pane){
 				Util::render_texture(&ren, hextile_spritesheet, c, r, &hextile_clips[type]);
 				Util::render_text(&ren, font_carbon_12, c + c_offset, r + r_offset, black, "%d", roll);
 			} else{
+				// render a debug rectangle instead
 				SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
 				Util::render_texture(&ren, hextile_spritesheet, c, r, &clip);
 			}
-
-			if(draw_tile){
-				good_draw_tile = true;
-			}
 		}
 	}
 
-	// render all the settlements 
+}
+void View_Game::render_model_face_vertex_tiles(pane_t& pane){
+	memset(vertex_covered, 0, model.vertex_array.size()*sizeof(Uint8));
+	memset(face_covered, 0, model.face_array.size()*sizeof(Uint8));
+	int screen_offset_x = pane.x + pane.padding / 2;
+	int screen_offset_y = pane.y + pane.padding / 2;
+	int height_overlap = (int)(tile_h*0.75);
+	int target, type;
+	int r, c;
+
+	// render all the roads/faces and Vertices(settlements/cities)
 	for(int row = 0; row < model.m_board_height; ++row){
 		for(int col = 0; col < model.m_board_width; ++col){
-			r = row*height_overlap + screen_offset_y;
-			c = col*tile_w + (row % 2 == 1)*(tile_w / 2) + screen_offset_x;
-			if(model.get_type_from_tile(col, row) == 0){ continue; }
-
-			// render all the vertices
-			for(i = 0; i < 6; ++i){
-				target = model.get_vertices_from_tile(col, row)[i];
-				if(target == -1 || vertex_covered[target] == 1){
-					continue;
-				}
-
-				vertex_covered[target] = 1;
-				int type = model.get_type_from_vertex(target);
-				//type = vertex_face_t::CITY;
-				if(type == vertex_face_t::NONE){ continue; }				
-
-				int x = c + vertex_pos[i][0] - sprite_small[0]/2;
-				int y = r + vertex_pos[i][1] - sprite_small[1]/2;
-				Util::render_texture(&ren, buildings_spritesheet, x, y, &building_clips[type]);
-			}
-
-		}
-	}
-
-
-	// render all the roads/faces
-	for(int row = 0; row < model.m_board_height; ++row){
-		for(int col = 0; col < model.m_board_width; ++col){
-			r = row*height_overlap + screen_offset_y;
-			c = col*tile_w + (row % 2 == 1)*(tile_w / 2) + screen_offset_x;
+			getPixelPosFromTilePos(col, row, &c, &r);
+			r += screen_offset_y;
+			c += screen_offset_x;
 			if(model.get_type_from_tile(col, row) == 0){
 				continue;
 			};
 
 			// render all the faces
-			for(i = 0; i < 6; ++i){
+			for(int i = 0; i < 6; ++i){
 				target = model.get_faces_from_tile(col, row)[i];
 				if(target == -1 || face_covered[target] == 1){
 					continue;
@@ -772,9 +833,60 @@ void View_Game::render_model(pane_t& pane){
 
 				Util::render_texture(&ren, buildings_spritesheet, x, y, &road_clips[i]);
 			}
+
+			// render all the vertices
+			for(int i = 0; i < 6; ++i){
+				target = model.get_vertices_from_tile(col, row)[i];
+				if(target == -1 || vertex_covered[target] == 1){
+					continue;
+				}
+
+				vertex_covered[target] = 1;
+				int type = model.get_type_from_vertex(target);
+				//type = vertex_face_t::CITY;
+				if(type == vertex_face_t::NONE){ continue; }
+
+				int x = c + vertex_pos[i][0] - sprite_small[0] / 2;
+				int y = r + vertex_pos[i][1] - sprite_small[1] / 2;
+				Util::render_texture(&ren, buildings_spritesheet, x, y, &building_clips[type]);
+			}
+
 		}
 	}
+}
 
+void View_Game::render_model_selected(pane_t& pane){
+	int screen_offset_x = pane.x + pane.padding / 2;
+	int screen_offset_y = pane.y + pane.padding / 2;
+	int c, r;
+
+	// highlight the target hex
+	if(draw_tile && selected_tile != nullptr){
+		getPixelPosFromTilePos(tile_col, tile_row, &c, &r);
+		r += screen_offset_y;
+		c += screen_offset_x;
+		SDL_Rect rect = { c, r, tile_w, tile_h };
+		Util::render_rectangle(&ren, &rect, Util::colour_blue());
+	}
+	// highlight the selected vetex
+	if(draw_vertex && selected_vertex != nullptr){
+		SDL_Rect rect = { selected_vertex->x + pane.x,
+			selected_vertex->y + pane.y,
+			selected_vertex->w,
+			selected_vertex->h };
+		Util::render_rectangle(&ren, &rect, Util::colour_blue());
+	}
+	// highlight the seleceted face
+	if(draw_face && selected_face != nullptr){
+		SDL_Rect rect = { selected_face->x + pane.x,
+			selected_face->y + pane.y,
+			selected_face->w,
+			selected_face->h };
+		Util::render_rectangle(&ren, &rect, Util::colour_blue());
+	}
+}
+
+void View_Game::render_model_debug(pane_t& pane){
 	if(true){
 		// draw all the intersect rectangles
 		do{
@@ -802,32 +914,6 @@ void View_Game::render_model(pane_t& pane){
 				Util::render_rectangle(&ren, &rect, Util::colour_white());
 			}
 		} while(false);
-	}
-
-
-	// highlight the target hex
-	if(draw_tile && good_draw_tile && selected_tile != nullptr){
-		getPixelPosFromTilePos(tile_col, tile_row, &c, &r);
-		r += screen_offset_y;
-		c += screen_offset_x;
-		SDL_Rect rect = { c, r, tile_w, tile_h };
-		Util::render_rectangle(&ren, &rect, Util::colour_blue());
-	}
-	// highlight the selected vetex
-	if(draw_vertex && selected_vertex != nullptr){
-		SDL_Rect rect = { selected_vertex->x + pane.x,
-								selected_vertex->y + pane.y,
-								selected_vertex->w,
-								selected_vertex->h };
-		Util::render_rectangle(&ren, &rect, Util::colour_blue());
-	}
-	// highlight the seleceted face
-	if(draw_face && selected_face != nullptr){
-		SDL_Rect rect = { selected_face->x + pane.x,
-								selected_face->y + pane.y,
-								selected_face->w,
-								selected_face->h };
-		Util::render_rectangle(&ren, &rect, Util::colour_blue());
 	}
 }
 
@@ -861,7 +947,8 @@ void View_Game::render_bottom_text(pane_t& pane){
 	rect = {0,pane.y + off_y, 80, 18 };
 	Util::render_rectangle(&ren, &rect, player->color);
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x + rect.w +5,pane.y + off_y, font_carbon_12_colour,
-		"Player %d : %s Victory Points=%d", model.m_current_player,player->name.c_str(), player->victory_points);
+		"Player %d : %s Victory Points=%d", model.m_current_player,player->name.c_str(),
+		model.num_victory_points_for_player(model.m_current_player));
 
 	// how many resources doe the player have?
 	off_x = 0;
@@ -943,10 +1030,38 @@ void View_Game::render(){
 		"FPS:%d.%d", fps.fps, total_frame_count);
 
 	// draw a rectangle aroudn the selected pane
-	if(selected_pane != nullptr  && true){
+	if(selected_pane != nullptr && true){
 		SDL_Rect r = { selected_pane->x, selected_pane->y, selected_pane->w, selected_pane->h };
-		SDL_Color c = { 255,255,0, 255 };
-		Util::render_rectangle(&ren, &r,c);
+		SDL_Color c = { 255, 255, 0, 255 };
+		Util::render_rectangle(&ren, &r, c);
+	}
+
+	// draw the message box
+	if(message_pane.isVisible()){
+		SDL_Rect r = {
+			message_pane.x, message_pane.y,
+			message_pane.w, message_pane.h
+		};
+		SDL_Color c = { 0,0,0, 255 };
+		Util::render_fill_rectangle(&ren, &r, c);
+		c = { 255, 255, 0, 255 };
+		Util::render_rectangle(&ren, &r, c);
+		if(model.get_error() != Model::MODEL_ERROR_NONE){
+			Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
+				font_carbon_12_colour, "%d,%s",				
+				model.get_error(),
+				View_Game::view_game_model_error_strings[model.get_error()].c_str());
+		}
+	}
+
+	// draw the misc pane
+	if(misc_pane.isVisible()){
+		SDL_Rect r = {
+			misc_pane.x, misc_pane.y,
+			misc_pane.w, misc_pane.h
+		};
+		SDL_Color c = { 255, 255, 0, 255 };
+		Util::render_rectangle(&ren, &r, c);
 	}
 
 	SDL_RenderPresent(&ren);

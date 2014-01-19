@@ -13,10 +13,10 @@
 #include "Tiles.h"
 #include "model_structs.h"
 #include "M_math.h"
+
  
 Model::Model(int num_players){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model Constructor(num_players=%d)", num_players);
-
 	// seed the random number generator
 	srand((unsigned int)time(NULL));
 
@@ -75,6 +75,7 @@ Model::Model(int num_players){
 	player_holding_longest_road_card = -1;
 
 	turn_count = 0;
+	set_error(Model::MODEL_ERROR_NONE);
 }
 Model::~Model(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG,"Model Destructor");
@@ -114,7 +115,7 @@ void Model::init_players(Player* players, int num_players){
 	for(int i = 0; i < num_players; ++i){
 		players[i].init(
 			"Player", {255,255,0,255},
-			0,start_resources,0,0,
+			0,start_resources,0,
 			config.buildings_cap
 		);
 	}
@@ -504,6 +505,10 @@ int Model::numtiles_from_row(int row, int level,int num_extensions){
 }
 
 resource_t Model::get_building_cost(building_t::buildings card){
+	if(card < 0 || card >= building_t::NUM_OF_BUILDINGS){
+		set_error(Model::MODEL_ERROR_ERROR);
+		return config.building_costs[0];
+	}
 	return config.building_costs[card];
 }
 
@@ -547,7 +552,6 @@ void Model::play_dev_card(int player, dev_cards_t* card){
 				m_players[player].num_soldiers >= 3 ) 
 			{
 				player_holding_largest_army_card = player;
-				m_players[player].victory_points +=2;
 			}else if( m_players[player].num_soldiers >
 						m_players[player_holding_largest_army_card].num_soldiers) 
 			{
@@ -555,7 +559,7 @@ void Model::play_dev_card(int player, dev_cards_t* card){
 			}			
 		}break;
 		case(dev_cards_t::VICTORY):{
-			m_players[player].victory_points++;						
+			
 		}break;
 		case(dev_cards_t::MONOPOLY):{
 
@@ -609,7 +613,7 @@ void Model::give_resources_from_roll(int roll){
 				default:{continue; }
 				}					
 				take.res[res_type] = amount;
-				bank_exchange(vertex_array[hex->vertices[i]].player,&give, &take);
+				bank_exchange(vertex_array[hex->vertices[i]].player, &give, &take);				
 				Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::give_resoure_from_roll col=%d,row=%d,type=%d amount=%d,player=%d",
 					col, row, res_type, amount, vertex_array[hex->vertices[i]].player);
 			}
@@ -621,6 +625,8 @@ void Model::give_resources_from_roll(int roll){
 
 
 bool Model::buy_dev_card(int player){
+	if(player < 0 || player >= m_num_players){return false;}
+	if(m_dev_deck.empty()){ return false; }
 	// pay for the card
 	resource_t price = get_building_cost(building_t::DEV_CARD);
 	if(pay_for_item(player, &price) == false){
@@ -633,17 +639,23 @@ bool Model::buy_dev_card(int player){
 }
 
 dev_cards_t Model::draw_dev_card(){
-	dev_cards_t rs = m_dev_deck.back();
-	m_dev_deck.pop_back();
-	Logger::getLog("jordan.log").log(Logger::DEBUG,"Model::draw_dev_card %d remaining. title=%s,message=%s",
-		m_dev_deck.size(), rs.title().c_str(), rs.message().c_str());
-	return rs;
+	if(m_dev_deck.empty()){
+		set_error(Model::MODEL_ERROR_BANK_DEV_CARD);
+		dev_cards_t rs;
+		return rs;
+	} else{
+		dev_cards_t rs = m_dev_deck.back();
+		m_dev_deck.pop_back();
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::draw_dev_card %d remaining. title=%s,message=%s",
+			m_dev_deck.size(), rs.title().c_str(), rs.message().c_str());
+		return rs;
+	}
 }
 
 void Model::build_building(int player,building_t::buildings building,int pos){
 	bool rs = false;
 	switch(building) {
-		case(building_t::CITY) : rs=add_city(player,pos); break;
+		case(building_t::CITY) :rs=add_city(player,pos);break;
 		case(building_t::SETTLEMENT) : rs=add_settlement(player, pos); break;
 		case(building_t::ROAD) : rs=add_road(player, pos); break;
 	}
@@ -656,30 +668,46 @@ void Model::build_building(int player,building_t::buildings building,int pos){
 }
 
 
-bool Model::add_city(int player, int pos){
-	if(vertex_array[pos].type != vertex_face_t::SETTLEMENT){ return false; }
-	if(vertex_array[pos].type == vertex_face_t::CITY){ return false; }
-	if(vertex_array[pos].player != player){ return false; }
-	if(m_players[player].building_cap[building_t::CITY] <= 0){ return false; }
+bool Model::add_city(int player, int pos){	
+	if(vertex_array[pos].type != vertex_face_t::SETTLEMENT ||
+		vertex_array[pos].type == vertex_face_t::CITY ||
+		vertex_array[pos].player != player)
+	{
+		set_error(Model::MODEL_ERROR_PLACE_CITY);
+		return false;
+	}
+	if(m_players[player].building_cap[building_t::CITY] <= 0){ 
+		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
+		return false;	
+	}
 	
 	// set the tile as a city now.
 	vertex_array[pos].type = vertex_face_t::CITY;
 	m_players[player].building_cap[building_t::CITY]--;
 	m_players[player].building_cap[building_t::SETTLEMENT]++;
-	m_players[player].buildings.push_back(pos);
-	
+	m_players[player].buildings.push_back(pos);	
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city player=%d,col=%d,row=%d,vertex=%d", player, vertex_array[pos].vert.tiles[0][0], vertex_array[pos].vert.tiles[0][1], pos);
 	return true;
 }
-bool Model::add_settlement(int player, int pos){
-	if(vertex_array[pos].type == vertex_face_t::SETTLEMENT){ return false; }
-	if(vertex_array[pos].type == vertex_face_t::CITY){ return false; }
-	if(m_players[player].building_cap[building_t::SETTLEMENT] <= 0){ return false; }
+bool Model::add_settlement(int player, int pos){	
+	if(vertex_array[pos].type == vertex_face_t::SETTLEMENT ||
+		vertex_array[pos].type == vertex_face_t::CITY)
+	{
+		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
+		return false;
+	}
+	if(m_players[player].building_cap[building_t::SETTLEMENT] <= 0){ 
+		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
+		return false;
+	}
 	
 	// find the tile associate with this vertex
 	int col, row;
 	Tiles* tile = find_tile_from_vertex(pos,&col,&row);
-	if(tile == nullptr){ return false; }
+	if(tile == nullptr){ 
+		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
+		return false;
+	}
 
 	// check for a connecting road, and space around the hex
 	if(can_build_settlement(player, row, col, pos)){
@@ -690,17 +718,27 @@ bool Model::add_settlement(int player, int pos){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d",player,col,row,pos );
 		return true;
 	}
+	set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 	return false;
 }
 bool Model::add_road(int player, int pos){
-	if(face_array[pos].type != vertex_face_t::NONE){ return false; }
-	if(m_players[player].building_cap[building_t::ROAD] <= 0){ return false; }
+	if(face_array[pos].type != vertex_face_t::NONE){ 
+		set_error(Model::MODEL_ERROR_PLACE_ROAD);
+		return false;
+	}
+	if(m_players[player].building_cap[building_t::ROAD] <= 0){
+		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
+		return false;
+	}
 	
 
 	// check for a connecting road
 	int col, row;
 	Tiles* tile = find_tile_from_face(pos, &col, &row);;
-	if(tile == nullptr){ return false; }
+	if(tile == nullptr){ 
+		set_error(Model::MODEL_ERROR_PLACE_ROAD);
+		return false;
+	}
 
 	// if a road exists, then we can build a road
 	if(can_build_road(player,row,col,pos)){
@@ -711,6 +749,7 @@ bool Model::add_road(int player, int pos){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
 		return true;
 	}
+	set_error(Model::MODEL_ERROR_PLACE_ROAD);
 	return false;
 }
 
@@ -894,6 +933,7 @@ Tiles* Model::find_tile_from_vertex(int vertex, int* c, int* r){
 	if(vertex < 0 || (unsigned) vertex >= vertex_array.size()){
 		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::find_tile_from_vertex() %d out of range %d-%d",
 			vertex, 0, vertex_array.size());
+		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
 		return nullptr;
 	}
 	vertex_face_t* v = &vertex_array[vertex];
@@ -906,6 +946,7 @@ Tiles* Model::find_tile_from_face(int face, int* c, int* r){
 	if(face < 0 || (unsigned) face >= face_array.size()){
 		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::find_tile_from_face() %d out of range %d-%d",
 			face, 0, face_array.size());
+		set_error(Model::MODEL_ERROR_INVALID_FACE);
 		return nullptr;
 	}
 	vertex_face_t* f = &face_array[face];
@@ -917,7 +958,8 @@ Tiles* Model::find_tile_from_face(int face, int* c, int* r){
 
 
 bool Model::can_build_road(int player,int row, int col, int pos){
-	Tiles* tile = &m_board[col + row*m_board_width];
+	Tiles* tile = get_tile(col, row);
+	if(tile == nullptr){ return false; }
 	vertex_face_t* face = &face_array[tile->faces[pos]];
 	bool road_exists;
 	bool blocked;
@@ -953,7 +995,8 @@ bool Model::can_build_road(int player,int row, int col, int pos){
 	return (road_exists && blocked == false);
 }	
 bool Model::can_build_settlement(int player, int row, int col, int v){
-	Tiles* tile = &m_board[col + row*m_board_width];
+	Tiles* tile = get_tile(col, row);
+	if(tile == nullptr){ return false; }
 	vertex_face_t* vertex = &vertex_array[tile->vertices[v]];
 	bool has_space = false;
 	bool is_connected = false;
@@ -1005,6 +1048,7 @@ bool Model::pay_for_item(int player, resource_t* price){
 
 bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 	if(!give || !take){ return false; }
+	if(player < 0 || player >= m_num_players){ return false; }
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange player=%d give=%d,%d,%d,%d,%d take=%d,%d,%d,%d,%d",
 		player,
 		give->res[0], give->res[1], give->res[2], give->res[3], give->res[4],
@@ -1018,9 +1062,22 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 		bank.res[0], bank.res[1], bank.res[2], bank.res[3], bank.res[4]);
 
 	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
-		if(bank_copy.res[i] - take->res[i] < 0){ good_flag = false; break; }
-		if(bank_copy.res[i] + give->res[i] > config.resource_cards_cap[i]){ good_flag = false; break; }
-		if(player_copy.res[i] - give->res[i] < 0){ good_flag = false; break; }
+		if(
+			(bank_copy.res[i] - take->res[i] < 0) ||
+			(bank_copy.res[i] + give->res[i] > config.resource_cards_cap[i])
+		)
+		{ 
+			int code = Model::MODEL_ERROR_BANK_RESOURCE_BRICK + i;
+			set_error((Model::model_error_codes_e)code);
+			good_flag = false;
+			break;
+		}
+		if(player_copy.res[i] - give->res[i] < 0){
+			int code = Model::MODEL_ERROR_PLAYER_RESOURCE_BRICK + i;
+			set_error((Model::model_error_codes_e)code);
+			good_flag = false; 
+			break;
+		}
 
 		bank_copy.res[i] -= take->res[i];
 		bank_copy.res[i] += give->res[i];
@@ -1040,21 +1097,15 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 	return true;
 }
 
-bool Model::bank_exchange(resource_t* give, resource_t* take){
-	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
-		if(bank.res[i] - take->res[i] < 0){ return false; }
-		if(bank.res[i] + give->res[i] > config.resource_cards_cap[i]){ return false; }
-		bank.res[i] -= take->res[i];
-		bank.res[i] += give->res[i];
-	}
-	return true;
-}
 bool Model::move_thief(int col, int row){
-	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_width){ return false; }
 	// check that the thief isn't placed on a water tile
-	if(Tiles::is_water_tile(m_board[col + row*m_board_width].type)){
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_width ||
+		Tiles::is_water_tile(m_board[col + row*m_board_width].type))
+	{
+		set_error(Model::MODEL_ERROR_PLACE_THIEF);
 		return false;
 	}
+	
 	thief_pos_x = col;
 	thief_pos_y = row;
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::move_thief(col=%d,row=%d)",thief_pos_x,thief_pos_y);
@@ -1065,45 +1116,76 @@ void Model::transfer_largest_army_card(int original_player, int new_player){
 	if(original_player < 0 || original_player >= m_num_players){ return; }
 	if(new_player < 0 || new_player >= m_num_players){ return; }
 	player_holding_largest_army_card = new_player;
-	m_players[original_player].victory_points -= 2;
-	m_players[new_player].victory_points += 2;
 }
 void Model::transfer_longest_road_card(int original_player, int new_player){
 	if(original_player < 0 || original_player >= m_num_players){ return; }
 	if(new_player < 0 || new_player >= m_num_players){ return; }
 	player_holding_longest_road_card = new_player;
-	m_players[original_player].victory_points -= 2;
-	m_players[new_player].victory_points += 2;
 }
 
 Tiles* Model::get_tile(int col, int row){
-	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){ return nullptr; }
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){ 
+		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return nullptr;
+	}
 	return &m_board[col + row*m_board_width];
 }
 int Model::get_type_from_tile(int col, int row){
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){ 
+		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return Tiles::NONE_TILE;
+	}
 	return m_board[col + row*m_board_width].type;
 }
 int Model::get_roll_from_tile(int col, int row){
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){
+		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return -1;
+	}
 	return m_board[col + row*m_board_width].roll;
 }
 int* Model::get_vertices_from_tile(int col, int row, int* size){
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){
+		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return nullptr;
+	}
 	if(size != nullptr){ *size = 6; }
 	return m_board[col + row*m_board_width].vertices;
 }
 int* Model::get_faces_from_tile(int col, int row, int* size){
+	if(col < 0 || row < 0 || col >= m_board_width || row >= m_board_height){
+		set_error(Model::MODEL_ERROR_INVALID_TILE); 
+		return nullptr;
+	}
 	if(size != nullptr){ *size = 6; }
 	return m_board[col + row*m_board_width].faces;
 }
 int Model::get_type_from_face(int face){
+	if(face < 0 || face >= (int)face_array.size()){
+		set_error(Model::MODEL_ERROR_INVALID_FACE);
+		return vertex_face_t::NONE;
+	}
 	return face_array[face].type;
 }
 int Model::get_type_from_vertex(int vertex){
+	if(vertex < 0 || vertex >= (int)vertex_array.size()) { 
+		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
+		return vertex_face_t::NONE;
+	}
 	return vertex_array[vertex].type;
 }
 int Model::get_player_from_face(int face){
+	if(face < 0 || face >= (int)face_array.size()){
+		set_error(Model::MODEL_ERROR_INVALID_FACE); 
+		return -1;
+	}
 	return face_array[face].player;
 }
 int Model::get_player_from_vertex(int vertex){
+	if(vertex < 0 || vertex >= (int)vertex_array.size()) { 
+		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
+		return -1;
+	}
 	return vertex_array[vertex].player;
 }
 
@@ -1124,4 +1206,39 @@ int Model::longest_road(){
 		// TODO: This is not working right now. INCORRECT
 		return m_players[player_holding_longest_road_card].roads.size();
 	}
+}
+
+int Model::num_victory_points_for_player(int player){
+	if(player < 0 || player >= m_num_players){ return -1; }
+	Player& p = m_players[player];
+
+	int points = 0;
+
+	// count the number of victory cards.
+	for(int i = 0; i < (int)p.dev_cards.size(); ++i){
+		if(p.dev_cards[i].visible == false || p.dev_cards[i].type == dev_cards_t::VICTORY){
+			continue;
+		}
+		points++;
+	}
+
+	// count the number of settlements and cities
+	for(int i = 0; i < (int)p.buildings.size(); ++i){
+		if(this->vertex_array[p.buildings[i]].type == vertex_face_t::CITY){
+			points += 2;
+		} else{
+			points++;
+		}
+	}
+
+	if(player == this->player_holding_largest_army_card){ points++;}
+	if(player == this->player_holding_longest_road_card){ points++; }
+	return points;
+}
+
+void Model::set_error(Model::model_error_codes_e code){
+	model_error = code;
+}
+int Model::get_error(){
+	return model_error;
 }

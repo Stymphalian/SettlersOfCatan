@@ -7,12 +7,16 @@
 
 class Timer{
 private:
-public:
-	// Variables
 	int timer_id;
 	bool running;
 	Uint32 event_type;
 	Uint32 interval;
+public:
+	// Variables
+	int get_timerid();
+	int isrunning();
+	Uint32 get_event_type();
+	Uint32 get_interval();
 
 	// Constructor  & Destructor
 	Timer(Uint32 interval,Uint32 user_event_type);

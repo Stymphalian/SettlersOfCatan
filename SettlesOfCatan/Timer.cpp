@@ -14,10 +14,14 @@ Timer::~Timer(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Timer destructor");
 	stop(); // Stop the timer
 }
+int Timer::get_timerid(){ return timer_id; }
+int Timer::isrunning() { return running; }
+Uint32 Timer::get_event_type(){ return event_type; };
+Uint32 Timer::get_interval(){ return interval; };
 
 // Member methods
 bool Timer::start(){
-	timer_id = SDL_AddTimer(interval, Timer::timer_callback, &event_type);
+	timer_id = SDL_AddTimer(interval, Timer::timer_callback,this);
 	if(timer_id == 0){
 		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_AddTimer");
 		return false;
@@ -35,19 +39,21 @@ bool Timer::stop(){
 	return true;
 }
 // Call back function which generates the events
-Uint32 Timer::timer_callback(Uint32 interval, void* event_type){
-	if(event_type == nullptr){ return 0; }
+Uint32 Timer::timer_callback(Uint32 interval, void* param){
+	if(param == nullptr){ return 0; }
+	Timer* self = (Timer*)param;
 	SDL_Event event;
 	SDL_zero(event);
-	event.type = *(Uint32*)event_type;
-	event.user.type = *(Uint32*)event_type;
+	event.type = self->event_type;
+	event.user.type = self->event_type;
 	event.user.code = 0;
-	event.user.data1 = 0;
+	event.user.data1 = param;
 	event.user.data2 = 0;
 	SDL_PushEvent(&event);
 	return interval; // restart the timer
 }
 
+// -- T I M E R    F A c T O R Y  --
 // Static get()  for Singleton pattern
 TimerFactory& TimerFactory::get(){
 	static TimerFactory instance(0);

@@ -14,8 +14,7 @@ public:
 	resource_t resources;
 	std::vector<dev_cards_t> dev_cards;
 	std::vector<int> buildings; // the vertex number
-	std::vector<int> roads; // the vertex number
- 	int victory_points;
+	std::vector<int> roads; // the face number
 	int num_soldiers;
 	int building_cap[building_t::NUM_OF_BUILDINGS];
 
@@ -29,7 +28,6 @@ public:
 		SDL_Color color,
 		int hand_size,
 		resource_t start_resources,
-		int victory_points,
 		int num_soldiers,
 		int start_building_cap[building_t::NUM_OF_BUILDINGS]
 		);

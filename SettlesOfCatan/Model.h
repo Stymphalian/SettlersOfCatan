@@ -8,7 +8,32 @@ class Player;
 
 class Model{
 public:
-	// enum phase_e {NONE,ROLL,THIEF,TRADE,BUILD,NUM_PHASES};
+	enum model_error_codes_e{
+		MODEL_ERROR_NONE =0,
+		MODEL_ERROR_ERROR,
+		MODEL_ERROR_BANK_RESOURCE_BRICK, /* order of the resources here is important, alphabetic*/
+		MODEL_ERROR_BANK_RESOURCE_ORE,
+		MODEL_ERROR_BANK_RESOURCE_SHEEP,
+		MODEL_ERROR_BANK_RESOURCE_WHEAT,
+		MODEL_ERROR_BANK_RESOURCE_WOOD,		
+		MODEL_ERROR_BANK_DEV_CARD,
+		MODEL_ERROR_PLAYER_RESOURCE_BRICK, /* order of the resources here is important, alphabetic*/
+		MODEL_ERROR_PLAYER_RESOURCE_ORE,
+		MODEL_ERROR_PLAYER_RESOURCE_SHEEP,
+		MODEL_ERROR_PLAYER_RESOURCE_WHEAT,
+		MODEL_ERROR_PLAYER_RESOURCE_WOOD,
+		MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS,
+		MODEL_ERROR_PLACE_THIEF,
+		MODEL_ERROR_PLACE_SETTLEMENT,
+		MODEL_ERROR_PLACE_CITY,
+		MODEL_ERROR_PLACE_ROAD,
+		MODEL_ERROR_PLAY_DEV_CARD,
+		MODEL_ERROR_INVALID_TILE,
+		MODEL_ERROR_INVALID_FACE,
+		MODEL_ERROR_INVALID_VERTEX,
+		NUM_model_error_codes_e
+	};
+	model_error_codes_e model_error;
 	// Variables
 	int m_num_levels; // how many rings are there
 	int m_num_extensions; // how many extensions were used
@@ -30,7 +55,6 @@ public:
 	int m_num_water_tiles; // the number of water tiles, include ports
 	std::vector<vertex_face_t> vertex_array;
 	std::vector<vertex_face_t> face_array;
-
 	std::vector<dev_cards_t> m_dev_deck; // a list holding the deck of dev cards
 
 	int thief_pos_x;
@@ -39,7 +63,6 @@ public:
 	int player_holding_longest_road_card;
 	int largest_army();
 	int longest_road();
-
 	int turn_count;
 
 	// Constructors and Destructors
@@ -50,6 +73,8 @@ public:
 	void end_turn();
 
 	Tiles* get_tile(int col, int row);
+	Tiles* find_tile_from_vertex(int vertex, int* c, int* r);
+	Tiles* find_tile_from_face(int face, int* c, int* r);
 	int get_type_from_face(int face);
 	int get_type_from_vertex(int vertex);
 	int get_player_from_face(int face);
@@ -64,8 +89,7 @@ public:
 	void build_building(int player, building_t::buildings building, int pos);
 	bool can_build_road(int player, int row, int col, int face);
 	bool can_build_settlement(int player, int row, int col, int vertex);
-	int get_ring_level(int row, int col, int nlevels);
-	
+		
 	int roll(int num_dice, int num_sides);
 	void give_resources_from_roll(int roll);
 	bool move_thief(int new_col, int new_row);
@@ -76,8 +100,10 @@ public:
 	void transfer_longest_road_card(int original_player, int new_player);
 		
 	bool pay_for_item(int player, resource_t* price);
-	bool bank_exchange(int player, resource_t* give, resource_t* take);
-	bool bank_exchange(resource_t* give, resource_t* take);
+	bool bank_exchange(int player, resource_t* give, resource_t* take);	
+	int num_victory_points_for_player(int player);
+	void set_error(Model::model_error_codes_e code);
+	int get_error();
 private:
 	// private member variables
 	configuration_t config; // hold configuration data, such as how many tiles and cards we should have
@@ -91,10 +117,9 @@ private:
 	dev_cards_t draw_dev_card();
 	bool add_city(int player, int pos);
 	bool add_settlement(int player, int pos);
-	bool add_road(int player, int pos);
-	Tiles* find_tile_from_vertex(int vertex,int* c, int* r);
-	Tiles* find_tile_from_face(int face,int* c, int* r);
+	bool add_road(int player, int pos);	
 	
+	int get_ring_level(int row, int col, int nlevels);
 	int level_from_row(int row,int levels,int num_extensions);
 	int numtiles_from_row(int row,int levels,int num_extensions);
 	int num_offset_tiles_from_row(int row, int levels,int num_extensions);
