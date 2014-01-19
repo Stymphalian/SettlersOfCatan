@@ -111,7 +111,9 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	offset_y = this->mid_pane.y + this->mid_pane.h;
 	offset_z = 3;
 	this->message_pane.init(offset_x, offset_y, offset_z, disp_w - 2*(disp_w/8),18);
-	this->message_pane.setVisible(false);
+	this->message_pane.setMessage(nullptr);
+	this->message_pane.setTimeout((unsigned)(this->desired_fps*1.5));
+	this->message_pane.stop();
 
 	// loading textures, music, fonts, and clips
 	// all the new and mallocs are here.
@@ -492,14 +494,16 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 
 	
 		// cycle through the error codes
-		if(keyboard[SDL_SCANCODE_1] ){
-			message_timeout = desired_fps*1.5;
-			message_pane.setVisible(true);
+		if(keyboard[SDL_SCANCODE_1] ){			
 			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
 			int code = (model.get_error() + dir);
 			if(code < 0){code = Model::NUM_model_error_codes_e + code;
 			} else{code %= Model::NUM_model_error_codes_e;}
 			model.set_error((Model::model_error_codes_e)code);
+
+			// set the message pane to show the error
+			message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
+			message_pane.reset();
 		}
 	} else if(e.type == SDL_KEYUP){
 
@@ -530,23 +534,25 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 }
 
 void View_Game::handle_user_events(SDL_Event& e){
-	if(e.type >= SDL_USEREVENT){		
-		// check for the fps timer events
-		if(e.user.type == TimerFactory::get().event_type()){
-			if((Timer*)e.user.data1 == fps_timer){
-				draw_flag = true;
-				fps.update();
+	if(e.type < SDL_USEREVENT){return;}
+	// check for the timer events
+	if(e.user.type == TimerFactory::get().event_type()){
+		// check for the fps timer
+		if((Timer*)e.user.data1 == fps_timer){
+			draw_flag = true;
+			fps.update();
 
-				// time-out any messages on the screen.
-				if(message_timeout == 1){
-					message_timeout = 0;
-					message_pane.setVisible(false);
-					model.set_error(Model::MODEL_ERROR_NONE);
-				} else{
-					message_timeout--;
-				}
+			// time-out any messages on the screen.
+			message_pane.tick();
+			if(message_pane.just_finished){
+				model.set_error(Model::MODEL_ERROR_NONE);
+				message_pane.setMessage(nullptr);
 			}
-		} 
+		} else{
+
+		}
+	} else{
+
 	}
 }
 
@@ -1048,9 +1054,9 @@ void View_Game::render(){
 		Util::render_rectangle(&ren, &r, c);
 		if(model.get_error() != Model::MODEL_ERROR_NONE){
 			Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
-				font_carbon_12_colour, "%d,%s",				
-				model.get_error(),
-				View_Game::view_game_model_error_strings[model.get_error()].c_str());
+				font_carbon_12_colour, "%s",				
+				(message_pane.message == nullptr) ? "" : message_pane.message
+				);
 		}
 	}
 

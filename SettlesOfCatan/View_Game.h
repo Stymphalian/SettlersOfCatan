@@ -64,6 +64,38 @@ public:
 private:
 	bool visible;
 };
+class message_pane_t : public pane_t{
+public:
+	const char* message;
+	unsigned timeout;
+	unsigned current_tick;
+	bool just_finished;
+	
+	message_pane_t() : pane_t(){
+		this->message = nullptr;
+		this->timeout = 0;
+		this->current_tick = 0;
+		this->just_finished = false;
+	}
+	void tick(){
+		if(current_tick == 0){
+			this->just_finished = false;
+		}else if(current_tick == 1){
+			pane_t::setVisible(false);
+			this->current_tick = 0;
+			this->just_finished = true;
+		} else{
+			this->current_tick--;
+		}
+	}	
+	void setTimeout(unsigned timeout){
+		this->timeout = timeout;
+		if(this->current_tick > timeout){this->current_tick = timeout;}
+	}
+	void reset(){ this->current_tick = this->timeout; pane_t::setVisible(true); }
+	void stop(){ this->current_tick = 0; pane_t::setVisible(false); }
+	void setMessage(const char* message){this->message = message;}
+};
 
 class Tile_intersect{
 public:
@@ -95,6 +127,8 @@ public:
 	}
 	virtual ~vertex_face_t_intersect(){};
 };
+
+
 
 class View_Game : public IView{
 public:
@@ -166,9 +200,9 @@ private:
 	Uint8 *vertex_covered;
 	Uint8 *face_covered;
 	pane_t top_pane, mid_pane, bot_pane;
-	pane_t misc_pane, message_pane;
+	pane_t misc_pane;
+	message_pane_t message_pane;
 	int total_frame_count;
-	int message_timeout;
 	int face_size[2];
 	int sprite_small[2]; // w and h of small sprites
 	int sprite_medium[2]; // w and h of medium sprites
