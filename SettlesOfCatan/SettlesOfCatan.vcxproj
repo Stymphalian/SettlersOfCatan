@@ -106,6 +106,7 @@ copy \Y "$(ProjectDir)data\*" "$(SolutionDir)$(Configuration)\data"</Command>
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="IView.cpp" />
     <ClCompile Include="View_Game.cpp" />
+    <ClCompile Include="View_Play.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.h" />
@@ -125,6 +126,7 @@ copy \Y "$(ProjectDir)data\*" "$(SolutionDir)$(Configuration)\data"</Command>
     <ClInclude Include="Util.h" />
     <ClInclude Include="IView.h" />
     <ClInclude Include="View_Game.h" />
+    <ClInclude Include="View_Play.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Design_Features.txt" />

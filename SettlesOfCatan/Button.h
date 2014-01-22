@@ -35,9 +35,11 @@ private:
 void exit_button_action(View_Game& view,Model& model);
 void end_turn_action(View_Game& view, Model& model);
 void roll_action(View_Game& view, Model& model);
+void enable_debug_action(View_Game& view, Model& model);
 void add_road_action(View_Game& view, Model& model);
 void add_settlement_action(View_Game& view, Model& model);
 void add_city_action(View_Game& view, Model& model);
 void buy_dev_card_action(View_Game& view, Model& model);
 void play_dev_card_action(View_Game& view, Model& model);
 void trade_action(View_Game& view, Model& model);
+void empty_action(View_Game& view, Model& model);

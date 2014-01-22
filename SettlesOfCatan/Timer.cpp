@@ -69,9 +69,10 @@ Uint32 TimerFactory::event_type(){
 }
 // Constructor, and Destructors for Singleton Pattern
 TimerFactory::TimerFactory(int param){
+	
 	m_user_event_type_timer = SDL_RegisterEvents(1);
 	if(m_user_event_type_timer == ((Uint32)-1)){
-		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_RegisterEvents");
+		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "TimerFactory::SDL_RegisterEvents");
 		m_user_event_type_timer = 0;
 	}
 }

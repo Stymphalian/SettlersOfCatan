@@ -65,25 +65,28 @@ void exit_button_action(View_Game& view, Model& model){
 void end_turn_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "end_turn_action");
 	model.end_turn();
-	view.set_state(View_Game::state_e::NONE);
+	view.set_state(View_Game::state_e::NORMAL);
 	//Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,0,0);
 }
 void add_road_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "add_road_action");
-	view.set_state(View_Game::state_e::PLACE_ROAD);
+	view.set_state(View_Game::BUILD_ROAD);
 }
 void roll_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "roll_action");
 	model.roll(2,6);
 }
-
+void enable_debug_action(View_Game& view, Model& model){
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "enabe_debug_action");
+	view.debug = (view.debug) ? false : true;
+}
 void add_settlement_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "add_settlement_action");
-	view.set_state(View_Game::state_e::PLACE_SETTLEMENT);
+	view.set_state(View_Game::BUILD_SETTLEMENT);
 }
 void add_city_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "add_city_action");
-	view.set_state(View_Game::state_e::PLACE_CITY);
+	view.set_state(View_Game::BUILD_CITY);
 }
 void buy_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "buy_dev_card_action");
@@ -91,11 +94,15 @@ void buy_dev_card_action(View_Game& view, Model& model){
 }
 void play_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "play_dev_card_action");
-	view.set_state(View_Game::state_e::PLAYING_DEV_CARD);
+	view.set_state(View_Game::PLAY_DEV_CARD);
 }
 void trade_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "trade_action");
 	view.set_state(View_Game::state_e::TRADING);
+}
+void empty_action(View_Game& view, Model& model){
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "empty_action");
+	view.debug_data = (view.debug_data + 1) % 3;
 }
 
 /*

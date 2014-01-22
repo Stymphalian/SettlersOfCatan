@@ -211,37 +211,25 @@ SDL_Color Util::colour_black(){
 }
 
 Uint32 Util::get_userev(const char* ev){
-	// special case in which there are no user-event types registered
-	if(user_evs.size() == 0){
-		userev_and_str type;
-		type.ev = SDL_RegisterEvents(1);
-		type.name = ev;
-		if(type.ev == ((Uint32)-1)){
-			Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_RegisterEvents");
-			return ((Uint32)-1);
-		} else{
-			user_evs.push_back(type);
-		}
-	}
-	
-	// get the user event, OR add a new one if it isn't registered
+	// check to see if the event has already been registered.
 	std::vector<userev_and_str>::iterator it;
 	for(it = user_evs.begin(); it != user_evs.end(); ++it){
 		if(it->name.compare(ev) == 0){
 			return it->ev;
-		} else{
-			userev_and_str type;
-			type.ev = SDL_RegisterEvents(1);
-			if(type.ev == ((Uint32)-1)){
-				Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_RegisterEvents");
-				break;
-			}
-			type.name = ev;
-			user_evs.push_back(type);
-			return type.ev;
-		}
+		} 
 	}
-	return ((Uint32) - 1);
+
+	// if not registereed, then register it.
+	userev_and_str type;
+	type.name = ev;
+	type.ev = SDL_RegisterEvents(1);
+	if(type.ev == ((Uint32)-1)){
+		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
+		return (Uint32)-1;
+	}	
+	user_evs.push_back(type);
+	Logger::getLog("jordan.log").log("Util::get_userev() Registered event %s=%d\n", type.name.c_str(), type.ev);
+	return type.ev;
 }
 
 void Util::push_userev(Uint32 user_type, Sint32 code, void* data1, void* data2){

@@ -25,7 +25,7 @@ std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_code
 	"Not enough resources.Not enough wood.",
 	"Not enough resources.Not enough buildings.",
 	"Can't place thief.",
-	"Can't placde settlement.",
+	"Can't place settlement.",
 	"Can't place city.",
 	"Can't place road.",
 	"Can't play dev card.",
@@ -54,7 +54,13 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->desired_fps = UTIL_FPS;
 	this->total_frame_count = 0;
 	this->state = state_e::NONE;
+	this->change_state_flag = false;
 	this->selected_pane = nullptr;
+	this->debug = true;
+	this->debug_tiles = false;
+	this->debug_vertices = false;
+	this->debug_faces = false;
+	this->debug_data = 0;
 
 	mouse.buttons = 0;
 	mouse.x = 0;
@@ -137,8 +143,11 @@ View_Game::~View_Game(){
 	tiles.clear();
 	vertices.clear();
 	faces.clear();
+
+	for(int i = 0; i < (int)player_buildings_spritesheet.size(); ++i){
+		SDL_DestroyTexture(player_buildings_spritesheet[i]);
+	}
 	SDL_DestroyTexture(hextile_spritesheet);
-	SDL_DestroyTexture(buildings_spritesheet);
 	SDL_FreeSurface(hextile_surface);
 	SDL_FreeSurface(hextile_face_surface);
 	TTF_CloseFont(font_carbon_12);
@@ -156,11 +165,10 @@ bool View_Game::load(){
 		return false;
 	}
 
-	buildings_spritesheet = Util::load_texture("data/buildings_spritesheet.png", &ren);
-	if(buildings_spritesheet == nullptr){
-		logger.SDL_log(Logger::ERROR, "View_Game::load() load_texture data/buildings_spritesheet.png");
+	if(load_player_building_textures("data/buildings_spritesheet.bmp") == false) {
+		logger.SDL_log(Logger::ERROR, "View_Game::load() load_player_building_textures(buildings_spritesheet.bmp)");
 		return false;
-	}
+	}	
 
 	hextile_surface = Util::load_surface("data/hextile.png");
 	if(hextile_surface == nullptr){
@@ -261,6 +269,93 @@ bool View_Game::load(){
 
 	return true;
 }
+bool View_Game::load_player_building_textures(const char* file){
+	if(!file){ return false; }
+	Logger& logger = Logger::getLog("jordan.log");
+	SDL_Surface* surface = nullptr;
+	SDL_Palette* palette = nullptr;
+	SDL_Color colors[256];
+
+	do{
+		// get the buildings spritesheet surface
+		surface = Util::load_surface(file);
+		if(surface == nullptr){
+			logger.SDL_log(Logger::ERROR, "View_Game::load_player_building_textures load_surface() %s", file);
+			break;
+		}
+
+		// Alloc a palette to use
+		palette = SDL_AllocPalette(256);
+		if(palette == nullptr){
+			logger.SDL_log(Logger::ERROR, "View_Game::load_player_building_textures() SDL_AllocPalette(%d)", 256);
+			break;
+		}
+
+		// set default colours;
+		for(int i = 0; i < 256; ++i){
+			colors[i] = surface->format->palette->colors[i];
+		}
+
+		// for every player create a texture for their building colours
+		int rs = 0;
+		bool good_flag = true;
+		for(int i = 0; i < model.m_num_players; ++i){
+			// custome 0,0,0 colour for the player
+			colors[0] = model.get_player(i)->color;
+
+			// set the colors to the palette
+			rs = SDL_SetPaletteColors(palette, colors, 0, 256);
+			if(rs != 0){
+				good_flag = false;
+				logger.SDL_log(Logger::ERROR, "load_player_building_textures() SDL_SetPaletteColors for player %i", i);
+				break;
+			}
+
+			// set the custom palette for the surface
+			rs = SDL_SetSurfacePalette(surface, palette);
+			if(rs != 0){
+				good_flag = false;
+				logger.SDL_log(Logger::ERROR, "load_player_building_textures() SDL_SetSurfaceTexture for player %i", i);
+				break;
+			}
+
+			// set the transparent color key
+			rs = SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGB(surface->format, 255, 0, 255));
+			if(rs != 0){
+				good_flag = false;
+				logger.SDL_log(Logger::ERROR, "load_player_building_textures() SDL_SetColorKey for player %i", i);
+				break;
+			}
+
+			// create the texture
+			SDL_Texture* tex = SDL_CreateTextureFromSurface(&ren, surface);
+			if(tex == nullptr){
+				logger.SDL_log(Logger::ERROR, "load_player_building_textures() SDL_CreateTextureFromSurface() for player %d", i);
+				good_flag = false;
+				break;
+			}
+
+			// push the texture onto the list
+			player_buildings_spritesheet.push_back(tex);
+		}
+
+		// did we finish without errors?
+		if(good_flag == false){ break; }
+		SDL_FreePalette(palette);
+		SDL_FreeSurface(surface);
+		return true;
+	} while(0);
+
+	// some error has occured, so do any cleanup
+	logger.log(Logger::DEBUG, "load_player_building_textures() Error in loading player building textures");
+	SDL_FreePalette(palette);
+	SDL_FreeSurface(surface);
+	for(int i = 0; i < (int)player_buildings_spritesheet.size(); ++i){
+		SDL_DestroyTexture(player_buildings_spritesheet[i]);
+	}
+	return false;
+}
+
 
 bool View_Game::setup_top_bar(pane_t& pane){
 	return true;
@@ -392,6 +487,10 @@ bool View_Game::setup_buttons(pane_t& pane){
 	off_x += end_turn_button.w + horiz_pad;
 	roll_button.init("Roll", off_x, off_y,0, but_w, but_h);
 	off_x += roll_button.w + horiz_pad;
+	enable_debug_button.init("Enable Debug", off_x, off_y, 0, but_w, but_h);
+	off_x += enable_debug_button.w + horiz_pad;
+	misc_button.init("Button", off_x, off_y, 0, but_w, but_h);
+	off_x += misc_button.w + horiz_pad;
 	
 	off_x = horiz_pad;
 	off_y += but_h + vert_pad;
@@ -417,6 +516,8 @@ bool View_Game::setup_buttons(pane_t& pane){
 	exit_button.set_action(exit_button_action);
 	end_turn_button.set_action(end_turn_action);
 	roll_button.set_action(roll_action);
+	enable_debug_button.set_action(enable_debug_action);
+	misc_button.set_action(empty_action);
 	add_road_button.set_action(add_road_action);
 	add_settlement_button.set_action(add_settlement_action);
 	add_city_button.set_action(add_city_action);
@@ -428,6 +529,8 @@ bool View_Game::setup_buttons(pane_t& pane){
 	button_list.push_back(&exit_button);
 	button_list.push_back(&end_turn_button);
 	button_list.push_back(&roll_button);
+	button_list.push_back(&enable_debug_button);
+	button_list.push_back(&misc_button);
 	button_list.push_back(&add_road_button);
 	button_list.push_back(&add_settlement_button);
 	button_list.push_back(&add_city_button);
@@ -443,9 +546,8 @@ bool View_Game::setup_buttons(pane_t& pane){
 	return true;
 }
 
-
 void View_Game::set_state(state_e new_state){
-	if(new_state < 0 || new_state >= state_e::NUM_OF_state_e){ return; }
+	if(new_state < 0 || new_state >= state_e::NUM_state_e){ return; }
 	state = new_state;
 }
 
@@ -469,6 +571,10 @@ void View_Game::on_close(SDL_Event& e){
 }
 
 void View_Game::handle_keyboard_events(SDL_Event& e){
+	// handle the key board given the state.
+	handle_keyboard_given_state(e,state);
+
+	//generic handling of the keyboard
 	if(e.type == SDL_KEYDOWN){
 		if(e.key.keysym.scancode == SDL_SCANCODE_ESCAPE){
 			SDL_Event ev;
@@ -491,7 +597,6 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 		if(move_mouse){
 			SDL_WarpMouseInWindow(&win, x, y);
 		}
-
 	
 		// cycle through the error codes
 		if(keyboard[SDL_SCANCODE_1] ){			
@@ -505,15 +610,43 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 			message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
 			message_pane.reset();
 		}
+
+		// cycle through the debug data codes
+		if(keyboard[SDL_SCANCODE_2]){
+			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
+			int value = this->debug_data + dir;
+			if(value < 0){ this->debug_data = 3 + value; }
+			else{ this->debug_data = (this->debug_data + dir) % 3; }
+		}
+
+		if(keyboard[SDL_SCANCODE_3]){
+			enable_debug_button.action(*this, model);
+		}
+		if(keyboard[SDL_SCANCODE_4]){
+			set_state(View_Game::START);
+		}
+		if(keyboard[SDL_SCANCODE_5]){
+			debug_tiles = (debug_tiles) ? false : true;
+		}
+
+		if(keyboard[SDL_SCANCODE_6]){
+			debug_vertices = (debug_vertices) ? false : true;
+		}
+		if(keyboard[SDL_SCANCODE_7]){
+			debug_faces = (debug_faces) ? false : true;
+		}
+
 	} else if(e.type == SDL_KEYUP){
 
 	}
 }
 
 void View_Game::handle_mouse_events(SDL_Event& e){
-	// find the hex it intersects with	
-	mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
 
+	// we must determine what hex tiles/vertex/face we may have intersected with.
+	// TODO: This can be simplified if we place objects into pane objects
+	// which each have their own mouse,keyboard, and update methods
+	mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
 	if(e.type == SDL_MOUSEBUTTONDOWN){
 		std::vector<Button*>::iterator it;
 		for(it = button_list.begin(); it != button_list.end(); ++it){
@@ -531,6 +664,9 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 	} else if(e.type == SDL_MOUSEMOTION){
 
 	}
+
+	// handle mouse input depengin on the specific state
+	handle_mouse_given_state(e,state);
 }
 
 void View_Game::handle_user_events(SDL_Event& e){
@@ -549,10 +685,10 @@ void View_Game::handle_user_events(SDL_Event& e){
 				message_pane.setMessage(nullptr);
 			}
 		} else{
-
+			// do nothing
 		}
 	} else{
-
+		// do nothing
 	}
 }
 
@@ -689,6 +825,7 @@ void View_Game::update_check_for_collisions(){
 		selected_pane = nullptr;
 		selected_vertex = nullptr;
 		selected_face = nullptr;
+		selected_tile = nullptr;
 	}
 }
 
@@ -794,8 +931,10 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 				Util::render_text(&ren, font_carbon_12, c + c_offset, r + r_offset, black, "%d", roll);
 			} else{
 				// render a debug rectangle instead
-				SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
-				Util::render_texture(&ren, hextile_spritesheet, c, r, &clip);
+				if(debug){
+					SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
+					Util::render_texture(&ren, hextile_spritesheet, c, r, &clip);
+				}
 			}
 		}
 	}
@@ -837,7 +976,7 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 				int x = c + face_pos[i][0];
 				int y = r + face_pos[i][1];
 
-				Util::render_texture(&ren, buildings_spritesheet, x, y, &road_clips[i]);
+				Util::render_texture(&ren, player_buildings_spritesheet[model.get_player_from_face(target)], x, y, &road_clips[i]);
 			}
 
 			// render all the vertices
@@ -854,7 +993,7 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 
 				int x = c + vertex_pos[i][0] - sprite_small[0] / 2;
 				int y = r + vertex_pos[i][1] - sprite_small[1] / 2;
-				Util::render_texture(&ren, buildings_spritesheet, x, y, &building_clips[type]);
+				Util::render_texture(&ren, player_buildings_spritesheet[model.get_player_from_vertex(target)], x, y, &building_clips[type]);
 			}
 
 		}
@@ -893,39 +1032,38 @@ void View_Game::render_model_selected(pane_t& pane){
 }
 
 void View_Game::render_model_debug(pane_t& pane){
-	if(true){
+	if(debug){
 		// draw all the intersect rectangles
-		do{
+		if( debug_tiles){
 			//break;
 			std::vector<Tile_intersect>::iterator it;
 			for(it = tiles.begin(); it != tiles.end(); ++it){
 				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
 				Util::render_rectangle(&ren, &rect, Util::colour_white());
 			}
-		} while(false);
+		}
 
 		// render all the intersect vertices
-		do{
+		if(debug_vertices){
 			std::vector< vertex_face_t_intersect>::iterator it;
 			for(it = vertices.begin(); it != vertices.end(); ++it){
 				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
 				Util::render_rectangle(&ren, &rect, Util::colour_white());
 			}
-		} while(false);
+		}
 		// render all the intersect faces
-		do{
+		if(debug_faces){
 			std::vector< vertex_face_t_intersect>::iterator it;
 			for(it = faces.begin(); it != faces.end(); ++it){
 				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
 				Util::render_rectangle(&ren, &rect, Util::colour_white());
 			}
-		} while(false);
+		}
 	}
 }
 
 void View_Game::render_buttons(pane_t& pane){
 	std::vector<Button*>::iterator it;
-
 	SDL_Rect rect;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		rect = { (*it)->x + pane.x,
@@ -956,7 +1094,7 @@ void View_Game::render_bottom_text(pane_t& pane){
 		"Player %d : %s Victory Points=%d", model.m_current_player,player->name.c_str(),
 		model.num_victory_points_for_player(model.m_current_player));
 
-	// how many resources doe the player have?
+	// how many resources does the player have?
 	off_x = 0;
 	off_y += line_spacing;
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
@@ -1016,48 +1154,135 @@ void View_Game::render_bottom_text(pane_t& pane){
 		"Largest army %d soldiers owned by player %d",model.largest_army(), model.player_holding_largest_army_card);
 }
 
+void View_Game::render_top_pane(pane_t& pane){
+	// draw the mouse position
+	if(debug){
+		int mouse_x, mouse_y;
+		Uint32 buttons;
+		buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y, font_carbon_12_colour,
+			"Mouse(%d,%d,%d)  Debug Data=%d State=%d", mouse_x, mouse_y, buttons, this->debug_data,(int)state);
+		// draw the fps 
+		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 18, font_carbon_12_colour,
+			"FPS:%d.%d", fps.fps, total_frame_count);
+
+
+		if(selected_tile != nullptr && this->debug_data == 0){
+			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
+				"Tile col=%d row=%d x=%d y=%d w=%d h=%d",
+				selected_tile->col, selected_tile->row,
+				selected_tile->x, selected_tile->y,
+				selected_tile->w, selected_tile->h
+				);
+
+
+			Tiles* t = model.get_tile(selected_tile->col, selected_tile->row);
+
+			if(t == nullptr){
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour, "Model Tile = nullptr");
+			} else{
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
+					"Model Tile active=%d type=%d roll=%d ringleve=%d",
+					t->active, t->type, t->roll, t->ring_level);
+
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 64, font_carbon_12_colour,
+					"vertices { %d %d %d %d %d %d } faces { %d %d %d %d %d %d }",
+					t->vertices[0], t->vertices[1], t->vertices[2], t->vertices[3], t->vertices[4], t->vertices[5],
+					t->faces[0], t->faces[1], t->faces[2], t->faces[3], t->faces[4], t->faces[5]
+					);
+			}
+
+
+		}
+		if(selected_vertex != nullptr && this->debug_data == 1){
+			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
+				"Vertex [num=%d] : x=%d y=%d z=%d w=%d h=%d",
+				selected_vertex->num,
+				selected_vertex->x, selected_vertex->y, selected_vertex->z,
+				selected_vertex->w, selected_vertex->h
+				);
+
+			vertex_face_t* vertex = model.get_vertex(selected_vertex->num);
+			if(vertex == nullptr){
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour, "Model Vertex = nullptr");
+			} else{
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
+					"Model Vertex: %d,%d,%d  faces { %d,%d,%d } vertex { %d,%d,%d }",
+					vertex->type, vertex->player, vertex->is_assigned,
+					vertex->vert.faces[0], vertex->vert.faces[1], vertex->vert.faces[2],
+					vertex->vert.vertices[0], vertex->vert.vertices[1], vertex->vert.vertices[2]
+					);
+				Util::render_text(&ren, font_carbon_12, top_pane.x + 50, top_pane.y + 64, font_carbon_12_colour,
+					"tiles = { (%d, %d), (%d, %d), (%d, %d) }",
+					vertex->vert.tiles[0][0], vertex->vert.tiles[0][1],
+					vertex->vert.tiles[1][0], vertex->vert.tiles[1][1],
+					vertex->vert.tiles[2][0], vertex->vert.tiles[2][1]
+					);
+			}
+		}
+		if(selected_face != nullptr && this->debug_data == 2){
+			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
+				"Face [num=%d]: x=%d y=%d z=%d w=%d h=%d",
+				selected_face->num,
+				selected_face->x, selected_face->y, selected_face->z,
+				selected_face->w, selected_face->h
+				);
+
+			vertex_face_t* face = model.get_face(selected_face->num);
+			if(face == nullptr){
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour, "Model Face = nullptr");
+			} else{
+				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
+					"Model Face: %d,%d,%d, faces { %d,%d,%d,%d } vertex { %d,%d } ",
+					face->type, face->player, face->is_assigned,
+					face->face.faces[0], face->face.faces[1], face->face.faces[2], face->face.faces[3],
+					face->face.vertices[0], face->face.vertices[1]
+					);
+
+				Util::render_text(&ren, font_carbon_12, top_pane.x + 50, top_pane.y + 64, font_carbon_12_colour,
+					"tiles { (%d,%d) (%d,%d) }",
+					face->face.tiles[0][0], face->face.tiles[0][1],
+					face->face.tiles[1][0], face->face.tiles[1][1]
+					);
+			}
+		}
+
+		// draw a rectangle around the selected pane
+		if(selected_pane != nullptr && true){
+			SDL_Rect r = { selected_pane->x, selected_pane->y, selected_pane->w, selected_pane->h };
+			SDL_Color c = { 255, 255, 0, 255 };
+			Util::render_rectangle(&ren, &r, c);
+		}
+	}
+}
+
 void View_Game::render(){
 	++total_frame_count;
 
 	SDL_RenderClear(&ren);
+	render_top_pane(top_pane);
 	render_model(mid_pane);
 	render_buttons(bot_pane);
 	// draw the UI text for stuff...
 	render_bottom_text(bot_pane);
-
-	// draw the mouse position
-	int mouse_x, mouse_y;
-	Uint32 buttons;
-	buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
-	Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y, font_carbon_12_colour,
-		"Mouse(%d,%d,%d)", mouse_x, mouse_y, buttons);
-	// draw the fps 
-	Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 18, font_carbon_12_colour,
-		"FPS:%d.%d", fps.fps, total_frame_count);
-
-	// draw a rectangle aroudn the selected pane
-	if(selected_pane != nullptr && true){
-		SDL_Rect r = { selected_pane->x, selected_pane->y, selected_pane->w, selected_pane->h };
-		SDL_Color c = { 255, 255, 0, 255 };
-		Util::render_rectangle(&ren, &r, c);
-	}
-
+		
 	// draw the message box
 	if(message_pane.isVisible()){
 		SDL_Rect r = {
 			message_pane.x, message_pane.y,
 			message_pane.w, message_pane.h
 		};
+		// clear to black
 		SDL_Color c = { 0,0,0, 255 };
 		Util::render_fill_rectangle(&ren, &r, c);
+		// draw the border
 		c = { 255, 255, 0, 255 };
 		Util::render_rectangle(&ren, &r, c);
-		if(model.get_error() != Model::MODEL_ERROR_NONE){
-			Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
-				font_carbon_12_colour, "%s",				
-				(message_pane.message == nullptr) ? "" : message_pane.message
-				);
-		}
+		// draw the error text
+		Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
+			font_carbon_12_colour, "%s",
+			(message_pane.message == nullptr) ? "" : message_pane.message
+			);
 	}
 
 	// draw the misc pane
@@ -1071,4 +1296,191 @@ void View_Game::render(){
 	}
 
 	SDL_RenderPresent(&ren);
+}
+
+void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
+	Logger& logger = Logger::getLog("jordan.log");
+
+	if(ev.type == SDL_MOUSEBUTTONDOWN){
+		if(s == View_Game::NONE)
+		{
+			//do nothing
+			//logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) None State", (int)s);
+		}
+		else if(s == View_Game::START)
+		{
+			static bool once = false;
+			if(once == false){
+				once = true;
+				logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start", (int)s);
+				// do roll assignment. for now we just assume we start
+				// from player one and then keep going.
+				set_state(View_Game::PLACE_SETTLEMENT_1);
+			} else{
+				set_state(View_Game::NORMAL);
+			}
+		}
+		else if(s == View_Game::PLACE_SETTLEMENT_1)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 1 for player %d", (int)s,model.m_current_player);
+			if(selected_vertex != nullptr){
+				bool rs = model.build_building(model.m_current_player, 
+											building_t::SETTLEMENT,
+											selected_vertex->num);			
+				if(rs){
+					set_state(View_Game::PLACE_ROAD_1);
+				}
+			}
+		}
+		else if(s == View_Game::PLACE_ROAD_1)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Roads 1 for player %d", (int)s,model.m_current_player);
+			static int counter = 0;
+			if(selected_face != nullptr){
+				bool rs = model.build_building(model.m_current_player,
+											building_t::ROAD,
+											selected_face->num);
+				if(rs){
+					counter++;
+				
+					// switch either to the next placing of settlements, or 
+					// to the next player of placing settlements.
+					if(counter >= model.m_num_players){
+						set_state(View_Game::PLACE_SETTLEMENT_2);
+						model.m_current_player = model.m_current_player;
+					} else{
+						set_state(View_Game::PLACE_SETTLEMENT_1);
+						model.m_current_player = (model.m_current_player + 1) % model.m_num_players;
+					}				
+				} // end if(rs)				
+			}	
+		}
+		else if(s == View_Game::PLACE_SETTLEMENT_2)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 2 for player %d", (int)s, model.m_current_player);
+			if(selected_vertex != nullptr){
+				bool rs = model.build_building(model.m_current_player,
+											building_t::SETTLEMENT,
+											selected_vertex->num);
+				if(rs) { set_state(View_Game::PLACE_ROAD_2); }
+			}
+		}
+		else if(s == View_Game::PLACE_ROAD_2)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Road 2 for player %d", (int)s, model.m_current_player);
+			static int counter = 0;
+			if(selected_face != nullptr){
+				bool rs = model.build_building(model.m_current_player,
+											building_t::ROAD,
+											selected_face->num);
+				if(rs) { 
+					counter++;
+					// switch either to the next placing of settlements, or 
+					// to the next player of placing settlements.
+					if(counter >= model.m_num_players){
+						set_state(View_Game::START_RESOURCES);
+						model.m_current_player = 0;
+					} else{
+						set_state(View_Game::PLACE_SETTLEMENT_2);
+						model.m_current_player--;
+						if(model.m_current_player < 0){
+							model.m_current_player = model.m_num_players + model.m_current_player;
+						}
+					}
+				}// end if rs()
+
+			}
+		}
+		else if(s == View_Game::START_RESOURCES)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start Resources and Placing the Thief",(int)s);			
+			// place the thief
+			if(selected_tile != nullptr){
+				// give resources.
+
+				// place the thief.
+				model.move_thief(selected_tile->col, selected_tile->row);
+				set_state(View_Game::NORMAL);
+			}			
+		}
+		else if(s == View_Game::NORMAL)
+		{
+			// do nothing.
+		}
+		else if(s == View_Game::TRADING)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Trading", (int)s);
+			set_state(View_Game::NORMAL);
+		}
+		else if(s == View_Game::BUILD_SETTLEMENT)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building settlement", (int)s);
+			set_state(View_Game::NORMAL);
+		}
+		else if(s == View_Game::BUILD_CITY)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building City", (int)s);
+			set_state(View_Game::NORMAL);
+		}
+		else if(s == View_Game::BUILD_ROAD)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building Road", (int)s);
+			set_state(View_Game::NORMAL);
+		}
+		else if(s == View_Game::PLAY_DEV_CARD)
+		{
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Playing Dev Card", (int)s);
+			set_state(View_Game::NORMAL);
+		}
+	}else  if(ev.type == SDL_MOUSEBUTTONUP){
+		if(s == View_Game::NONE){}
+		else if(s == View_Game::START){}
+		else if(s == View_Game::PLACE_SETTLEMENT_1){}
+		else if(s == View_Game::PLACE_ROAD_1){}
+		else if(s == View_Game::PLACE_SETTLEMENT_2){}
+		else if(s == View_Game::PLACE_ROAD_2){}
+		else if(s == View_Game::START_RESOURCES){}
+		else if(s == View_Game::NORMAL){}
+		else if(s == View_Game::TRADING){}
+		else if(s == View_Game::BUILD_SETTLEMENT){}
+		else if(s == View_Game::BUILD_CITY){}
+		else if(s == View_Game::BUILD_ROAD){}
+		else if(s == View_Game::PLAY_DEV_CARD){}
+	} else if(ev.type == SDL_MOUSEMOTION){
+		if(s == View_Game::NONE){}
+		else if(s == View_Game::START){}
+		else if(s == View_Game::PLACE_SETTLEMENT_1){}
+		else if(s == View_Game::PLACE_ROAD_1){}
+		else if(s == View_Game::PLACE_SETTLEMENT_2){}
+		else if(s == View_Game::PLACE_ROAD_2){}
+		else if(s == View_Game::START_RESOURCES){}
+		else if(s == View_Game::NORMAL){}
+		else if(s == View_Game::TRADING){}
+		else if(s == View_Game::BUILD_SETTLEMENT){}
+		else if(s == View_Game::BUILD_CITY){}
+		else if(s == View_Game::BUILD_ROAD){}
+		else if(s == View_Game::PLAY_DEV_CARD){}	
+	}
+
+	if(model.get_error() != Model::MODEL_ERROR_NONE){
+		message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
+		message_pane.reset();
+	}
+}
+
+void View_Game::handle_keyboard_given_state(SDL_Event& ev,View_Game::state_e s){
+	if(s == View_Game::NONE){}
+	else if(s == View_Game::START){}
+	else if(s == View_Game::PLACE_SETTLEMENT_1){}
+	else if(s == View_Game::PLACE_ROAD_1){}
+	else if(s == View_Game::PLACE_SETTLEMENT_2){}
+	else if(s == View_Game::PLACE_ROAD_2){}
+	else if(s == View_Game::START_RESOURCES){}
+	else if(s == View_Game::NORMAL){}
+	else if(s == View_Game::TRADING){}
+	else if(s == View_Game::BUILD_SETTLEMENT){}
+	else if(s == View_Game::BUILD_CITY){}
+	else if(s == View_Game::BUILD_ROAD){}
+	else if(s == View_Game::PLAY_DEV_CARD){}
+	else if(s == View_Game::NUM_state_e){}
 }

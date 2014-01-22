@@ -114,7 +114,7 @@ void Model::init_players(Player* players, int num_players){
 	start_resources.zero_out();
 	for(int i = 0; i < num_players; ++i){
 		players[i].init(
-			"Player", {255,255,0,255},
+			"Player", {rand()%256,rand()%256,rand()%256,255},
 			0,start_resources,0,
 			config.buildings_cap
 		);
@@ -652,7 +652,7 @@ dev_cards_t Model::draw_dev_card(){
 	}
 }
 
-void Model::build_building(int player,building_t::buildings building,int pos){
+bool Model::build_building(int player,building_t::buildings building,int pos){
 	bool rs = false;
 	switch(building) {
 		case(building_t::CITY) :rs=add_city(player,pos);break;
@@ -661,22 +661,42 @@ void Model::build_building(int player,building_t::buildings building,int pos){
 	}
 
 	if(rs == true){
+		// don't need to pay if you are placing the first couple of buildings.
+		if((int)get_player(player)->buildings.size()-1 < 2 &&
+			(building == building_t::SETTLEMENT || building == building_t::CITY)){		
+			return true;
+		}		
+		if((int)get_player(player)->roads.size()-1 < 2 && building == building_t::ROAD){
+			return true;
+		}
+		
 		// pay the necessary resources
 		resource_t price = get_building_cost(building);
 		pay_for_item(player, &price);
+		return true;
 	}
+	return false;
 }
 
 
 bool Model::add_city(int player, int pos){	
+	if(pos < 0 || pos >= (int)vertex_array.size() ||
+		player < 0 || player >= m_num_players)
+	{
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_city() Out of range (player=%d/%d),(pos=%d/%d)", player, m_num_players, pos, (int)vertex_array.size());
+		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
+		return false;
+	}
 	if(vertex_array[pos].type != vertex_face_t::SETTLEMENT ||
 		vertex_array[pos].type == vertex_face_t::CITY ||
 		vertex_array[pos].player != player)
 	{
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() Unsuitable Vertex type=%d,player=%d", (int)vertex_array[pos].type, vertex_array[pos].player);
 		set_error(Model::MODEL_ERROR_PLACE_CITY);
 		return false;
 	}
 	if(m_players[player].building_cap[building_t::CITY] <= 0){ 
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d Not enough buildings\n",player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
 		return false;	
 	}
@@ -685,18 +705,27 @@ bool Model::add_city(int player, int pos){
 	vertex_array[pos].type = vertex_face_t::CITY;
 	m_players[player].building_cap[building_t::CITY]--;
 	m_players[player].building_cap[building_t::SETTLEMENT]++;
-	m_players[player].buildings.push_back(pos);	
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city player=%d,col=%d,row=%d,vertex=%d", player, vertex_array[pos].vert.tiles[0][0], vertex_array[pos].vert.tiles[0][1], pos);
+//	m_players[player].buildings.push_back(pos);	 // don't need to push back because it is already there.
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, vertex_array[pos].vert.tiles[0][0], vertex_array[pos].vert.tiles[0][1], pos);
 	return true;
 }
 bool Model::add_settlement(int player, int pos){	
+	if(pos < 0 || pos >= (int)vertex_array.size() ||
+		player < 0 || player >= m_num_players)
+	{
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_settlement() Out of range (player=%d/%d),(pos=%d/%d)",player,m_num_players,pos,(int)vertex_array.size());
+		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
+		return false;
+	}
 	if(vertex_array[pos].type == vertex_face_t::SETTLEMENT ||
 		vertex_array[pos].type == vertex_face_t::CITY)
 	{
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Vertex is already occupied  by %d", (int)vertex_array[pos].type);
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
 	if(m_players[player].building_cap[building_t::SETTLEMENT] <= 0){ 
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Player %d does not have enough buildings",player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
 		return false;
 	}
@@ -705,6 +734,7 @@ bool Model::add_settlement(int player, int pos){
 	int col, row;
 	Tiles* tile = find_tile_from_vertex(pos,&col,&row);
 	if(tile == nullptr){ 
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_settlement() Tile doesn't exist(col=%d,row=%d)", col, row);
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
@@ -718,25 +748,36 @@ bool Model::add_settlement(int player, int pos){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d",player,col,row,pos );
 		return true;
 	}
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Unable to build settlement");
 	set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 	return false;
 }
 bool Model::add_road(int player, int pos){
-	if(face_array[pos].type != vertex_face_t::NONE){ 
+	if(pos < 0 || pos >= (int)face_array.size() ||
+		player <0 || player >= m_num_players)
+	{
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_road() Out of bounds( player =%d/%d,pos =%d/%d)", player,m_num_players, pos,(int)face_array.size());
+		set_error(Model::MODEL_ERROR_PLACE_ROAD);
+		return false;
+	}
+	if(face_array[pos].type != vertex_face_t::NONE)
+	{ 
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road() Face is already filled with an object %d", face_array[pos].type);
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
 		return false;
 	}
 	if(m_players[player].building_cap[building_t::ROAD] <= 0){
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Can't build road. Player %d doesn't have enough builidings", player);
 		return false;
 	}
 	
-
 	// check for a connecting road
 	int col, row;
 	Tiles* tile = find_tile_from_face(pos, &col, &row);;
 	if(tile == nullptr){ 
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_road()  Tile can't be found (col=%d,row=%d)", col, row);
 		return false;
 	}
 
@@ -745,10 +786,11 @@ bool Model::add_road(int player, int pos){
 		face_array[pos].type = vertex_face_t::ROAD;
 		face_array[pos].player = player;
 		m_players[player].building_cap[building_t::ROAD]--;
-		m_players[player].buildings.push_back(pos);
+		m_players[player].roads.push_back(pos);
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
 		return true;
 	}
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Unable to build road.");
 	set_error(Model::MODEL_ERROR_PLACE_ROAD);
 	return false;
 }
@@ -958,17 +1000,37 @@ Tiles* Model::find_tile_from_face(int face, int* c, int* r){
 
 
 bool Model::can_build_road(int player,int row, int col, int pos){
+	if(get_player(player) == nullptr){ return false; }
+	if(pos < 0 || pos >= (int)face_array.size()){
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() pos is out of range %d/%d", pos, (int)face_array.size());
+		return false;
+	}
 	Tiles* tile = get_tile(col, row);
 	if(tile == nullptr){ return false; }
-	vertex_face_t* face = &face_array[tile->faces[pos]];
+	//vertex_face_t* face = &face_array[tile->faces[pos]];
+	vertex_face_t* face = &face_array[pos];
 	bool road_exists;
 	bool blocked;
+	bool water_tiled;
+
+	// check the two faces beside to make sure one is a land tile
+	water_tiled = true;
+	for(int i = 0; i < 2; ++i){
+		Tiles* t = get_tile(face->face.tiles[i][0], face->face.tiles[i][1]);
+		if( t == nullptr){ continue; }
+		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
+	}
+
 
 	// check every face for a road that belong to the player
 	vertex_face_t* edge = nullptr;
 	road_exists = false;
 	for(int i = 0; i < 4; ++i){
 		if(face->face.faces[i] == -1){ continue; }
+		if(face->face.faces[i] < 0 || face->face.faces[i] >= (int)face_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d index out of range.", face->face.faces[i], (int)face_array.size());
+			continue;
+		}
 		edge = &face_array[face->face.faces[i]];
 
 		if(edge->type == vertex_face_t::ROAD && edge->player == player){
@@ -976,13 +1038,17 @@ bool Model::can_build_road(int player,int row, int col, int pos){
 			break;
 		}
 	}
-
+	
 	// check that there doesn't exist a city/settlement that
 	// is blocking the placement of the road
 	vertex_face_t* vert = nullptr;
 	blocked = false;
 	for(int i = 0; i < 2; ++i){
 		if(face->face.vertices[i] == -1){ continue; }
+		if(face->face.vertices[i] < 0 || face->face.vertices[i] >= (int)vertex_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d vertex index out of range", face->face.vertices[i], (int)vertex_array.size());
+			continue;
+		}
 		vert = &vertex_array[face->face.vertices[i]];
 
 		if((vert->type == vertex_face_t::CITY || vert->type == vertex_face_t::SETTLEMENT)
@@ -992,21 +1058,80 @@ bool Model::can_build_road(int player,int row, int col, int pos){
 			break;
 		}
 	}	
-	return (road_exists && blocked == false);
+
+	// handle the special case in which the player is placing their first roads.
+	// This means that there doesn't 
+	// 1) need to be an existing linked road.
+	// 2) And that one of the attached vertices must be a player owned settlment.
+	bool special_condition = true;
+	if((int)get_player(player)->roads.size() < 2){
+		do{
+			road_exists = true;
+			special_condition = false;
+
+			// for the two attached vertices for this face
+			// check to see if there is a vertex in which there are no roads attached to.
+			for(int vindex = 0; vindex < 2; vindex++){
+				vertex_face_t* v1 = get_vertex(face->face.vertices[vindex]);
+				if(v1 == nullptr){continue;}
+
+				if(v1->type == vertex_face_t::SETTLEMENT && v1->player == player){
+					bool is_okay = true;
+					// check that this settlment doesn't already have an attached road
+					for(int i = 0; i < 3; ++i){
+						if(get_face(v1->vert.faces[i]) == nullptr){ continue; }
+						if(get_face(v1->vert.faces[i])->type != vertex_face_t::NONE){
+							// there is already an attached road.
+							is_okay = false;
+							break;
+						}
+					}
+
+					if(is_okay == true){
+						// no attached roads for this vertex.
+						// it is a settlement
+						// is is player owned
+						special_condition = true;
+						break;
+					}
+				}
+			}			
+		} while(false);
+	}
+
+	return (road_exists && !blocked && special_condition && !water_tiled);
 }	
 bool Model::can_build_settlement(int player, int row, int col, int v){
+	if(get_player(player) == nullptr){ return false; }
+	if(v < 0 || v >= (int)vertex_array.size()){
+		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() index out of range v=%d/%d",v, (int)vertex_array.size());
+		return false;
+	}
 	Tiles* tile = get_tile(col, row);
 	if(tile == nullptr){ return false; }
-	vertex_face_t* vertex = &vertex_array[tile->vertices[v]];
+	vertex_face_t* vertex = &vertex_array[v];
 	bool has_space = false;
 	bool is_connected = false;
+	bool water_tiled = true;
+
+	// check the three tiles beside to make sure one is a land tile
+	water_tiled = true;
+	for(int i = 0; i < 3; ++i){
+		Tiles* t = get_tile(vertex->vert.tiles[i][0], vertex->vert.tiles[i][1]);
+		if(t == nullptr){ continue; }
+		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
+	}
+
 
 	// check every vertex for for an existing settlement/city 
 	vertex_face_t* point = nullptr;
 	has_space = true;
 	for(int i = 0; i < 3; ++i){
 		if(vertex->vert.vertices[i] == -1){ continue; }
-
+		if(vertex->vert.vertices[i] < 0 || vertex->vert.vertices[i] >= (int)vertex_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d vertex index out of range", vertex->vert.vertices[i], (int)vertex_array.size());
+			continue;
+		}
 		point = &vertex_array[vertex->vert.vertices[i]];
 		if(point->type == vertex_face_t::CITY ||
 			point->type == vertex_face_t::SETTLEMENT)
@@ -1021,6 +1146,10 @@ bool Model::can_build_settlement(int player, int row, int col, int v){
 	is_connected = false;
 	for(int i = 0; i < 3; ++i){
 		if(vertex->vert.faces[i] == -1){ continue; }
+		if(vertex->vert.faces[i] < 0 || vertex->vert.faces[i] >= (int)face_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d face index out of range", vertex->vert.faces[i], (int)face_array.size());
+			continue;
+		}
 
 		edge = &face_array[vertex->face.faces[i]];
 		if(edge->type == vertex_face_t::ROAD && edge->player == player){
@@ -1029,7 +1158,15 @@ bool Model::can_build_settlement(int player, int row, int col, int v){
 		}
 	}
 
-	return (has_space && is_connected);
+	// Handle the speical case in which the player is placing their 
+	// first few settlments and roads.
+	if(get_player(player) != nullptr){
+		if(get_player(player)->buildings.size() < 2){
+			is_connected = true;
+		}
+	}
+
+	return (has_space && is_connected && water_tiled ==false);
 }
 
 
@@ -1231,9 +1368,26 @@ int Model::num_victory_points_for_player(int player){
 		}
 	}
 
-	if(player == this->player_holding_largest_army_card){ points++;}
-	if(player == this->player_holding_longest_road_card){ points++; }
+	if(player == this->player_holding_largest_army_card){ points+=2;}
+	if(player == this->player_holding_longest_road_card){ points+=2; }
 	return points;
+}
+
+
+
+vertex_face_t* Model::get_vertex(int num){
+	if(num < 0 || num >= (int)vertex_array.size()){ 
+		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
+		return nullptr;
+	}
+	return &vertex_array[num];
+}
+vertex_face_t* Model::get_face(int num){
+	if(num < 0 || num >= (int)face_array.size()){
+		set_error(Model::MODEL_ERROR_INVALID_FACE);
+		return nullptr;
+	}
+	return &face_array[num];
 }
 
 void Model::set_error(Model::model_error_codes_e code){

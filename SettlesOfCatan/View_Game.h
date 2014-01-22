@@ -134,8 +134,20 @@ class View_Game : public IView{
 public:
 	static std::string view_game_model_error_strings[Model::NUM_model_error_codes_e];
 	enum state_e {
-		NONE, PLACE_ROAD, PLACE_SETTLEMENT, PLACE_CITY, PLACE_THEIF,
-		PLAYING_DEV_CARD, TRADING, NUM_OF_state_e
+		NONE,
+		START,
+		PLACE_SETTLEMENT_1,
+		PLACE_ROAD_1,
+		PLACE_SETTLEMENT_2,
+		PLACE_ROAD_2,
+		START_RESOURCES,
+		NORMAL,
+		TRADING,
+		BUILD_SETTLEMENT,
+		BUILD_CITY,
+		BUILD_ROAD,
+		PLAY_DEV_CARD,
+		NUM_state_e
 	};
 	// variables
 	Model& model;
@@ -147,7 +159,12 @@ public:
 	int desired_fps;
 	bool exit_flag;
 	bool active;
-	unsigned state;
+	state_e state;
+	bool change_state_flag;
+
+	bool debug;
+	bool debug_tiles,debug_vertices,debug_faces;
+	int debug_data;
 	
 	// selected tile
 	Tile_intersect* selected_tile;
@@ -183,11 +200,11 @@ public:
 	void update(SDL_Event& ev);
 	void render();	
 private:
-	// resources
-	SDL_Texture* hextile_spritesheet;
-	SDL_Texture* buildings_spritesheet;
+	// Variables                resources
+	SDL_Texture* hextile_spritesheet;	
 	SDL_Surface* hextile_surface;
 	SDL_Surface* hextile_face_surface;
+	std::vector<SDL_Texture*> player_buildings_spritesheet;
 	Mix_Music* music;
 	Mix_Chunk* sound1;
 	Timer* fps_timer;	
@@ -210,10 +227,12 @@ private:
 	int vertex_pos[6][2];
 	int face_pos[6][2];
 	
-	// buttons
+		// buttons
 	Button exit_button;
 	Button end_turn_button;
 	Button roll_button;
+	Button enable_debug_button;
+	Button misc_button;
 	Button add_road_button;
 	Button add_settlement_button;
 	Button add_city_button;
@@ -224,6 +243,7 @@ private:
 
 	// methods
 	bool load();
+	bool load_player_building_textures(const char* file);
 	bool setup_top_bar(pane_t& pane);
 	bool setup_board_pane(pane_t& pane);
 	bool setup_buttons(pane_t& pane);
@@ -234,6 +254,7 @@ private:
 	void render_model_debug(pane_t& pane);	
 	void render_buttons(pane_t& pane);
 	void render_bottom_text(pane_t& pane);
+	void render_top_pane(pane_t& pane);
 	void update_check_for_collisions();
 	void update_top_pane(pane_t& pane, Collision& rel_mouse_hitbox);
 	void update_mid_pane(pane_t& pane, Collision& rel_mouse_hitbox);
@@ -246,6 +267,11 @@ private:
 	void get_mid_point_from_face(int face, int* x, int* y);
 	//bool rect_intersect(SDL_Rect* A, SDL_Rect* B, SDL_Rect* result);
 	//bool rect_intersect(int ax, int ay, int aw, int ah,int bx, int by, int bw, int bh,int* rs_x, int* rs_y, int* rs_w, int* rs_h);
+
+
+	// handling mouse input for the different states
+	void handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s);
+	void View_Game::handle_keyboard_given_state(SDL_Event& ev, View_Game::state_e s);
 };
 
 

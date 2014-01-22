@@ -75,6 +75,8 @@ public:
 	Tiles* get_tile(int col, int row);
 	Tiles* find_tile_from_vertex(int vertex, int* c, int* r);
 	Tiles* find_tile_from_face(int face, int* c, int* r);
+	vertex_face_t* get_vertex(int num);
+	vertex_face_t* get_face(int num);
 	int get_type_from_face(int face);
 	int get_type_from_vertex(int vertex);
 	int get_player_from_face(int face);
@@ -86,7 +88,7 @@ public:
 	Player* get_player(int player);
 
 	resource_t get_building_cost(building_t::buildings card);
-	void build_building(int player, building_t::buildings building, int pos);
+	bool build_building(int player, building_t::buildings building, int pos);
 	bool can_build_road(int player, int row, int col, int face);
 	bool can_build_settlement(int player, int row, int col, int vertex);
 		
@@ -127,87 +129,3 @@ private:
 	int num_possiblities_dice(int sum, int num_dice, int num_sides);
 	bool fill_vertex_face_arrays();
 };
-
-
-/*
-int edge(int* graph, int n, int u, int v){
-	return graph[u + v*n];
-}
-
-void dfs(int* graph, int n,int origin){
-	if(!graph){ return; }
-
-	// variables and initaliazation
-	int v = 0; // current node
-	std::vector<int> stack;
-	int* visited = (int*) malloc(sizeof(int)* n);
-	memset(visited, 0, sizeof(int)*n);
-
-	// push origin onto the stack
-	stack.insert(stack.begin(),origin);
-
-	while(stack.empty() == false){
-		// pop off the first node from the stack
-		v = stack.front();
-		stack.erase(stack.begin());
-		
-		// mark v as visited
-		visited[v] = 1;
-
-		// Process the node
-
-		// for every edge e inbound to v
-		for(int w = 0; w < n; ++w){
-			if(w == v) { continue; }
-			if(edge(graph, n, v, w) == 0){ continue; }
-
-			// edge exists
-			if(visited[w] == 1){
-				// node is already visited ( backedge)
-			} else{
-				// node is not yet visited ( discovery edge )
-				// push onto the stack
-				stack.insert(stack.begin(), w);
-			}
-		}
-	}
-}
-
-void bfs(int* graph, int n,int origin){
-	if(!graph){ return; }
-
-	//variables
-	std::vector<int> queue;
-	int v = 0;
-	int* visited = (int*)malloc(sizeof(int)*n);
-	memset(visited, 0, sizeof(int)*n);
-
-	// push origin onto the queue
-	queue.push_back(origin);
-
-	while(queue.empty() == false){
-		// pop off the queue
-		v = queue.front();
-		queue.erase(queue.begin());
-		visited[v] = 1;
-
-		// process the vertex
-
-		// for every edge e inbound on current
-		for(int w = 0; w < n; ++w){
-			if(w == v){ continue; }
-			if(edge(graph, n, w, v) == 0){ continue; }
-
-			if(visited[w] == 1){
-				// already visited
-			} else{
-				// back edge or cross edge
-				// enqueue onto the queue
-				queue.push_back(w);
-			}
-		}// end for
-
-	}
-}
-
-*/

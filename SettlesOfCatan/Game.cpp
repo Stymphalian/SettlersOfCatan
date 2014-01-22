@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "IView.h"
 #include "View_Game.h"
+#include "View_Play.h"
 #include "Model.h"
 
 /*
@@ -52,7 +53,7 @@ void Game::construct(const char* title,int w, int h){
 	active = true;
 	default_window_w = w;
 	default_window_h = h;
-	default_window_x = 640;
+	default_window_x = 720;
 	default_window_y = 0;
 	window_title = title;
 
@@ -99,8 +100,10 @@ void Game::run(){
 	Model model(4);
 	View_Game game_view(model,*win,*ren);
 	if(game_view.active == false){ return; }
+	View_Play play_view(*win, *ren);
 
 	current_view = &game_view;
+	//current_view = &play_view;
 	Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,nullptr,nullptr);
 
 	// main event loop
@@ -116,7 +119,6 @@ void Game::run(){
 			} else if(is_mouse_event(e)){
 				current_view->handle_mouse_events(e);
 			} else if(e.type >= SDL_USEREVENT){
-
 				
 				if(e.user.type == Util::get().get_userev("view_switch_event"))
 				{ // handle pushing on a new view onto the stack
