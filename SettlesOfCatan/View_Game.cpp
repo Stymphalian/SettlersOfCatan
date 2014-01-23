@@ -8,6 +8,7 @@
 #include "IView.h"
 #include "View_Game.h"
 #include "Player.h"
+#include "lizz_lua.h"
 
 std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_codes_e] = {
 	"",
@@ -132,7 +133,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->active = this->active && setup_buttons(bot_pane);
 	if(this->active == false){
 		Logger::getLog("jordan.log").log(Logger::ERROR, "View_Game() Error loading view");
-	}
+	}	
 }
 
 View_Game::~View_Game(){
