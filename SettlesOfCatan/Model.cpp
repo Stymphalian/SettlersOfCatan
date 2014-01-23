@@ -208,9 +208,11 @@ bool Model::fill_board(Tiles* board, int size,int num_levels){
 	int roll_pos = 0;
 	int water_tile_pos = 0;
 	Tiles* hex = 0;
+	int count = 0;
 	for(int row = 0; row < height; ++row){
 		for(int col = 0; col < width; ++col){
 			if(board[col + row*width].active == 0){ continue; }
+			count++;
 			
 			hex = &board[col + row*width];
 			hex->active = 1;
@@ -246,7 +248,7 @@ bool Model::fill_board(Tiles* board, int size,int num_levels){
 					hex->roll = roll_order[roll_pos++];
 				}
 			}
-			logger.log(Logger::DEBUG, "Tile col=%d,row=%d ring_level=%d,type=%d,roll=%d", col, row, hex->ring_level,hex->type,hex->roll);
+			logger.log(Logger::DEBUG, "Tile [%d] col=%d,row=%d ring_level=%d,type=%d,roll=%d", count,col, row, hex->ring_level,hex->type,hex->roll);
 
 			// assign the vertices to the tile
 			Tiles *other=nullptr,*other2=nullptr;
@@ -293,7 +295,7 @@ bool Model::fill_board(Tiles* board, int size,int num_levels){
 			// assign the faces to the board			
 			for(int i = 0; i < 6; ++i){
 				hex->get_adjacent(i, col, row, &x, &y);
-				other = (x < 0 || y < 0 || x >= width || y >= width)
+				other = (x < 0 || y < 0 || x >= width || y >= height)
 							? nullptr : &board[x + y*width];
 			
 				// check the neighbouring tile to see if a face node is already assigned
@@ -322,12 +324,14 @@ bool Model::fill_board(Tiles* board, int size,int num_levels){
 	logger.log(Logger::DEBUG, "Model.fill_board() vertex_array.size() = %d", vertex_array.size());
 	logger.log(Logger::DEBUG, "Model.fill_board() tiles_pos=%d,water_tiles_pos=%d,roll_pos=%d", tile_pos, water_tile_pos, roll_pos);
 	logger.log(logger.DEBUG, "Model.fill_board() Assignment of face and vertex nodes");
+	count = 0;
 	for(int row = 0; row < m_board_height; ++row){
 		for(int col = 0; col < m_board_width; ++col){
 			if(board[col + row*width].active == 1){
+				count++;
 				Tiles& hex = board[col + row*width];
-				logger.log(logger.DEBUG, "row=%d,col=%d face={%d,%d,%d,%d,%d,%d} vertices={%d,%d,%d,%d,%d,%d}",
-							row, col,
+				logger.log(logger.DEBUG, "[%d] row=%d,col=%d face={%d,%d,%d,%d,%d,%d} vertices={%d,%d,%d,%d,%d,%d}",
+							count,row, col,
 							hex.faces[0], hex.faces[1], hex.faces[2], 
 							hex.faces[3], hex.faces[4], hex.faces[5],
 							hex.vertices[0], hex.vertices[1], hex.vertices[2],
@@ -594,24 +598,26 @@ void Model::give_resources_from_roll(int roll){
 			// check all 6 vertices for settlements/cities owned by players
 			for(int i = 0; i < 6; ++i){
 				take.zero_out();
+				if(get_vertex(hex->vertices[i]) == nullptr){ continue; }
 				if(vertex_array[hex->vertices[i]].type == vertex_face_t::NONE){ continue; }					
 
 				amount = 0;
 				res_type = 0;
 				if(vertex_array[hex->vertices[i]].type == vertex_face_t::CITY){
 					amount = 2;
-				} else if(vertex_array[hex->vertices[i]].type == vertex_face_t::CITY) {
+				} else if(vertex_array[hex->vertices[i]].type == vertex_face_t::SETTLEMENT) {
 					amount = 1;
 				}
 
 				switch(hex->type){
-				case(Tiles::SHEEP_TILE) : res_type = resource_t::SHEEP; break;
-				case(Tiles::ORE_TILE) : res_type = resource_t::ORE; break;
-				case(Tiles::BRICK_TILE) : res_type = resource_t::BRICK; break;
-				case(Tiles::WOOD_TILE) : res_type = resource_t::WOOD; break;
-				case(Tiles::WHEAT_TILE) : res_type = resource_t::WHEAT; break;
-				default:{continue; }
+					case(Tiles::SHEEP_TILE) : res_type = resource_t::SHEEP; break;
+					case(Tiles::ORE_TILE) : res_type = resource_t::ORE; break;
+					case(Tiles::BRICK_TILE) : res_type = resource_t::BRICK; break;
+					case(Tiles::WOOD_TILE) : res_type = resource_t::WOOD; break;
+					case(Tiles::WHEAT_TILE) : res_type = resource_t::WHEAT; break;
+					default:{continue; }
 				}					
+
 				take.res[res_type] = amount;
 				bank_exchange(vertex_array[hex->vertices[i]].player, &give, &take);				
 				Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::give_resoure_from_roll col=%d,row=%d,type=%d amount=%d,player=%d",

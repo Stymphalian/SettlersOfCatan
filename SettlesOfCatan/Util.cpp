@@ -228,7 +228,7 @@ Uint32 Util::get_userev(const char* ev){
 		return (Uint32)-1;
 	}	
 	user_evs.push_back(type);
-	Logger::getLog("jordan.log").log("Util::get_userev() Registered event %s=%d\n", type.name.c_str(), type.ev);
+	Logger::getLog("jordan.log").log("Util::get_userev() Registered event %s=%d", type.name.c_str(), type.ev);
 	return type.ev;
 }
 

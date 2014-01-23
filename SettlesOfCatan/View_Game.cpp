@@ -928,7 +928,12 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 
 			if(type != 0){
 				Util::render_texture(&ren, hextile_spritesheet, c, r, &hextile_clips[type]);
-				Util::render_text(&ren, font_carbon_12, c + c_offset, r + r_offset, black, "%d", roll);
+				// only render the roll if the tile is not a water tile or desert tile
+				if(!(model.get_tile(0, 0)->is_water_tile(type) ||type == Tiles::DESERT_TILE) )
+				{
+					Util::render_text(&ren, font_carbon_12, c + c_offset, r + r_offset, black, "%d", roll);
+				}
+				
 			} else{
 				// render a debug rectangle instead
 				if(debug){
@@ -1397,6 +1402,9 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 			// place the thief
 			if(selected_tile != nullptr){
 				// give resources.
+				for(int i = model.num_dice; i < model.num_dice*model.num_dice_sides; ++i){
+					model.give_resources_from_roll(i);
+				}
 
 				// place the thief.
 				model.move_thief(selected_tile->col, selected_tile->row);
