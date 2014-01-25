@@ -149,7 +149,7 @@ void configuration_t::apply_extensions(int num_extensions){
 		}
 		extra_resources = amount % 5;
 				
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "configuration_t::apply_extneions() extension %d, amount = %d, remainder = %d", i,amount,extra_resources);
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "configuration_t::apply_extensions() extension %d, amount = %d, remainder = %d", i,amount,extra_resources);
 		amount = amount / 5;
 		num_tiles[Tiles::SHEEP_TILE] += amount;
 		num_tiles[Tiles::WHEAT_TILE] += amount;

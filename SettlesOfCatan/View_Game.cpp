@@ -93,7 +93,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->top_pane.init(0, 0,offset_z,disp_w, offset_y);
 
 	int board_x, board_y;
-	getPixelPosFromTilePos(model.m_board_width + 1, model.m_board_height + 1, &board_x, &board_y);
+	getPixelPosFromTilePos(model.get_board_width() + 1, model.get_board_height() + 1, &board_x, &board_y);
 	offset_x = 0;
 	offset_y = top_pane.h ; 
 	offset_z = 0;
@@ -205,9 +205,9 @@ bool View_Game::load(){
 	fps_timer->stop();
 
 	// vertex covered
-	vertex_covered = new Uint8[model.vertex_array.size()];
+	vertex_covered = new Uint8[model.get_num_vertices()];
 	// face covered
-	face_covered = new Uint8[model.face_array.size()];
+	face_covered = new Uint8[model.get_num_faces()];
 
 	// setting up the clips for the sprite sheets
 	memset(hextile_clips, 0, sizeof(hextile_clips));
@@ -300,7 +300,7 @@ bool View_Game::load_player_building_textures(const char* file){
 		// for every player create a texture for their building colours
 		int rs = 0;
 		bool good_flag = true;
-		for(int i = 0; i < model.m_num_players; ++i){
+		for(int i = 0; i < model.get_num_players(); ++i){
 			// custome 0,0,0 colour for the player
 			colors[0] = model.get_player(i)->color;
 
@@ -365,14 +365,14 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	selected_tile = nullptr;
 	selected_vertex = nullptr;
 	selected_face = nullptr;
-	tiles.reserve(model.m_board_size);
-	vertices.reserve(model.vertex_array.size());
-	faces.reserve(model.face_array.size());
+	tiles.reserve(model.get_board_height()*model.get_board_width());
+	vertices.reserve(model.get_num_vertices());
+	faces.reserve(model.get_num_faces());
 
 	// setup all the tiles
 	int x, y;
-	for(int row = 0; row < model.m_board_height; ++row){
-		for(int col = 0; col < model.m_board_width; ++col){			
+	for(int row = 0; row < model.get_board_height(); ++row){
+		for(int col = 0; col < model.get_board_width(); ++col){			
 			Tile_intersect temp; 
 			getPixelPosFromTilePos(col, row, &x, &y);
 			
@@ -385,8 +385,10 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	// setup all the vertices
 	int pos =0;
 	int tile_x, tile_y;
+	std::vector<vertex_face_t>& vertex_array = model.get_vertex_array();
 	std::vector<vertex_face_t>::iterator it;
-	for(it = model.vertex_array.begin(); it != model.vertex_array.end(); ++it){
+
+	for(it = vertex_array.begin(); it != vertex_array.end(); ++it){
 		x = y = 0;
 		tile_x = tile_y = 0;
 		vertex_face_t_intersect temp;
@@ -410,7 +412,8 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	// setup all the face intersects
 	pos = 0;
 	tile_x = tile_y = 0;
-	for(it = model.face_array.begin(); it != model.face_array.end(); ++it){
+	std::vector<vertex_face_t>& face_array = model.get_face_array();
+	for(it = face_array.begin(); it != face_array.end(); ++it){
 		x = y = 0;
 		tile_x = tile_y = 0;
 		vertex_face_t_intersect temp;
@@ -759,8 +762,7 @@ int View_Game::getHexFaceDir(int px, int py){
 }
 bool View_Game::getTilePosFromDirection(int dir, int tilex, int tiley, int* new_tile_x, int* new_tile_y){
 	if(!new_tile_x || !new_tile_y){ return false; }
-	Tiles& tile = model.m_board[0];
-	return tile.get_adjacent(dir, tilex, tiley, new_tile_x, new_tile_y);		
+	return Tiles::get_adjacent(dir, tilex, tiley, new_tile_x, new_tile_y);		
 }
 void View_Game::get_mid_point_from_face(int face, int* x, int* y){
 	if(!x || !y){ return; }
@@ -860,7 +862,7 @@ void View_Game::update_mid_pane(pane_t& pane, Collision& rel_mouse_hitbox){
 					this->tile_row = -1;
 					break;
 				} else{
-					this->selected_tile = &tiles[this->tile_col + this->tile_row*model.m_board_width];
+					this->selected_tile = &tiles[this->tile_col + this->tile_row*model.get_board_width()];
 				}
 			}
 
@@ -919,13 +921,14 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 	int type, roll;
 
 	// render all the game tiles
-	for(int row = 0; row < model.m_board_height; ++row){
-		for(int col = 0; col < model.m_board_width; ++col){
+	for(int row = 0; row < model.get_board_height(); ++row){
+		for(int col = 0; col < model.get_board_width(); ++col){
 			getPixelPosFromTilePos(col, row, &c, &r);
 			r += screen_offset_y;
 			c += screen_offset_x;
-			type = model.get_type_from_tile(col, row);
-			roll = model.get_roll_from_tile(col, row);
+			type = model.get_tile(col, row)->type;
+			roll = model.get_tile(col, row)->type;
+		
 
 			if(type != 0){
 				Util::render_texture(&ren, hextile_spritesheet, c, r, &hextile_clips[type]);
@@ -947,8 +950,8 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 
 }
 void View_Game::render_model_face_vertex_tiles(pane_t& pane){
-	memset(vertex_covered, 0, model.vertex_array.size()*sizeof(Uint8));
-	memset(face_covered, 0, model.face_array.size()*sizeof(Uint8));
+	memset(vertex_covered, 0, model.get_num_vertices()*sizeof(Uint8));
+	memset(face_covered, 0, model.get_num_faces()*sizeof(Uint8));
 	int screen_offset_x = pane.x + pane.padding / 2;
 	int screen_offset_y = pane.y + pane.padding / 2;
 	int height_overlap = (int)(tile_h*0.75);
@@ -956,24 +959,25 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 	int r, c;
 
 	// render all the roads/faces and Vertices(settlements/cities)
-	for(int row = 0; row < model.m_board_height; ++row){
-		for(int col = 0; col < model.m_board_width; ++col){
+	for(int row = 0; row < model.get_board_height(); ++row){
+		for(int col = 0; col < model.get_board_width(); ++col){
 			getPixelPosFromTilePos(col, row, &c, &r);
 			r += screen_offset_y;
 			c += screen_offset_x;
-			if(model.get_type_from_tile(col, row) == 0){
+			if(model.get_tile(col, row)->type == 0){
 				continue;
 			};
 
 			// render all the faces
 			for(int i = 0; i < 6; ++i){
-				target = model.get_faces_from_tile(col, row)[i];
+				target = model.get_tile(col,row)->faces[i];
 				if(target == -1 || face_covered[target] == 1){
 					continue;
 				}
 
 				face_covered[target] = 1;
-				type = model.get_type_from_face(target);
+				type = model.get_face(target)->type;
+				//type = model.get_type_from_face(target);
 				// TODO: the types for this are wrong. it is currently set to 
 				// types of vertex_face_t, but out clipping rects use building_t
 				// enumerations to indetify the clip.
@@ -982,24 +986,26 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 				int x = c + face_pos[i][0];
 				int y = r + face_pos[i][1];
 
-				Util::render_texture(&ren, player_buildings_spritesheet[model.get_player_from_face(target)], x, y, &road_clips[i]);
+				Util::render_texture(&ren, player_buildings_spritesheet[model.get_face(target)->player], x, y, &road_clips[i]);
 			}
 
 			// render all the vertices
 			for(int i = 0; i < 6; ++i){
-				target = model.get_vertices_from_tile(col, row)[i];
+				target = model.get_tile(col, row)->vertices[i];
+				//target = model.get_vertices_from_tile(col, row)[i];
 				if(target == -1 || vertex_covered[target] == 1){
 					continue;
 				}
 
 				vertex_covered[target] = 1;
-				int type = model.get_type_from_vertex(target);
+				int type = model.get_vertex(target)->type;
+				//int type = model.get_type_from_vertex(target);
 				//type = vertex_face_t::CITY;
 				if(type == vertex_face_t::NONE){ continue; }
 
 				int x = c + vertex_pos[i][0] - sprite_small[0] / 2;
 				int y = r + vertex_pos[i][1] - sprite_small[1] / 2;
-				Util::render_texture(&ren, player_buildings_spritesheet[model.get_player_from_vertex(target)], x, y, &building_clips[type]);
+				Util::render_texture(&ren, player_buildings_spritesheet[model.get_vertex(target)->player], x, y, &building_clips[type]);
 			}
 
 		}
@@ -1088,7 +1094,7 @@ void View_Game::render_bottom_text(pane_t& pane){
 	int off_x, off_y;
 	int line_spacing = 18;
 	SDL_Rect rect = { 0, 0, 0, 0 };
-	Player* player = model.get_player(model.m_current_player);
+	Player* player = model.get_player(model.get_current_player());
 	if(player == nullptr){ return; }
 
 	// who is the current player
@@ -1097,8 +1103,8 @@ void View_Game::render_bottom_text(pane_t& pane){
 	rect = {0,pane.y + off_y, 80, 18 };
 	Util::render_rectangle(&ren, &rect, player->color);
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x + rect.w +5,pane.y + off_y, font_carbon_12_colour,
-		"Player %d : %s Victory Points=%d", model.m_current_player,player->name.c_str(),
-		model.num_victory_points_for_player(model.m_current_player));
+		"Player %d : %s Victory Points=%d", model.get_current_player(),player->name.c_str(),
+		model.num_victory_points_for_player(model.get_current_player()));
 
 	// how many resources does the player have?
 	off_x = 0;
@@ -1150,14 +1156,15 @@ void View_Game::render_bottom_text(pane_t& pane){
 		);
 
 	// Who has the Largest army and longest road cards
+	// TODO: longest road  and largest army.
 	off_x = 0;
 	off_y += line_spacing;
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
-		"Longest road %d segments by player %d ",model.longest_road(),model.player_holding_longest_road_card);
+		"Longest road %d segments by player %d ",0,model.get_player_with_longest_road());
 	off_x = 0;
 	off_y += line_spacing;
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
-		"Largest army %d soldiers owned by player %d",model.largest_army(), model.player_holding_largest_army_card);
+		"Largest army %d soldiers owned by player %d",0, model.get_player_with_largest_army());
 }
 
 void View_Game::render_top_pane(pane_t& pane){
@@ -1328,11 +1335,12 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 		}
 		else if(s == View_Game::PLACE_SETTLEMENT_1)
 		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 1 for player %d", (int)s,model.m_current_player);
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 1 for player %d", (int)s,model.get_current_player());
 			if(selected_vertex != nullptr){
-				bool rs = model.build_building(model.m_current_player, 
-											building_t::SETTLEMENT,
-											selected_vertex->num);			
+				bool rs = model.build_building(
+											building_t::SETTLEMENT,											
+											selected_vertex->num,
+											model.get_current_player() );
 				if(rs){
 					set_state(View_Game::PLACE_ROAD_1);
 				}
@@ -1340,57 +1348,65 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 		}
 		else if(s == View_Game::PLACE_ROAD_1)
 		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Roads 1 for player %d", (int)s,model.m_current_player);
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Roads 1 for player %d", (int)s,model.get_current_player());
 			static int counter = 0;
 			if(selected_face != nullptr){
-				bool rs = model.build_building(model.m_current_player,
-											building_t::ROAD,
-											selected_face->num);
+				bool rs = model.build_building(
+											building_t::ROAD,											
+											selected_face->num,
+											model.get_current_player() );
 				if(rs){
 					counter++;
 				
 					// switch either to the next placing of settlements, or 
 					// to the next player of placing settlements.
-					if(counter >= model.m_num_players){
+					if(counter >= model.get_num_players()){
 						set_state(View_Game::PLACE_SETTLEMENT_2);
-						model.m_current_player = model.m_current_player;
+						model.set_current_player(model.get_current_player());
+						//model.m_current_player = model.m_current_player;
 					} else{
 						set_state(View_Game::PLACE_SETTLEMENT_1);
-						model.m_current_player = (model.m_current_player + 1) % model.m_num_players;
+						model.set_current_player((model.get_current_player() + 1) % model.get_num_players());
+						//model.m_current_player = (model.m_current_player + 1) % model.m_num_players;
 					}				
 				} // end if(rs)				
 			}	
 		}
 		else if(s == View_Game::PLACE_SETTLEMENT_2)
 		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 2 for player %d", (int)s, model.m_current_player);
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 2 for player %d", (int)s, model.get_current_player());
 			if(selected_vertex != nullptr){
-				bool rs = model.build_building(model.m_current_player,
-											building_t::SETTLEMENT,
-											selected_vertex->num);
+				bool rs = model.build_building(
+											building_t::SETTLEMENT,							
+											selected_vertex->num,
+											model.get_current_player() );
 				if(rs) { set_state(View_Game::PLACE_ROAD_2); }
 			}
 		}
 		else if(s == View_Game::PLACE_ROAD_2)
 		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Road 2 for player %d", (int)s, model.m_current_player);
+			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Road 2 for player %d", (int)s, model.get_current_player());
 			static int counter = 0;
 			if(selected_face != nullptr){
-				bool rs = model.build_building(model.m_current_player,
-											building_t::ROAD,
-											selected_face->num);
+				bool rs = model.build_building(
+											building_t::ROAD,											
+											selected_face->num,
+											model.get_current_player() );
 				if(rs) { 
 					counter++;
 					// switch either to the next placing of settlements, or 
 					// to the next player of placing settlements.
-					if(counter >= model.m_num_players){
+					if(counter >= model.get_num_players()){
 						set_state(View_Game::START_RESOURCES);
-						model.m_current_player = 0;
+						//model.m_current_player = 0;
+						model.set_current_player(0);
 					} else{
 						set_state(View_Game::PLACE_SETTLEMENT_2);
-						model.m_current_player--;
-						if(model.m_current_player < 0){
-							model.m_current_player = model.m_num_players + model.m_current_player;
+						model.set_current_player(model.get_current_player() - 1);
+						//model.m_current_player--;
+						if(model.get_current_player() < 0){
+							model.set_current_player(model.get_num_players());
+							//model.m_current_player = model.m_num_players + model.m_current_player;
 						}
 					}
 				}// end if rs()
@@ -1403,12 +1419,12 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 			// place the thief
 			if(selected_tile != nullptr){
 				// give resources.
-				for(int i = model.num_dice; i < model.num_dice*model.num_dice_sides; ++i){
+				for(int i = model.get_num_dice(); i < model.get_num_dice()*model.get_num_dice_sides(); ++i){
 					model.give_resources_from_roll(i);
 				}
 
 				// place the thief.
-				model.move_thief(selected_tile->col, selected_tile->row);
+				model.place_thief(selected_tile->col, selected_tile->row);
 				set_state(View_Game::NORMAL);
 			}			
 		}

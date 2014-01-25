@@ -29,6 +29,9 @@ void Tiles::reset_vertices_faces(){
 bool Tiles::is_water_tile(int type){
 	return (type >= Tiles::WATER_TILE);
 }
+bool Tiles::is_land_tile(int type){
+	return !(Tiles::is_water_tile(type));
+}
 
 int Tiles::get_direction_of_vertex(int vertex_num){
 	for(int i = 0; i < 6; ++i){

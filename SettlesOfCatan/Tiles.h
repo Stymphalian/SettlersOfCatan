@@ -14,6 +14,10 @@ public:
 	};
 	// statics
 	static bool is_water_tile(int type);
+	static bool is_land_tile(int type);
+	static bool get_adjacent(int dir, int x, int y, int* dx, int* dy);
+	static int hex_dx(int dir, bool odd_row);
+	static int hex_dy(int dir);
 
 	// variables
 	int active;
@@ -31,9 +35,6 @@ public:
 	void init(int type, int roll);
 	void reset_vertices_faces();
 	int get_direction_of_vertex(int vertex_num);
-	int get_direction_of_face(int face_num);
-	bool get_adjacent(int dir, int x, int y, int* dx, int* dy);
-	int hex_dx(int dir, bool odd_row);
-	int hex_dy(int dir);
+	int get_direction_of_face(int face_num);	
 };
 

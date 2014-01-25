@@ -3,7 +3,7 @@
 #include <list>
 #include "Tiles.h"
 #include "model_structs.h"
-
+#include "Logger.h"
 class Player;
 
 class Model{
@@ -33,99 +33,156 @@ public:
 		MODEL_ERROR_INVALID_VERTEX,
 		NUM_model_error_codes_e
 	};
-	model_error_codes_e model_error;
-	// Variables
-	int m_num_levels; // how many rings are there
-	int m_num_extensions; // how many extensions were used
-	int num_dice;
-	int num_dice_sides;
-
-	resource_t bank;
-	int roll_value;
-	int m_num_players;
-	int m_current_player;
-	Player* m_players;
-		
-	Tiles* m_board;
-	int m_board_size; // width*height
-	int m_board_width; //also the len of the longest row ( middle row)
-	int m_board_height;  // the number of rows on the game board
-	bool m_even_middle_row;
-	int m_num_game_tiles; // how many game tiles are there, including the water tiles
-	int m_num_water_tiles; // the number of water tiles, include ports
-	std::vector<vertex_face_t> vertex_array;
-	std::vector<vertex_face_t> face_array;
-	std::vector<dev_cards_t> m_dev_deck; // a list holding the deck of dev cards
-
-	int thief_pos_x;
-	int thief_pos_y;
-	int player_holding_largest_army_card;
-	int player_holding_longest_road_card;
-	int largest_army();
-	int longest_road();
-	int turn_count;
-
 	// Constructors and Destructors
 	Model(int num_players);
 	virtual ~Model();
 
 	// Methods
-	void end_turn();
-
-	Tiles* get_tile(int col, int row);
-	Tiles* find_tile_from_vertex(int vertex, int* c, int* r);
-	Tiles* find_tile_from_face(int face, int* c, int* r);
-	vertex_face_t* get_vertex(int num);
-	vertex_face_t* get_face(int num);
-	int get_type_from_face(int face);
-	int get_type_from_vertex(int vertex);
-	int get_player_from_face(int face);
-	int get_player_from_vertex(int vertex);
-	int get_type_from_tile(int col, int row);
-	int get_roll_from_tile(int col, int row);
-	int* get_vertices_from_tile(int col, int row,int* size=nullptr);
-	int* get_faces_from_tile(int col, int row,int* size=nullptr);
-	Player* get_player(int player);
-
-	resource_t get_building_cost(building_t::buildings card);
-	bool build_building(int player, building_t::buildings building, int pos);
-	bool can_build_road(int player, int row, int col, int face);
-	bool can_build_settlement(int player, int row, int col, int vertex);
-		
-	int roll(int num_dice, int num_sides);
-	void give_resources_from_roll(int roll);
-	bool move_thief(int new_col, int new_row);
-
-	bool buy_dev_card(int player);
-	void play_dev_card(int player, dev_cards_t* card);
-	void transfer_largest_army_card(int original_player, int new_player);
-	void transfer_longest_road_card(int original_player, int new_player);
-		
-	bool pay_for_item(int player, resource_t* price);
-	bool bank_exchange(int player, resource_t* give, resource_t* take);	
-	int num_victory_points_for_player(int player);
-	void set_error(Model::model_error_codes_e code);
+	//get data structures
 	int get_error();
-private:
-	// private member variables
-	configuration_t config; // hold configuration data, such as how many tiles and cards we should have
+	bool set_error(Model::model_error_codes_e code);
+	Tiles* get_tile(int col, int row);
+	Tiles* get_tile_from_face(int face, int* c, int* r);
+	Tiles* get_tile_from_vertex(int vertex, int* c, int* r);	
+	vertex_face_t* get_vertex(int vertex_key);
+	vertex_face_t* get_face(int face_key);
+	std::vector<vertex_face_t>& get_vertex_array();
+	std::vector<vertex_face_t>& get_face_array();
+	// get members
+	const dev_cards_t* get_dev_card();
+	resource_t get_building_cost(building_t::buildings card);
+	int get_board_height();
+	int get_board_width();
+	int get_num_vertices();
+	int get_num_faces();
+	int get_thief_x();
+	int get_thief_y();
+	int get_player_with_largest_army();
+	int get_player_with_longest_road();
+	int get_turn_count();
+	int get_roll_value();
+	int get_num_dice();
+	int get_num_dice_sides();
+	int get_current_player();
+	int get_num_players();
+ 	bool set_current_player(int player);
+	bool set_player_with_largest_army(int player);
+	bool set_player_with_longest_road(int player);
 	
-	// methods
-	void establish_board_dimensions(int num_players);
-	void init_players(Player* players, int num_players);
-	bool fill_board(Tiles* board, int size,int num_levels);
-	bool fill_deck(int* default_dev_cards_cap,int size);
+	// actions
+	bool reset(); // resets the dev cards, bank, vertices, and faces
+	void end_turn();
+	bool bank_exchange(resource_t* give, resource_t* take);
+	bool place_thief(int x, int y);
+	bool build_building(building_t::buildings building, int key,int player);
+	bool can_build_road(int face,int player);
+	bool can_build_settlement(int vertex,int player);
+	bool can_build_city(int vertex, int player);
+	int roll(int num_dice, int num_sides);	
 
-	dev_cards_t draw_dev_card();
-	bool add_city(int player, int pos);
-	bool add_settlement(int player, int pos);
-	bool add_road(int player, int pos);	
+	// Until I create an interface between players and the model
+	Player* get_player(int player);
+	int num_victory_points_for_player(int player);
+	bool bank_exchange(int player, resource_t* give, resource_t* take);
+	void give_resources_from_roll(int roll);
+	bool buy_dev_card(int player);
+	bool pay_for_item(int player, resource_t* price);
+	void init_players(std::vector<Player>* players);
+
+private:
+	Logger& logger;
+	// private member variables	
+	model_error_codes_e _model_error;
+	int _num_dice;
+	int _num_dice_sides;
+	int _thief_pos_x;
+	int _thief_pos_y;
+	int _roll_value;
+	int _turn_count;
 	
-	int get_ring_level(int row, int col, int nlevels);
-	int level_from_row(int row,int levels,int num_extensions);
-	int numtiles_from_row(int row,int levels,int num_extensions);
-	int num_offset_tiles_from_row(int row, int levels,int num_extensions);
-	void apply_tile_resource_extensions(int num_extensions);
-	int num_possiblities_dice(int sum, int num_dice, int num_sides);
-	bool fill_vertex_face_arrays();
+	int _num_levels; // how many rings are there
+	int _num_extensions; // how many extensions were used
+	bool _even_middle_row; // do we have an even middle row?
+
+	configuration_t _config; // hold configuration data, such as how many tiles and cards we should have
+	resource_t _bank;
+
+	int _num_players;
+	int _current_player;
+	int _player_holding_largest_army_card;
+	int _player_holding_longest_road_card;
+	std::vector<Player> _players;
+	
+	int _board_width; //also the len of the longest row ( middle row)
+	int _board_height;  // the number of rows on the game board
+	int _board_size; // width*height	
+	int _num_game_tiles; // how many game tiles are there, including the water tiles
+	int _num_water_tiles; // the number of water tiles, include ports	
+	Tiles* _board;
+	
+	std::vector<vertex_face_t> _vertex_array;
+	std::vector<vertex_face_t> _face_array;
+
+	int _deck_pos;
+	std::vector<dev_cards_t> _dev_deck; // a list holding the deck of dev cards
+			
+	// methods
+	void set_defaults();
+	void init(int num_players);
+	
+	void establish_board_dimensions(int num_players);	
+	// TODO: Make the fill* methods purely functional.
+	bool fill_board(
+		Tiles* board,
+		int num_levels,
+		int num_extensions,
+		bool even_middle_row,
+		int board_width,
+		int board_height,
+		int board_size,
+		int num_game_tiles,
+		int num_water_tiles,
+		int* num_tiles,
+		int num_dice,
+		int num_dice_sides
+		);
+	bool fill_vertex_face_on_board(
+		Tiles* board,
+		int board_width,
+		int board_height,
+		std::vector<vertex_face_t>& vertex_array,
+		std::vector<vertex_face_t>& face_array		
+		);
+	bool fill_vertex_face_arrays(
+		Tiles* board,
+		int board_width,
+		int board_height,
+		std::vector<vertex_face_t>& vertex_array,
+		std::vector<vertex_face_t>& face_array		
+		);
+	int get_ring_level(int row, int col, int nlevels,int nextensions,bool even_middle_row);
+	int level_from_row(int row, int levels, int num_extensions);
+	int numtiles_from_row(int row, int levels, int num_extensions);
+	int num_offset_tiles_from_row(int row, int levels, int num_extensions);
+	
+	bool fill_deck(
+		std::vector<dev_cards_t>& deck,
+		int* default_dev_cards_cap,
+		int size
+		);
+	
+	dev_cards_t draw_dev_card();
+	bool build_city(int player, int pos);
+	bool build_settlement(int player, int pos);
+	bool build_road(int player, int pos);
+
+	bool set_vertex(int player, int pos, int type );
+	bool set_face(int player, int pos, int type);
+	bool _can_build_settlement(int player, int vertex_key);
+	bool _can_build_city(int player, int vertex_key);
+	bool _can_build_road(int player, int face_key);
+	Tiles* _find_tile_from_vertex(int vertex_key, int* col, int* row);
+	Tiles* _find_tile_from_face(int face_key, int* col, int* row);
+	
+	int num_possiblities_dice(int sum, int num_dice, int num_sides);	
 };

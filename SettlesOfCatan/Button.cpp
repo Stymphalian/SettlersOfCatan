@@ -90,7 +90,7 @@ void add_city_action(View_Game& view, Model& model){
 }
 void buy_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "buy_dev_card_action");
-	model.buy_dev_card(model.m_current_player);
+	model.buy_dev_card(model.get_current_player());
 }
 void play_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "play_dev_card_action");

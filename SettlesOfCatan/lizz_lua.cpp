@@ -33,7 +33,6 @@ int first_function(lua_State* state){
 	return 1;
 }
 
-
 lizz_lua::lizz_lua(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "lizz_lua::lizz_lua() Constructor");
 	this->lua_state = luaL_newstate();
