@@ -58,13 +58,43 @@ void resource_t::zero_out(){
 vertex_face_t::vertex_face_t(){
 	type = object_e::NONE;
 	player = -1;
-	memset(&vert, -1, sizeof(vert));
-	memset(&face, -1, sizeof(face));
-	is_assigned = false;
+	assign_once = false;
+	memset(&node, 0, sizeof(struct node_t));
 }
 vertex_face_t::~vertex_face_t(){
 	//Logger::getLog("jordan.log").log(Logger::DEBUG, "vertex_face_t destructor");
 }
+bool vertex_face_t::is_assigned(){
+	return assign_once;
+}
+void vertex_face_t::assign(){
+	assign_once = true;
+}
+void vertex_face_t::face(int key, int value){
+	node.faces[key] = value;
+}
+void vertex_face_t::vertex(int key, int value){
+	node.vertices[key] = value;
+}
+void vertex_face_t::tile_x(int pos, int value){
+	node.tiles[pos][0] = value;
+}
+void vertex_face_t::tile_y(int pos, int value){
+	node.tiles[pos][1] = value;
+}
+int vertex_face_t::face(int key){
+	return node.faces[key];
+}
+int vertex_face_t::vertex(int key){
+	return node.vertices[key];
+}
+int vertex_face_t::tile_x(int pos){
+	return node.tiles[pos][0];
+}
+int vertex_face_t::tile_y(int pos){
+	return node.tiles[pos][1];
+}
+
 
 
 // configuration_t

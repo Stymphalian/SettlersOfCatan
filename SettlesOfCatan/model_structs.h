@@ -5,27 +5,31 @@
 class vertex_face_t{
 public:
 	enum object_e { NONE, ROAD, SETTLEMENT, CITY, SIZE_OF_object_e };
-	enum vertex_e {};
-	enum face_e {};
-	vertex_face_t();
-	virtual ~vertex_face_t();
-
+	// variables
 	object_e type; 
 	int player;
-	bool is_assigned;
-	union {
-		struct vert{
-			int faces[3];
-			int vertices[3];
-			int tiles[3][2]; // col, row/ x,y
-		}vert;
-		struct face{
-			int faces[4];
-			int vertices[2];
-			int tiles[2][2]; // col,row/ x,y  [0] is leftmost
-		}face;
-	};
+	//constructor and desturctor
+	vertex_face_t();
+	virtual ~vertex_face_t();
+	//methods
+	bool is_assigned();
+	void assign();
+	void face(int key,int value);
+	void vertex(int key,int value);
+	void tile_x(int pos,int value);
+	void tile_y(int pos, int value);
+	
+	int face(int key);
+	int vertex(int key);
+	int tile_x(int pos);
+	int tile_y(int pos);
 private:
+	bool assign_once;
+	struct node_t{
+		int faces[4];
+		int vertices[3];
+		int tiles[3][2];
+	}node;	
 };
 
 class resource_t{

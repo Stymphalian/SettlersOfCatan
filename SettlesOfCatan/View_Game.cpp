@@ -394,8 +394,8 @@ bool View_Game::setup_board_pane(pane_t& pane){
 		vertex_face_t_intersect temp;
 		vertices.push_back(temp);
 
-		int col = it->vert.tiles[0][0];
-		int row = it->vert.tiles[0][1];
+		int col = it->tile_x(0);
+		int row = it->tile_y(0);
 		int dir = model.get_tile(col, row)->get_direction_of_vertex(pos);
 		if(dir == -1){ continue; }
 		// vertex_pos gives us the x,y point of the vertex of direction dir.
@@ -420,8 +420,8 @@ bool View_Game::setup_board_pane(pane_t& pane){
 		faces.push_back(temp);
 
 		// set the x and y point of the face inteserct block
-		int col = it->face.tiles[0][0];
-		int row = it->face.tiles[0][1];
+		int col = it->tile_x(0);
+		int row = it->tile_y(0);
 		int dir = model.get_tile(col, row)->get_direction_of_face(pos);
 		if(dir == -1){ continue; }
 		int mid_x, mid_y;
@@ -1221,15 +1221,15 @@ void View_Game::render_top_pane(pane_t& pane){
 			} else{
 				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
 					"Model Vertex: %d,%d,%d  faces { %d,%d,%d } vertex { %d,%d,%d }",
-					vertex->type, vertex->player, vertex->is_assigned,
-					vertex->vert.faces[0], vertex->vert.faces[1], vertex->vert.faces[2],
-					vertex->vert.vertices[0], vertex->vert.vertices[1], vertex->vert.vertices[2]
+					vertex->type, vertex->player, vertex->is_assigned(),
+					vertex->face(0), vertex->face(1), vertex->face(2),
+					vertex->vertex(0), vertex->vertex(1), vertex->vertex(2)
 					);
 				Util::render_text(&ren, font_carbon_12, top_pane.x + 50, top_pane.y + 64, font_carbon_12_colour,
 					"tiles = { (%d, %d), (%d, %d), (%d, %d) }",
-					vertex->vert.tiles[0][0], vertex->vert.tiles[0][1],
-					vertex->vert.tiles[1][0], vertex->vert.tiles[1][1],
-					vertex->vert.tiles[2][0], vertex->vert.tiles[2][1]
+					vertex->tile_x(0), vertex->tile_y(0),
+					vertex->tile_x(1), vertex->tile_y(1),
+					vertex->tile_x(2), vertex->tile_y(2)
 					);
 			}
 		}
@@ -1247,15 +1247,15 @@ void View_Game::render_top_pane(pane_t& pane){
 			} else{
 				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
 					"Model Face: %d,%d,%d, faces { %d,%d,%d,%d } vertex { %d,%d } ",
-					face->type, face->player, face->is_assigned,
-					face->face.faces[0], face->face.faces[1], face->face.faces[2], face->face.faces[3],
-					face->face.vertices[0], face->face.vertices[1]
+					face->type, face->player, face->is_assigned(),
+					face->face(0), face->face(1), face->face(2), face->face(3),
+					face->vertex(0), face->vertex(1)					
 					);
 
 				Util::render_text(&ren, font_carbon_12, top_pane.x + 50, top_pane.y + 64, font_carbon_12_colour,
 					"tiles { (%d,%d) (%d,%d) }",
-					face->face.tiles[0][0], face->face.tiles[0][1],
-					face->face.tiles[1][0], face->face.tiles[1][1]
+					face->tile_x(0), face->tile_y(0),
+					face->tile_x(1), face->tile_y(1)
 					);
 			}
 		}

@@ -402,6 +402,15 @@ bool Model::fill_board(
 }
 
 
+/*
+Given a board and arrays for vertices and faces.
+@Parameter Tiles* board -- the board of Tiles in which to add vertices and faces.
+@Parameter int board_width -- the width of the board
+@Parameter int board_height -- the height of the board
+@Parameter std::vector<vertex_face_t>& vertex_array -- the array to put vertices.
+@Parameter std::vector<vertex_face_t>& face_array -- the array to place the faces.
+@Return: returns true on success.
+*/
 bool Model::fill_vertex_face_on_board(
 	Tiles* board,
 	int board_width,
@@ -418,8 +427,8 @@ bool Model::fill_vertex_face_on_board(
 	for(int row = 0; row < board_height; ++row){
 		for(int col = 0; col < board_width; ++col){
 			if(board[col + row*board_width].active == 0){ continue; }
-			hex = &board[col + row*board_width];
 			count++;
+			hex = &board[col + row*board_width];
 
 			// assign the vertices to the tile
 			Tiles *other = nullptr, *other2 = nullptr;
@@ -511,6 +520,17 @@ bool Model::fill_vertex_face_on_board(
 	return true;
 }
 
+
+/*
+Given the vertices and the faces, fill out the vertex_face_t 
+objects with the appropriate vert and face arrays.
+@Parameter Tiles* board - The board Tiles from which to discover the connections between the faces and vertices.
+@Parameter int board_width -- the width of the board.
+@Parameter int board_height -- the height of the board.
+@Parameter std::vector<vertex_face_t>& vertex_array -- the vertex array to fill out.
+@Parameter std::vector<vertex_face_t>& face_array -- the face array to fill out.
+@Return: Returns true
+*/
 bool Model::fill_vertex_face_arrays(
 	Tiles* board, 
 	int board_width,
@@ -538,51 +558,52 @@ bool Model::fill_vertex_face_arrays(
 					continue;
 				}
 				t = &vertex_array[hex->vertices[v]];
-				if(t->is_assigned == true){ continue; }
-				t->is_assigned = true;
+				if(t->is_assigned() == true){ continue; }
+				t->assign();
 
 				// assign the hex tiles
+
 				// assign the current tile to index 0
-				t->vert.tiles[0][0] = col;
-				t->vert.tiles[0][1] = row;
+				t->tile_x(0, col);
+				t->tile_y(0, row);
 				// assign the most clockwise tile to index 1
 				hex->get_adjacent(v, col, row, &x, &y);
 				temp = (x < 0 || y < 0 || x >= board_width || y >= board_height) ? nullptr : &board[x + y*board_width];
 				if(temp == nullptr || temp->active == false){
 					x = y = -1;
 				}
-				t->vert.tiles[1][0] = x;
-				t->vert.tiles[1][1] = y;
+				t->tile_x(1, x);
+				t->tile_y(1, y);
 				// assign the least clockwise tile to index 2
 				hex->get_adjacent((v + 5) % 6, col, row, &x, &y);
 				temp = (x < 0 || y < 0 || x >= board_width || y >= board_height) ? nullptr : &board[x + y*board_width];
 				if(temp == nullptr || temp->active == false){
 					x = y = -1;
 				}
-				t->vert.tiles[2][0] = x;
-				t->vert.tiles[2][1] = y;
+				t->tile_x(2, x);
+				t->tile_y(2, y);
 
 
 				// assign the vertices and faces
-				t->vert.vertices[0] = hex->vertices[(v + 1) % 6];
-				t->vert.vertices[1] = hex->vertices[(v + 5) % 6];
-				t->vert.faces[0] = hex->faces[v];
-				t->vert.faces[1] = hex->faces[(v + 5) % 6];
+				t->vertex(0, hex->vertices[(v + 1) % 6]);
+				t->vertex(1, hex->vertices[(v + 5) % 6]);
+				t->face(0, hex->faces[v]);
+				t->face(1, hex->faces[(v + 5) % 6]);
 
-				if(t->vert.tiles[1][0] != -1){
+				if( t->tile_x(1) != -1){
 					// using the most clockwise tile to find the vertices and faces
-					other = &board[t->vert.tiles[1][0] + t->vert.tiles[1][1] * board_width];
-					t->vert.vertices[2] = other->vertices[(v + 5) % 6];
-					t->vert.faces[2] = other->faces[(v + 4) % 6];
-				} else if(t->vert.tiles[2][0] != -1){
+					other = &board[t->tile_x(1)+ t->tile_y(1) * board_width];
+					t->vertex(2, other->vertices[(v + 5) % 6]);
+					t->face(2,other->faces[(v + 4) % 6]);
+				} else if(t->tile_x(2) != -1){
 					// using the least clockwise tile to find the vertices and faces
-					other = &board[t->vert.tiles[2][0] + t->vert.tiles[2][1] * board_width];
-					t->vert.vertices[2] = other->vertices[(v + 1) % 6];
-					t->vert.faces[2] = other->faces[(v + 2) % 6];
+					other = &board[t->tile_x(2) + t->tile_y(2) * board_width];
+					t->vertex(2,other->vertices[(v + 1) % 6]);
+					t->face(2,other->faces[(v + 2) % 6]);
 				} else{
 					// the vertex exists only if both the neighbour tiles exists
-					t->vert.vertices[2] = -1; //no vertex, 
-					t->vert.faces[2] = -1; // no face
+					t->vertex(2, -1); //no vertex, 
+					t->vertex(2, -1);// no face
 				}
 			}
 
@@ -593,67 +614,68 @@ bool Model::fill_vertex_face_arrays(
 					continue;
 				}
 				t = &face_array[hex->faces[f]];
-				if(t->is_assigned){ continue; }
-				t->is_assigned = true;
+				if(t->is_assigned()){ continue; }
+				t->assign();
 
 				// assign the attching tiles
-				t->face.tiles[0][0] = col;
-				t->face.tiles[0][1] = row;
+				t->tile_x(0, col);
+				t->tile_y(0, row);
 				// get the tile sharing the current face
 				hex->get_adjacent(f, col, row, &x, &y);
 				temp = (x < 0 || y < 0 || x >= board_width || y >= board_height) ? nullptr : &board[x + y*board_width];
 				if(temp == nullptr || temp->active == false){
 					x = y = -1;
 				}
-				t->face.tiles[1][0] = x;
-				t->face.tiles[1][1] = y;
+				t->tile_x(1, x);
+				t->tile_y(1, y);
 
 				// assign the vertices 
-				t->face.vertices[0] = hex->vertices[f];
-				t->face.vertices[1] = hex->vertices[(f + 1) % 6];
+				t->vertex(0, hex->vertices[f]);
+				t->vertex(1, hex->vertices[(f + 1) % 6]);
 
 
 				// we want the leftmost hextile to be in tiles[0]				
 				int vpos = f;
-				if(f >= Tiles::HEXSOUTHWEST  && t->face.tiles[1][0] != -1){
+				if(f >= Tiles::HEXSOUTHWEST  && t->tile_x(1) != -1){
 					// so we want to swap them
-					int temp_x = t->face.tiles[0][0];
-					int temp_y = t->face.tiles[0][1];
-					t->face.tiles[0][0] = t->face.tiles[1][0];
-					t->face.tiles[0][1] = t->face.tiles[1][1];
-					t->face.tiles[1][0] = temp_x;
-					t->face.tiles[1][1] = temp_y;
+					int temp_x = t->tile_x(0);
+					int temp_y = t->tile_y(0);
+					t->tile_x(0, t->tile_x(1));
+					t->tile_y(0, t->tile_y(1));
+					t->tile_x(1, temp_x);
+					t->tile_y(1, temp_y);
 					vpos = (f + 3) % 6; // directly opposite face on the current tile
 				}
 
 				// assign the attaching faces
-				t->face.faces[0] = hex->faces[(vpos + 1) % 6]; // most clockwise inner face
-				t->face.faces[1] = hex->faces[(vpos + 5) % 6]; // least clockwise inner face
+				t->face(0, hex->faces[(vpos + 1) % 6]); // most clockwise inner face
+				t->face(1, hex->faces[(vpos + 5) % 6]); // least clockwise inner face
 
-				if(t->face.tiles[1][0] == -1){
+				if(t->tile_x(1) == -1){
 					// if no neightbour is attached to the current face, 
 					// let us check other adjacent tiles to see if faces
 					// are attached
-					t->face.faces[2] = t->face.faces[3] = -1; // just set to -1 to begin with
+					t->face(2, -1); // just set to -1 to begin with.
+					t->face(3, -1);
 
 					// check if the most clockwise neighbour exists
 					hex->get_adjacent((vpos + 1) % 6, col, row, &x, &y);
 					if(x >= 0 && y >= 0 && x < board_width && y < board_height){
 						other = &board[x + y*board_width];
-						t->face.faces[2] = other->faces[(vpos + 5) % 6];
+						t->face(2, other->faces[(vpos + 5) % 6]);
 					}
 
 					// check if the least clockwise neighbour exists
 					hex->get_adjacent((vpos + 5) % 6, col, row, &x, &y);
 					if(x >= 0 && y >= 0 && x < board_width && y < board_height){
 						other = &board[x + y*board_width];
-						t->face.faces[3] = other->faces[(vpos + 1) % 6];
+						t->face(3, other->faces[(vpos + 1) % 6]);
 					}
 				} else {
 					// get the outer faces from the adjacent tile
-					other = &board[t->face.tiles[1][0] + t->face.tiles[1][1] * board_width];
-					t->face.faces[2] = other->faces[(vpos + 2) % 6];
-					t->face.faces[3] = other->faces[(vpos + 4) % 6];
+					other = &board[t->tile_x(1)  + t->tile_y(1) * board_width];
+					t->face(2, other->faces[(vpos + 2) % 6]);
+					t->face(3, other->faces[(vpos + 4) % 6]);
 				}
 			}
 
@@ -672,11 +694,11 @@ bool Model::fill_vertex_face_arrays(
 		vertex_face_t* t = &(*it);
 		logger.log(Logger::DEBUG, "vertex[%d] type=%d player=%d faces {%d,%d,%d} vertices {%d,%d,%d} tiles{ (%d,%d), (%d,%d), (%d,%d)}",
 			count, t->type, t->player,
-			t->vert.faces[0], t->vert.faces[1], t->vert.faces[2],
-			t->vert.vertices[0], t->vert.vertices[1], t->vert.vertices[2],
-			t->vert.tiles[0][0], t->vert.tiles[0][1],
-			t->vert.tiles[1][0], t->vert.tiles[1][1],
-			t->vert.tiles[2][0], t->vert.tiles[2][1]
+			t->face(0), t->face(1), t->face(2),
+			t->vertex(0), t->vertex(1), t->vertex(2),
+			t->tile_x(0), t->tile_y(0),
+			t->tile_x(1), t->tile_y(1),
+			t->tile_x(2), t->tile_y(2)
 			);
 		count++;
 
@@ -688,10 +710,10 @@ bool Model::fill_vertex_face_arrays(
 		vertex_face_t* t = &(*it);
 		logger.log(Logger::DEBUG, "face[%d] type=%d player=%d faces {%d,%d,%d,%d} vertices {%d,%d} tiles{ (%d,%d), (%d,%d)}",
 			count, t->type, t->player,
-			t->face.faces[0], t->face.faces[1], t->face.faces[2], t->face.faces[3],
-			t->face.vertices[0], t->face.vertices[1],
-			t->face.tiles[0][0], t->face.tiles[0][1],
-			t->face.tiles[1][0], t->face.tiles[1][1]
+			t->face(0), t->face(1), t->face(2), t->face(3),
+			t->vertex(0), t->vertex(1),
+			t->tile_x(0), t->tile_y(0),
+			t->tile_x(1), t->tile_y(1)
 			);
 		count++;
 	}
@@ -913,9 +935,10 @@ bool Model::build_city(int player, int pos){
 	_players[player].building_cap[building_t::CITY]--;
 	_players[player].building_cap[building_t::SETTLEMENT]++;
 	//	m_players[player].buildings.push_back(pos);	 // don't need to push back because it is already there.
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, _vertex_array[pos].vert.tiles[0][0], _vertex_array[pos].vert.tiles[0][1], pos);
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, _vertex_array[pos].tile_x(0),_vertex_array[pos].tile_y(0), pos);
 	return true;
 }
+
 bool Model::build_settlement(int player, int pos){
 	if(pos < 0 || pos >= (int)_vertex_array.size() ||
 		player < 0 || player >= _num_players)
@@ -1037,7 +1060,7 @@ bool Model::_can_build_road(int player, int pos){
 	// check the two faces beside to make sure one is a land tile
 	water_tiled = true;
 	for(int i = 0; i < 2; ++i){
-		Tiles* t = get_tile(face->face.tiles[i][0], face->face.tiles[i][1]);
+		Tiles* t = get_tile(face->tile_x(i), face->tile_y(i));
 		if(t == nullptr){ continue; }
 		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
 	}
@@ -1047,12 +1070,12 @@ bool Model::_can_build_road(int player, int pos){
 	vertex_face_t* edge = nullptr;
 	road_exists = false;
 	for(int i = 0; i < 4; ++i){
-		if(face->face.faces[i] == -1){ continue; }
-		if(face->face.faces[i] < 0 || face->face.faces[i] >= (int)_face_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d index out of range.", face->face.faces[i], (int)_face_array.size());
+		if(face->face(i) == -1){ continue; }
+		if(face->face(i) < 0 || face->face(i) >= (int)_face_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d index out of range.", face->face(i), (int)_face_array.size());
 			continue;
 		}
-		edge = &_face_array[face->face.faces[i]];
+		edge = &_face_array[face->face(i)];
 
 		if(edge->type == vertex_face_t::ROAD && edge->player == player){
 			road_exists = true;
@@ -1065,12 +1088,12 @@ bool Model::_can_build_road(int player, int pos){
 	vertex_face_t* vert = nullptr;
 	blocked = false;
 	for(int i = 0; i < 2; ++i){
-		if(face->face.vertices[i] == -1){ continue; }
-		if(face->face.vertices[i] < 0 || face->face.vertices[i] >= (int)_vertex_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d vertex index out of range", face->face.vertices[i], (int)_vertex_array.size());
+		if(face->vertex(i) == -1){ continue; }
+		if(face->vertex(i) < 0 || face->vertex(i) >= (int)_vertex_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d vertex index out of range", face->vertex(i), (int)_vertex_array.size());
 			continue;
 		}
-		vert = &_vertex_array[face->face.vertices[i]];
+		vert = &_vertex_array[face->vertex(i)];
 
 		if((vert->type == vertex_face_t::CITY || vert->type == vertex_face_t::SETTLEMENT)
 			&& vert->player != player)
@@ -1094,15 +1117,15 @@ bool Model::_can_build_road(int player, int pos){
 			// for the two attached vertices for this face
 			// check to see if there is a vertex in which there are no roads attached to.
 			for(int vindex = 0; vindex < 2; vindex++){
-				vertex_face_t* v1 = get_vertex(face->face.vertices[vindex]);
+				vertex_face_t* v1 = get_vertex(face->vertex(vindex));
 				if(v1 == nullptr){ continue; }
 
 				if(v1->type == vertex_face_t::SETTLEMENT && v1->player == player){
 					bool is_okay = true;
 					// check that this settlment doesn't already have an attached road
 					for(int i = 0; i < 3; ++i){
-						if(get_face(v1->vert.faces[i]) == nullptr){ continue; }
-						if(get_face(v1->vert.faces[i])->type != vertex_face_t::NONE){
+						if(get_face(v1->face(i)) == nullptr){ continue; }
+						if(get_face(v1->face(i))->type != vertex_face_t::NONE){
 							// there is already an attached road.
 							is_okay = false;
 							break;
@@ -1148,7 +1171,7 @@ bool Model::_can_build_settlement(int player, int v){
 	// check the three tiles beside to make sure one is a land tile
 	water_tiled = true;
 	for(int i = 0; i < 3; ++i){
-		Tiles* t = get_tile(vertex->vert.tiles[i][0], vertex->vert.tiles[i][1]);
+		Tiles* t = get_tile(vertex->tile_x(i), vertex->tile_y(i));
 		if(t == nullptr){ continue; }
 		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
 	}
@@ -1158,12 +1181,12 @@ bool Model::_can_build_settlement(int player, int v){
 	vertex_face_t* point = nullptr;
 	has_space = true;
 	for(int i = 0; i < 3; ++i){
-		if(vertex->vert.vertices[i] == -1){ continue; }
-		if(vertex->vert.vertices[i] < 0 || vertex->vert.vertices[i] >= (int)_vertex_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d vertex index out of range", vertex->vert.vertices[i], (int)_vertex_array.size());
+		if(vertex->vertex(i) == -1){ continue; }
+		if(vertex->vertex(i) < 0 || vertex->vertex(i) >= (int)_vertex_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d vertex index out of range", vertex->vertex(i), (int)_vertex_array.size());
 			continue;
 		}
-		point = &_vertex_array[vertex->vert.vertices[i]];
+		point = &_vertex_array[vertex->vertex(i)];
 		if(point->type == vertex_face_t::CITY ||
 			point->type == vertex_face_t::SETTLEMENT)
 		{
@@ -1176,13 +1199,13 @@ bool Model::_can_build_settlement(int player, int v){
 	vertex_face_t* edge = nullptr;
 	is_connected = false;
 	for(int i = 0; i < 3; ++i){
-		if(vertex->vert.faces[i] == -1){ continue; }
-		if(vertex->vert.faces[i] < 0 || vertex->vert.faces[i] >= (int)_face_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d face index out of range", vertex->vert.faces[i], (int)_face_array.size());
+		if(vertex->face(i) == -1){ continue; }
+		if(vertex->face(i) < 0 || vertex->face(i) >= (int)_face_array.size()){
+			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d face index out of range", vertex->face(i), (int)_face_array.size());
 			continue;
 		}
 
-		edge = &_face_array[vertex->face.faces[i]];
+		edge = &_face_array[vertex->face(i)];
 		if(edge->type == vertex_face_t::ROAD && edge->player == player){
 			is_connected = true;
 			break;
@@ -1216,10 +1239,10 @@ Tiles* Model::_find_tile_from_vertex(int vertex, int* col, int* row)
 		return nullptr;
 	}
 	vertex_face_t* v = &_vertex_array[vertex];
-	if(v->vert.tiles[0][0] == -1){ return nullptr; }
-	if(col != nullptr){ *col = v->vert.tiles[0][0]; }
-	if(row != nullptr){ *row = v->vert.tiles[0][1]; }
-	return &_board[v->vert.tiles[0][0] + v->vert.tiles[0][1] * _board_width];
+	if(v->tile_x(0) == -1){ return nullptr; }
+	if(col != nullptr){ *col = v->tile_x(0); }
+	if(row != nullptr){ *row = v->tile_y(0); }
+	return &_board[v->tile_x(0) + v->tile_y(0) * _board_width];
 }
 
 /*
@@ -1235,10 +1258,10 @@ Tiles* Model::_find_tile_from_face(int face, int* col, int* row)
 		return nullptr;
 	}
 	vertex_face_t* f = &_face_array[face];
-	if(f->face.tiles[0][0] == -1){ return nullptr; }
-	if(col != nullptr){ *col = f->face.tiles[0][0]; }
-	if(row != nullptr){ *row = f->face.tiles[0][1]; }
-	return &_board[f->face.tiles[0][0] + f->face.tiles[0][1] * _board_width];
+	if(f->tile_x(0) == -1){ return nullptr; }
+	if(col != nullptr){ *col = f->tile_x(0); }
+	if(row != nullptr){ *row = f->tile_y(0); }
+	return &_board[f->tile_x(0) + f->tile_y(0)* _board_width];
 }
 
 
@@ -1260,7 +1283,6 @@ int Model::num_possiblities_dice(int sum, int num_dice, int num_sides){
 // -----------------------------------------------------------------
 //				 P U B L I C			 M E T H O D S
 // -----------------------------------------------------------------
-
 bool Model::set_error(Model::model_error_codes_e code){
 	_model_error = code;
 	return true;
