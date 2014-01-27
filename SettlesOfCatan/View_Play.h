@@ -6,6 +6,9 @@
 
 #include "Timer.h"
 #include "IView.h"
+#include "IDialog.h"
+#include "CheckBox.h"
+#include "View_Game.h"
 
 class View_Play : public IView
 {
@@ -18,6 +21,16 @@ public:
 	SDL_Texture* texture;
 	TTF_Font* font_carbon_12;
 	SDL_Color font_carbon_12_colour;
+
+	Collision mouse_intersect;
+	Uint32 button;
+	int mouse_x, mouse_y;
+
+
+	// M Y  S T U F F   S T A R T
+	view_debug_t debug;
+	View_Game_Debug_Dialog* dialog;
+	// M Y   S T U F F  E N D 
 
 	// constructor and destructor
 	View_Play(SDL_Window& win, SDL_Renderer& ren);

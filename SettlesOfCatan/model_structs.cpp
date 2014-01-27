@@ -26,6 +26,7 @@ dev_cards_t::dev_cards_t(){
 	_title = 0;
 	_message = 0;
 	visible = false;
+	player = -1;
 }
 dev_cards_t::~dev_cards_t(){
 	//Logger::getLog("jordan.log").log(Logger::DEBUG, "dev_cards_t destructor");
@@ -37,6 +38,7 @@ void dev_cards_t::init(dev_cards_t::dev_cards_e type){
 	_title = type;
 	_message = type;
 	this->visible = false;
+	this->player = -1;
 }
 
 std::string dev_cards_t::title(){

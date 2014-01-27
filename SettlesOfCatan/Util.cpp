@@ -215,6 +215,7 @@ Uint32 Util::get_userev(const char* ev){
 	std::vector<userev_and_str>::iterator it;
 	for(it = user_evs.begin(); it != user_evs.end(); ++it){
 		if(it->name.compare(ev) == 0){
+			//printf("userev = %d\n", it->ev);
 			return it->ev;
 		} 
 	}
@@ -225,6 +226,7 @@ Uint32 Util::get_userev(const char* ev){
 	type.ev = SDL_RegisterEvents(1);
 	if(type.ev == ((Uint32)-1)){
 		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
+		//printf("error userev");
 		return (Uint32)-1;
 	}	
 	user_evs.push_back(type);

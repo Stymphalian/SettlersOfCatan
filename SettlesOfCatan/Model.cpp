@@ -71,6 +71,7 @@ Model::~Model(){
 
 /*
 Setups the Model such that it can support X num of players.
+@Parameters int num_players -- initialize the model based on the number of players
 Preconditions:
 	The Model must be empty before using init()
 	A call to set_defaults() before using init() is recommended.
@@ -185,6 +186,7 @@ void Model::init(int num_players){
 
 /*
 Determine the board dimensions given that we want to have X number of players.
+@Parameters  int num_players -- the number of players used to establish the game board.
 This function will set
 	_board_width
 	_board_height
@@ -323,9 +325,11 @@ bool Model::fill_board(
 	}
 
 	// Random order for the roll values on each tile
+	// NOTE: #7 is not a valid roll value, so skip it.
 	logger.log(logger.DEBUG, "Model.fill_board() Random ordering of tile roll probability, board_tiles=%d,water_tiles=%d", num_game_tiles, num_water_tiles);
 	while(roll_order_size < (num_game_tiles - num_water_tiles)){
 		for(int i = num_dice; i <= num_dice*num_dice_sides; ++i){
+			if(i == 7){ continue; }
 			if(roll_order_size >= (num_game_tiles - num_water_tiles)){ break; }
 			roll_order[roll_order_size++] = i;
 		}
@@ -633,7 +637,6 @@ bool Model::fill_vertex_face_arrays(
 				t->vertex(0, hex->vertices[f]);
 				t->vertex(1, hex->vertices[(f + 1) % 6]);
 
-
 				// we want the leftmost hextile to be in tiles[0]				
 				int vpos = f;
 				if(f >= Tiles::HEXSOUTHWEST  && t->tile_x(1) != -1){
@@ -646,10 +649,13 @@ bool Model::fill_vertex_face_arrays(
 					t->tile_y(1, temp_y);
 					vpos = (f + 3) % 6; // directly opposite face on the current tile
 				}
+				// vpos is the direction of the face in the left-most tile.
 
 				// assign the attaching faces
-				t->face(0, hex->faces[(vpos + 1) % 6]); // most clockwise inner face
-				t->face(1, hex->faces[(vpos + 5) % 6]); // least clockwise inner face
+				// obtain the left tile
+				Tiles* left_tile = &board[t->tile_x(0) + t->tile_y(0)*_board_width];
+				t->face(0, left_tile->faces[(vpos + 1) % 6]); // most clockwise inner face
+				t->face(1, left_tile->faces[(vpos + 5) % 6]); // least clockwise inner face
 
 				if(t->tile_x(1) == -1){
 					// if no neightbour is attached to the current face, 
@@ -659,14 +665,14 @@ bool Model::fill_vertex_face_arrays(
 					t->face(3, -1);
 
 					// check if the most clockwise neighbour exists
-					hex->get_adjacent((vpos + 1) % 6, col, row, &x, &y);
+					left_tile->get_adjacent((vpos + 1) % 6, col, row, &x, &y);
 					if(x >= 0 && y >= 0 && x < board_width && y < board_height){
 						other = &board[x + y*board_width];
 						t->face(2, other->faces[(vpos + 5) % 6]);
 					}
 
 					// check if the least clockwise neighbour exists
-					hex->get_adjacent((vpos + 5) % 6, col, row, &x, &y);
+					left_tile->get_adjacent((vpos + 5) % 6, col, row, &x, &y);
 					if(x >= 0 && y >= 0 && x < board_width && y < board_height){
 						other = &board[x + y*board_width];
 						t->face(3, other->faces[(vpos + 1) % 6]);
@@ -892,20 +898,37 @@ bool Model::fill_deck(std::vector<dev_cards_t>& deck,int* default_cards, int siz
 	return true;
 }
 
-dev_cards_t Model::draw_dev_card(){
+/*
+@Return: returns nullptr if there are no more cards to draw from the deck.
+*/
+const dev_cards_t* Model::draw_dev_card(){
 	if(_deck_pos >= (int)_dev_deck.size()){
 		set_error(Model::MODEL_ERROR_BANK_DEV_CARD);
-		dev_cards_t rs;
-		return rs;
+		return nullptr;
 	} else{
-		dev_cards_t rs = _dev_deck[_deck_pos];
+		dev_cards_t* rs = &_dev_deck[_deck_pos];
 		_deck_pos++;
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::draw_dev_card %d of %d. title=%s,message=%s",
-			_deck_pos, _dev_deck.size(), rs.title().c_str(), rs.message().c_str());
-		return rs;
+			_deck_pos, _dev_deck.size(), rs->title().c_str(), rs->message().c_str());
+		return (const dev_cards_t*) rs;
 	}
 }
 
+/*
+Build a city on the game board.
+Only build a city if it will result in a valid model.
+Preconditions:
+	player is within range.
+	position is a valid vertex key.
+	vertex is a setllement and owned by the player.
+	The player has enough buildings to place the city.
+Effects:
+	Modifies the player object ( building capacity)
+
+@Parameter int player -- the player to build the city for
+@Parameter int pos -- the vertex position to place the city.
+@Return: returns true if the city was built, false otherwise.
+*/
 bool Model::build_city(int player, int pos){
 	if(pos < 0 || pos >= (int)_vertex_array.size() ||
 		player < 0 || player >= _num_players)
@@ -922,6 +945,8 @@ bool Model::build_city(int player, int pos){
 		set_error(Model::MODEL_ERROR_PLACE_CITY);
 		return false;
 	}
+
+	// TODO: Remove once we have a good interface with players and model.
 	if(_players[player].building_cap[building_t::CITY] <= 0){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d Not enough buildings\n", player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
@@ -934,11 +959,26 @@ bool Model::build_city(int player, int pos){
 	// TODO: Remove this.
 	_players[player].building_cap[building_t::CITY]--;
 	_players[player].building_cap[building_t::SETTLEMENT]++;
-	//	m_players[player].buildings.push_back(pos);	 // don't need to push back because it is already there.
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, _vertex_array[pos].tile_x(0),_vertex_array[pos].tile_y(0), pos);
 	return true;
 }
 
+
+/*
+Build a setllement on the game board.
+Only build a settlement if it will result in a valid model.
+Preconditions:
+	player is within range.
+	position is a valid vertex key.
+	vertex does not alreay have a building set.
+	The player has enough buildings to place the settlement.
+Effects:
+	Modifies the player object ( building capacity)
+
+@Parameter int player -- the player to build the setllement for
+@Parameter int pos -- the vertex position to place the setllement.
+@Return: returns true if the setllement was built, false otherwise.
+*/
 bool Model::build_settlement(int player, int pos){
 	if(pos < 0 || pos >= (int)_vertex_array.size() ||
 		player < 0 || player >= _num_players)
@@ -954,6 +994,8 @@ bool Model::build_settlement(int player, int pos){
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
+
+	// TODO : Remove this once we have a good interface.
 	if(_players[player].building_cap[building_t::SETTLEMENT] <= 0){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Player %d does not have enough buildings", player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
@@ -984,7 +1026,20 @@ bool Model::build_settlement(int player, int pos){
 	return false;
 }
 
+/*
+Build a road only it will result in a valid model.
+Preconditions:
+	player is within range.
+	positions is a valid face key.
+	face is not already set.
+	The player has enough buildings to place the road
+Effects:
+	Modifies the player object ( building capacity)
 
+@Parameter int player -- the player to build the road for
+@Parameter int pos -- the vertex position to place the road.
+@Return: returns true if the road was built, false otherwise.
+*/
 bool Model::build_road(int player, int pos){
 	if(pos < 0 || pos >= (int)_face_array.size() ||
 		player <0 || player >= _num_players)
@@ -999,6 +1054,7 @@ bool Model::build_road(int player, int pos){
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
 		return false;
 	}
+	// TODO: Remove this once an interface between players and model is set.
 	if(_players[player].building_cap[building_t::ROAD] <= 0){
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Can't build road. Player %d doesn't have enough builidings", player);
@@ -1030,20 +1086,35 @@ bool Model::build_road(int player, int pos){
 }
 
 bool Model::set_vertex(int player, int vertex_key, int type){
-	if(player < 0 || player >= _num_players){ return false; }
+	if(player < -1 || player >= _num_players){ return false; }
 	if(vertex_key < 0 || vertex_key >= (int) _vertex_array.size()){ return false; }
 	_vertex_array[vertex_key].type = (vertex_face_t::object_e) type;
 	_vertex_array[vertex_key].player = player;
 	return true;
 }
 bool Model::set_face(int player, int face_key, int type){
-	if(player < 0 || player >= _num_players){ return false; }
+	if(player < -1 || player >= _num_players){ return false; }
 	if(face_key < 0 || face_key >= (int)_face_array.size()){ return false; }
 	_face_array[face_key].type = (vertex_face_t::object_e) type;
 	_face_array[face_key].player = player;
 	return true;
 }
 
+/*
+Check if you can build a road.
+check to make sure that there is a road connecting to this placed road.
+Check that the road is not blocked by another player's city.
+Check that the road is not placed on a water tile face.
+
+Note:
+	There are special conditions if it is the player's first two roads.
+	The road has the additonal condition in that it must be placed leading
+	out of a settlement.
+
+@Parameter int player -- the player to see if a road can be placed for.
+@Parameter int pos - the face key to place the road.
+@Return true if it is possible to build the road. false otherwise
+*/
 bool Model::_can_build_road(int player, int pos){
 	if(player < 0 || player >= _num_players){ return false; }
 	if(pos < 0 || pos >= (int)_face_array.size()){
@@ -1056,6 +1127,7 @@ bool Model::_can_build_road(int player, int pos){
 	bool road_exists;
 	bool blocked;
 	bool water_tiled;
+	bool special_condition;
 
 	// check the two faces beside to make sure one is a land tile
 	water_tiled = true;
@@ -1064,7 +1136,6 @@ bool Model::_can_build_road(int player, int pos){
 		if(t == nullptr){ continue; }
 		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
 	}
-
 
 	// check every face for a road that belong to the player
 	vertex_face_t* edge = nullptr;
@@ -1108,7 +1179,7 @@ bool Model::_can_build_road(int player, int pos){
 	// This means that there doesn't 
 	// 1) need to be an existing linked road.
 	// 2) And that one of the attached vertices must be a player owned settlment.
-	bool special_condition = true;
+	special_condition = true;
 	if((int)get_player(player)->roads.size() < 2){
 		do{
 			road_exists = true;
@@ -1146,6 +1217,9 @@ bool Model::_can_build_road(int player, int pos){
 
 	return (road_exists && !blocked && special_condition && !water_tiled);
 }
+
+
+
 bool Model::_can_build_city(int player, int v){
 	if(player < 0 || player >= _num_players){ return false; }
 	if(v < 0 || v >= (int)_vertex_array.size()){
@@ -1156,6 +1230,21 @@ bool Model::_can_build_city(int player, int v){
 	return (vertex->type == vertex_face_t::SETTLEMENT && vertex->player == player);
 }
 
+
+/*
+Check if you can build a settlement
+check to make sure that there is a road connecting to this vertex.
+Check that there is a space ( vertex ) between each settlement.
+Check that the road is not placed on a water tile vertex.
+
+Note:
+There are special conditions if it is the player's first two settlements.
+The first  two settlments do not need a connecting road.
+
+@Parameter int player -- the player to see if a settlement can be placed for.
+@Parameter int pos - the vertex key to place the settlement.
+@Return true if it is possible to build the settlement. false otherwise
+*/
 bool Model::_can_build_settlement(int player, int v){
 	if(player <0 || player >= _num_players){ return false; }
 	if(v < 0 || v >= (int)_vertex_array.size()){
@@ -1175,7 +1264,6 @@ bool Model::_can_build_settlement(int player, int v){
 		if(t == nullptr){ continue; }
 		if(!t->is_water_tile(t->type)){ water_tiled = false; break; }
 	}
-
 
 	// check every vertex for for an existing settlement/city 
 	vertex_face_t* point = nullptr;
@@ -1314,12 +1402,20 @@ vertex_face_t* Model::get_face(int num){
 	return &_face_array[num];
 }
 
-std::vector<vertex_face_t>& Model::get_vertex_array(){
-	return _vertex_array;
+
+std::vector<vertex_face_t>::iterator Model::get_vertices_begin(){
+	return _vertex_array.begin();
 }
-std::vector<vertex_face_t>& Model::get_face_array(){
-	return _face_array;
+std::vector<vertex_face_t>::iterator Model::get_vertices_end(){
+	return _vertex_array.end();
 }
+std::vector<vertex_face_t>::iterator Model::get_faces_begin(){
+	return _face_array.begin();
+}
+std::vector<vertex_face_t>::iterator Model::get_faces_end(){
+	return _face_array.end();
+}
+
 
 /*
 @Paramter int col -- The column in which our target tile exists
@@ -1357,9 +1453,7 @@ Tiles* Model::get_tile_from_vertex(int vertex, int* c, int* r){
 @Return: A point to a dev_cards_t object.
 */
 const dev_cards_t* Model::get_dev_card(){	
-	const dev_cards_t* rs = (const dev_cards_t*) &_dev_deck[_deck_pos++];
-	draw_dev_card();
-	return rs;
+	return draw_dev_card();
 }
 
 /*
@@ -1390,6 +1484,7 @@ int Model::get_num_dice(){ return _num_dice; }
 int Model::get_num_dice_sides(){ return _num_dice_sides; }
 int Model::get_current_player(){ return _current_player; }
 int Model::get_num_players(){ return _num_players; }
+resource_t const* Model::get_bank(){ return (resource_t const*)&_bank; }
 bool Model::set_current_player(int player){
 	if(player < -1 || player >= _num_players){ return false; }
 	_current_player = player;
@@ -1414,6 +1509,7 @@ Removes the thief from the board.
 @Return return true on success. False on any kind of failure.
 */
 bool Model::reset(){
+	logger.log(Logger::DEBUG, "Model::reset()");
 	// The thief should not be on the board
 	_thief_pos_x = -1;
 	_thief_pos_y = -1;
@@ -1453,11 +1549,32 @@ bool Model::reset(){
 
 	// reset the dev_deck to be a full deck
 	_deck_pos = 0;
+	for(int i = 0; i < (int)_dev_deck.size(); ++i){
+		_dev_deck[i].player = -1;
+		_dev_deck[i].visible = false;
+	}
+
+	// Reset Player DATA
+	// TODO : Rework when we have a clear player-model interface.
+	for(int i = 0; i < _num_players; ++i){
+		_players[i].hand_size = 0;
+		_players[i].dev_cards.clear();
+		_players[i].buildings.clear();
+		_players[i].roads.clear();
+		_players[i].num_soldiers = 0;
+		_players[i].resources.zero_out();
+		
+		// reset the number of buildings a player can place.
+		for(int j = 0; j < building_t::NUM_OF_BUILDINGS; ++j){
+			_players[i].building_cap[j] = _config.buildings_cap[j];
+		}
+	}
 
 	// reset the modelerror code
 	_model_error = Model::MODEL_ERROR_NONE;	
 
-	// How do I handle the state information held by players?
+	
+
 	return true;
 }
 
@@ -1522,6 +1639,23 @@ builds a building in the appropriate positions
 @Return: returns true if the building was successfully built.
 */
 bool Model::build_building(building_t::buildings building, int pos, int player){
+	// check if we have enough resources to pay for the building.
+	if(get_player(player) == nullptr){ return false; }
+	if(get_player(player)->buildings.size() >= 2 &&
+		get_player(player)->roads.size() >= 2
+		)
+	{		
+		resource_t price = get_building_cost(building);
+		for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+			// the player doesn't have enough resources to pay for the item.
+			if(get_player(player)->resources.res[i] < price.res[i]){
+				set_error(Model::MODEL_ERROR_RESOURCES);
+				return false;
+			}
+		}
+	}
+
+	// Build whatever building we need to build.
 	bool rs = false;
 	switch(building) {
 	case(building_t::CITY) : rs = build_city(player, pos); break;
@@ -1529,6 +1663,7 @@ bool Model::build_building(building_t::buildings building, int pos, int player){
 	case(building_t::ROAD) : rs = build_road(player, pos); break;
 	}
 
+	
 	if(rs == true){
 		// TODO: Remove this logic, and place in a player-to-model interface.
 		// don't need to pay if you are placing the first couple of buildings.
@@ -1590,7 +1725,7 @@ int Model::num_victory_points_for_player(int player){
 
 	// count the number of victory cards.
 	for(int i = 0; i < (int)p.dev_cards.size(); ++i){
-		if(p.dev_cards[i].visible == false || p.dev_cards[i].type == dev_cards_t::VICTORY){
+		if(p.dev_cards[i]->visible == false || p.dev_cards[i]->type == dev_cards_t::VICTORY){
 			continue;
 		}
 		points++;
@@ -1613,17 +1748,18 @@ int Model::num_victory_points_for_player(int player){
 bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 	if(!give || !take){ return false; }
 	if(player < 0 || player >= _num_players){ return false; }
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange player=%d give=%d,%d,%d,%d,%d take=%d,%d,%d,%d,%d",
+	/*Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange player=%d give=%d,%d,%d,%d,%d take=%d,%d,%d,%d,%d",
 		player,
 		give->res[0], give->res[1], give->res[2], give->res[3], give->res[4],
 		take->res[0], take->res[1], take->res[2], take->res[3], take->res[4]
 		);
+		*/
 
 	resource_t player_copy = _players[player].resources;
 	resource_t bank_copy = _bank;
 	bool good_flag = true;;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange old_bank=%d,%d,%d,%d,%d",
-		_bank.res[0], _bank.res[1], _bank.res[2], _bank.res[3], _bank.res[4]);
+	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange old_bank=%d,%d,%d,%d,%d",
+//		_bank.res[0], _bank.res[1], _bank.res[2], _bank.res[3], _bank.res[4]);
 
 	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
 		if(
@@ -1649,19 +1785,19 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 		player_copy.res[i] += take->res[i];
 	}
 	if(good_flag == false){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange failed");
+		//Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange failed");
 		return false;
 	}	
 
 	// perform the transaction
 	_players[player].resources = player_copy;
 	_bank = bank_copy;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange new_bank=%d,%d,%d,%d,%d",
+	/*Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange new_bank=%d,%d,%d,%d,%d",
 		_bank.res[0],
 		_bank.res[1],
 		_bank.res[2],
 		_bank.res[3],
-		_bank.res[4]);
+		_bank.res[4]);*/
 	return true;
 }
 
@@ -1676,7 +1812,11 @@ void Model::give_resources_from_roll(int roll){
 	for(int row = 0; row < _board_height; ++row){
 		for(int col = 0; col < _board_width; ++col){
 			// do not give resources if the tile contains a thief
-			if(row == _thief_pos_y && col == _thief_pos_x){ continue; }
+			if(row == _thief_pos_y && col == _thief_pos_x){
+				logger.log(Logger::DEBUG, "Model::give_resources_from_roll(roll=%d) Thief tile reached col=%d,row=%d",
+					roll, _thief_pos_x,_thief_pos_y);
+				continue;
+			}
 
 			hex = &_board[col + row*_board_width];
 			if(hex->active == 0){ continue; }
@@ -1685,7 +1825,8 @@ void Model::give_resources_from_roll(int roll){
 			// check all 6 vertices for settlements/cities owned by players
 			for(int i = 0; i < 6; ++i){
 				take.zero_out();
-				if(get_vertex(hex->vertices[i]) == nullptr){ continue; }
+				//if(get_vertex(hex->vertices[i]) == nullptr){ continue; }
+				if(hex->vertices[i] < 0 || hex->vertices[i] >= (int)_vertex_array.size()){ continue; }
 				if(_vertex_array[hex->vertices[i]].type == vertex_face_t::NONE){ continue; }
 
 				amount = 0;
@@ -1706,9 +1847,13 @@ void Model::give_resources_from_roll(int roll){
 				}
 
 				take.res[res_type] = amount;
-				bank_exchange(_vertex_array[hex->vertices[i]].player, &give, &take);
-				Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::give_resoure_from_roll col=%d,row=%d,type=%d amount=%d,player=%d",
-					col, row, res_type, amount, _vertex_array[hex->vertices[i]].player);
+				if(bank_exchange(_vertex_array[hex->vertices[i]].player, &give, &take)){
+					Logger::getLog("jordan.log").log(
+						Logger::DEBUG, 
+						"Model::give_resource_from_roll col=%d,row=%d,type=%d amount=%d,player=%d",
+						col, row, res_type, amount,
+						_vertex_array[hex->vertices[i]].player);
+				}
 			}
 			// we have now checked all the veritces for this tile
 		}
@@ -1725,7 +1870,7 @@ bool Model::buy_dev_card(int player){
 		return false;
 	}
 
-	dev_cards_t card = draw_dev_card();
+	const dev_cards_t* card = draw_dev_card();
 	_players[player].dev_cards.push_back(card);
 	return true;
 }

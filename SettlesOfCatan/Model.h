@@ -11,12 +11,14 @@ public:
 	enum model_error_codes_e{
 		MODEL_ERROR_NONE =0,
 		MODEL_ERROR_ERROR,
+		MODEL_ERROR_BANK_RESOURCES,
 		MODEL_ERROR_BANK_RESOURCE_BRICK, /* order of the resources here is important, alphabetic*/
 		MODEL_ERROR_BANK_RESOURCE_ORE,
 		MODEL_ERROR_BANK_RESOURCE_SHEEP,
 		MODEL_ERROR_BANK_RESOURCE_WHEAT,
 		MODEL_ERROR_BANK_RESOURCE_WOOD,		
 		MODEL_ERROR_BANK_DEV_CARD,
+		MODEL_ERROR_RESOURCES,
 		MODEL_ERROR_PLAYER_RESOURCE_BRICK, /* order of the resources here is important, alphabetic*/
 		MODEL_ERROR_PLAYER_RESOURCE_ORE,
 		MODEL_ERROR_PLAYER_RESOURCE_SHEEP,
@@ -46,8 +48,10 @@ public:
 	Tiles* get_tile_from_vertex(int vertex, int* c, int* r);	
 	vertex_face_t* get_vertex(int vertex_key);
 	vertex_face_t* get_face(int face_key);
-	std::vector<vertex_face_t>& get_vertex_array();
-	std::vector<vertex_face_t>& get_face_array();
+	std::vector<vertex_face_t>::iterator get_vertices_begin();
+	std::vector<vertex_face_t>::iterator get_vertices_end();
+	std::vector<vertex_face_t>::iterator get_faces_begin();
+	std::vector<vertex_face_t>::iterator get_faces_end();
 	// get members
 	const dev_cards_t* get_dev_card();
 	resource_t get_building_cost(building_t::buildings card);
@@ -65,6 +69,7 @@ public:
 	int get_num_dice_sides();
 	int get_current_player();
 	int get_num_players();
+	resource_t const* get_bank();
  	bool set_current_player(int player);
 	bool set_player_with_largest_army(int player);
 	bool set_player_with_longest_road(int player);
@@ -171,7 +176,7 @@ private:
 		int size
 		);
 	
-	dev_cards_t draw_dev_card();
+	const dev_cards_t* draw_dev_card();
 	bool build_city(int player, int pos);
 	bool build_settlement(int player, int pos);
 	bool build_road(int player, int pos);

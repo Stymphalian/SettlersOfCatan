@@ -145,7 +145,6 @@ void Game::run(){
 					current_view->handle_user_events(e);
 					current_view->update(e); // check for collisions, and update model state
 				}
-
 			} else {		
 				// any uncaught events
 				logger.log(Logger::DEBUG, "Uncaught event %u", e.type);

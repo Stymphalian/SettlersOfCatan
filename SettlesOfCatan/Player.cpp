@@ -41,7 +41,9 @@ void Player::init(std::string name,
 	this->num_soldiers = num_soldiers;
 	for(int i = 0; i < building_t::NUM_OF_BUILDINGS; ++i){
 		this->building_cap[i] = start_building_cap[i];
-	}	
+	}
+	buildings.clear();
+	roads.clear();
 }
 
 int Player::get_hand_size(){

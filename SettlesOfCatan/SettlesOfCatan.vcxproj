@@ -130,8 +130,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Button.cpp" />
+    <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="IDialog.cpp" />
     <ClCompile Include="lizz_lua.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model_structs.cpp" />
@@ -152,9 +154,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.h" />
+    <ClInclude Include="CheckBox.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Graph.h" />
+    <ClInclude Include="IDialog.h" />
     <ClInclude Include="lizz_lua.h" />
     <ClInclude Include="model_structs.h" />
     <ClInclude Include="Logger.h" />

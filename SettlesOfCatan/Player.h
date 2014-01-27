@@ -12,7 +12,7 @@ public:
 	SDL_Color color;
 	int hand_size;
 	resource_t resources;
-	std::vector<dev_cards_t> dev_cards;
+	std::vector<const dev_cards_t*> dev_cards;
 	std::vector<int> buildings; // the vertex number
 	std::vector<int> roads; // the face number
 	int num_soldiers;

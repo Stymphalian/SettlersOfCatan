@@ -12,6 +12,7 @@
 #include "Model.h"
 #include "model_structs.h"
 #include "IView.h"
+#include "IDialog.h"
 
 /*
 Concrete class for the Game View
@@ -128,7 +129,24 @@ public:
 	virtual ~vertex_face_t_intersect(){};
 };
 
-
+class view_debug_t{
+public:
+	int panel_page;	
+	bool board_tiles;
+	bool board_vertices;
+	bool board_faces;		
+	bool selected_pane;
+	bool item_numbering;
+	bool selected_tile_vertices;;
+	bool selected_tile_faces;;
+	bool selected_vertex_vertices;
+	bool selected_vertex_faces;
+	bool selected_vertex_tiles;
+	bool selected_face_vertices;
+	bool selected_face_faces;
+	bool selected_face_tiles;
+	view_debug_t();
+};
 
 class View_Game : public IView{
 public:
@@ -162,9 +180,9 @@ public:
 	state_e state;
 	bool change_state_flag;
 
+	// debug flags
 	bool debug;
-	bool debug_tiles,debug_vertices,debug_faces;
-	int debug_data;
+	view_debug_t _debug;
 	
 	// selected tile
 	Tile_intersect* selected_tile;
@@ -184,6 +202,9 @@ public:
 	int face_hit_w;
 	int face_hit_h;
 	int draw_face;
+	// A debug dialog
+	IDialog* dialog_in_focus;
+	View_Game_Debug_Dialog* debug_dialog;
 	
 	//constructor and destructor
 	View_Game(Model& model, SDL_Window& win, SDL_Renderer& ren);
@@ -199,8 +220,12 @@ public:
 	void handle_user_events(SDL_Event& ev);
 	void update(SDL_Event& ev);
 	void render();	
+	void open_debug_dialog();
+	void close_debug_dialog();
+	void open_trade_dialog();
+	void close_trade_dialog();
 private:
-	// Variables                resources
+	// Variables  and resources
 	SDL_Texture* hextile_spritesheet;	
 	SDL_Surface* hextile_surface;
 	SDL_Surface* hextile_face_surface;
@@ -226,7 +251,6 @@ private:
 	int sprite_large[2]; // w and h of large sprites
 	int vertex_pos[6][2];
 	int face_pos[6][2];
-	
 		// buttons
 	Button exit_button;
 	Button end_turn_button;
@@ -252,6 +276,9 @@ private:
 	void render_model_face_vertex_tiles(pane_t& pane);
 	void render_model_selected(pane_t& pane);
 	void render_model_debug(pane_t& pane);	
+	void render_connecting_vertices(pane_t& pane, vertex_face_t* origin, int num);
+	void render_connecting_faces(pane_t& pane,vertex_face_t* origin, int num);
+	void render_connecting_tiles(pane_t& pane, vertex_face_t* origin, int num);
 	void render_buttons(pane_t& pane);
 	void render_bottom_text(pane_t& pane);
 	void render_top_pane(pane_t& pane);
@@ -265,9 +292,6 @@ private:
 	int getHexFaceDir(int px, int py); // returns -1 for no selection.
 	bool getTilePosFromDirection(int dir, int tilex, int tiley, int* new_tile_x, int* new_tile_y);	
 	void get_mid_point_from_face(int face, int* x, int* y);
-	//bool rect_intersect(SDL_Rect* A, SDL_Rect* B, SDL_Rect* result);
-	//bool rect_intersect(int ax, int ay, int aw, int ah,int bx, int by, int bw, int bh,int* rs_x, int* rs_y, int* rs_w, int* rs_h);
-
 
 	// handling mouse input for the different states
 	void handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s);

@@ -7,6 +7,7 @@
 
 #include "Model.h"
 #include "View_Game.h"
+#include "IDialog.h"
 
 Button::Button(){ hit_flag = false; }
 Button::Button(const char* text, int x, int y, int z, int w, int h){
@@ -52,7 +53,6 @@ void Button::set_pad(int pad_x, int pad_y){
 	this->pad_y = pad_y;
 }
 
-
 void exit_button_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "exit_button_action");
 	SDL_Event ev;
@@ -74,11 +74,13 @@ void add_road_action(View_Game& view, Model& model){
 }
 void roll_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "roll_action");
-	model.roll(2,6);
+	model.roll(2, 6);
+	model.give_resources_from_roll(model.get_roll_value());
 }
 void enable_debug_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "enabe_debug_action");
-	view.debug = (view.debug) ? false : true;
+	//view.debug = (view.debug) ? false : true;
+	view.open_debug_dialog();
 }
 void add_settlement_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "add_settlement_action");
@@ -102,7 +104,8 @@ void trade_action(View_Game& view, Model& model){
 }
 void empty_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "empty_action");
-	view.debug_data = (view.debug_data + 1) % 3;
+	view._debug.panel_page = (view._debug.panel_page + 1) % 3;
+	model.reset();
 }
 
 /*

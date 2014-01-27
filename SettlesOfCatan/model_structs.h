@@ -56,11 +56,12 @@ public:
 	static std::string default_titles[NUM_OF_DEV_CARDS];
 
 	//variables
-	dev_cards_e type;
+	dev_cards_e type;	
 	int _title;
 	int _message;
 	bool visible;
-
+	int player;
+	
 	// constructor and destructor
 	dev_cards_t();
 	virtual ~dev_cards_t();

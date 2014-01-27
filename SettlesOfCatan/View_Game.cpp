@@ -8,17 +8,22 @@
 #include "IView.h"
 #include "View_Game.h"
 #include "Player.h"
+#include "Button.h"
+#include "IDialog.h"
+#include "CheckBox.h"
 #include "lizz_lua.h"
 
 std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_codes_e] = {
 	"",
 	"Error",
+	"Not enough bank resources.",
 	"Not enough bank resources.Not enough brick.",
 	"Not enough bank resources.Not enough ore.",
 	"Not enough bank resources.Not enough sheep",
 	"Not enough bank resources.Not enough wheat.",
 	"Not enough bank resources.Not enough wood",
 	"Not enough bank resources.No more dev cards",
+	"Not enough resources.",
 	"Not enough resources.Not enough brick.",
 	"Not enough resources.Not enough ore.",
 	"Not enough resources.Not enough sheep.",
@@ -34,6 +39,10 @@ std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_code
 	"Invalid face.",
 	"Invalid vertex."
 };
+
+view_debug_t::view_debug_t(){
+	memset(this, 0, sizeof(view_debug_t));
+}
 
 View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 : model(_model),IView(win,ren)
@@ -58,10 +67,6 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->change_state_flag = false;
 	this->selected_pane = nullptr;
 	this->debug = true;
-	this->debug_tiles = false;
-	this->debug_vertices = false;
-	this->debug_faces = false;
-	this->debug_data = 0;
 
 	mouse.buttons = 0;
 	mouse.x = 0;
@@ -83,8 +88,12 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->face_hit_w = UTIL_VERTEX_HITBOX_W;
 	this->face_hit_h = UTIL_VERTEX_HITBOX_H;
 	this->draw_face = false;
+	// no debug dialog to beign with.
+	this->debug_dialog = nullptr;
+	this->dialog_in_focus = nullptr;
 
 	// setup the static panes to be used for this view
+	// top pane
 	int offset_x = 0;
 	int offset_y = 0;
 	int offset_z = 0;
@@ -92,6 +101,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	getPixelPosFromTilePos(0,4, &offset_x, &offset_y);		
 	this->top_pane.init(0, 0,offset_z,disp_w, offset_y);
 
+	// mid pane
 	int board_x, board_y;
 	getPixelPosFromTilePos(model.get_board_width() + 1, model.get_board_height() + 1, &board_x, &board_y);
 	offset_x = 0;
@@ -141,6 +151,7 @@ View_Game::~View_Game(){
 	delete fps_timer;
 	delete[] vertex_covered;
 	delete[] face_covered;
+	delete debug_dialog;
 	tiles.clear();
 	vertices.clear();
 	faces.clear();
@@ -385,10 +396,10 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	// setup all the vertices
 	int pos =0;
 	int tile_x, tile_y;
-	std::vector<vertex_face_t>& vertex_array = model.get_vertex_array();
+	//std::vector<vertex_face_t>& vertex_array = model.get_vertex_array();
 	std::vector<vertex_face_t>::iterator it;
 
-	for(it = vertex_array.begin(); it != vertex_array.end(); ++it){
+	for(it = model.get_vertices_begin(); it != model.get_vertices_end(); ++it){
 		x = y = 0;
 		tile_x = tile_y = 0;
 		vertex_face_t_intersect temp;
@@ -412,8 +423,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	// setup all the face intersects
 	pos = 0;
 	tile_x = tile_y = 0;
-	std::vector<vertex_face_t>& face_array = model.get_face_array();
-	for(it = face_array.begin(); it != face_array.end(); ++it){
+	for(it = model.get_faces_begin(); it != model.get_faces_end(); ++it){
 		x = y = 0;
 		tile_x = tile_y = 0;
 		vertex_face_t_intersect temp;
@@ -575,6 +585,12 @@ void View_Game::on_close(SDL_Event& e){
 }
 
 void View_Game::handle_keyboard_events(SDL_Event& e){
+	// if there is a dialog open, then handle that.
+	if(dialog_in_focus != nullptr  && dialog_in_focus->isvisible()){
+		dialog_in_focus->handle_keyboard_events(e);
+		if(dialog_in_focus->modal){ return; }
+	}
+
 	// handle the key board given the state.
 	handle_keyboard_given_state(e,state);
 
@@ -615,29 +631,18 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 			message_pane.reset();
 		}
 
-		// cycle through the debug data codes
+		// cycle through the debug data pages.
 		if(keyboard[SDL_SCANCODE_2]){
 			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
-			int value = this->debug_data + dir;
-			if(value < 0){ this->debug_data = 3 + value; }
-			else{ this->debug_data = (this->debug_data + dir) % 3; }
+			int value = _debug.panel_page + dir;
+			if(value < 0){ _debug.panel_page = 3 + value; }
+			else{ _debug.panel_page = (_debug.panel_page + dir) % 3; }
 		}
-
 		if(keyboard[SDL_SCANCODE_3]){
 			enable_debug_button.action(*this, model);
 		}
 		if(keyboard[SDL_SCANCODE_4]){
 			set_state(View_Game::START);
-		}
-		if(keyboard[SDL_SCANCODE_5]){
-			debug_tiles = (debug_tiles) ? false : true;
-		}
-
-		if(keyboard[SDL_SCANCODE_6]){
-			debug_vertices = (debug_vertices) ? false : true;
-		}
-		if(keyboard[SDL_SCANCODE_7]){
-			debug_faces = (debug_faces) ? false : true;
 		}
 
 	} else if(e.type == SDL_KEYUP){
@@ -646,6 +651,11 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 }
 
 void View_Game::handle_mouse_events(SDL_Event& e){
+	// handle a dialog
+	if(dialog_in_focus != nullptr  && dialog_in_focus->isvisible()){
+		dialog_in_focus->handle_mouse_events(e);
+		if(dialog_in_focus->modal){ return; }
+	}
 
 	// we must determine what hex tiles/vertex/face we may have intersected with.
 	// TODO: This can be simplified if we place objects into pane objects
@@ -675,10 +685,12 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 
 void View_Game::handle_user_events(SDL_Event& e){
 	if(e.type < SDL_USEREVENT){return;}
-	// check for the timer events
-	if(e.user.type == TimerFactory::get().event_type()){
+		// check for the timer events
+	if(e.user.type == TimerFactory::get().event_type())
+	{
 		// check for the fps timer
-		if((Timer*)e.user.data1 == fps_timer){
+		if((Timer*)e.user.data1 == fps_timer)
+		{
 			draw_flag = true;
 			fps.update();
 
@@ -688,11 +700,21 @@ void View_Game::handle_user_events(SDL_Event& e){
 				model.set_error(Model::MODEL_ERROR_NONE);
 				message_pane.setMessage(nullptr);
 			}
-		} else{
-			// do nothing
+		} 
+		
+	}
+	// check for a closing dialog
+	else if(e.user.type == Util::get().get_userev("close_dialog_event"))
+	{
+		IDialog* d = (IDialog*)e.user.data1;
+		if(d != nullptr && d == debug_dialog){
+			close_debug_dialog();
 		}
-	} else{
-		// do nothing
+
+	}
+	else
+	{
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::handle_user_events Unhandled user event");
 	}
 }
 
@@ -778,6 +800,12 @@ void View_Game::get_mid_point_from_face(int face, int* x, int* y){
 
 // Update all the objects with information from the keyboard and mouse;
 void View_Game::update(SDL_Event& e){
+	// handle a dialog
+	if(dialog_in_focus != nullptr && dialog_in_focus->isvisible()){
+		dialog_in_focus->update(e);
+		if(dialog_in_focus->modal){ return; }
+	}
+
 	update_check_for_collisions();
 	// animations and such	
 }
@@ -927,11 +955,12 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 			r += screen_offset_y;
 			c += screen_offset_x;
 			type = model.get_tile(col, row)->type;
-			roll = model.get_tile(col, row)->type;
+			roll = model.get_tile(col, row)->roll;
 		
 
 			if(type != 0){
 				Util::render_texture(&ren, hextile_spritesheet, c, r, &hextile_clips[type]);
+
 				// only render the roll if the tile is not a water tile or desert tile
 				if(!(model.get_tile(0, 0)->is_water_tile(type) ||type == Tiles::DESERT_TILE) )
 				{
@@ -946,6 +975,14 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 				}
 			}
 		}
+	}
+
+	// render the thief on the board
+	if(model.get_thief_x() != -1  && 
+		model.get_tile(model.get_thief_x(), model.get_thief_y()) != nullptr){
+		Tile_intersect* intersect = &tiles[model.get_thief_x() + model.get_thief_y()*model.get_board_width()];
+		SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
+		Util::render_texture(&ren, hextile_spritesheet, intersect->x + pane.x ,intersect->y + pane.y, &clip);
 	}
 
 }
@@ -1033,7 +1070,7 @@ void View_Game::render_model_selected(pane_t& pane){
 			selected_vertex->h };
 		Util::render_rectangle(&ren, &rect, Util::colour_blue());
 	}
-	// highlight the seleceted face
+	// highlight the selected face
 	if(draw_face && selected_face != nullptr){
 		SDL_Rect rect = { selected_face->x + pane.x,
 			selected_face->y + pane.y,
@@ -1044,35 +1081,191 @@ void View_Game::render_model_selected(pane_t& pane){
 }
 
 void View_Game::render_model_debug(pane_t& pane){
-	if(debug){
-		// draw all the intersect rectangles
-		if( debug_tiles){
-			//break;
-			std::vector<Tile_intersect>::iterator it;
-			for(it = tiles.begin(); it != tiles.end(); ++it){
-				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
-				Util::render_rectangle(&ren, &rect, Util::colour_white());
-			}
-		}
+	if(debug == false){ return; }
 
-		// render all the intersect vertices
-		if(debug_vertices){
-			std::vector< vertex_face_t_intersect>::iterator it;
-			for(it = vertices.begin(); it != vertices.end(); ++it){
-				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
-				Util::render_rectangle(&ren, &rect, Util::colour_white());
+	// draw all the intersect rectangles
+	if( _debug.board_tiles){
+		//break;
+		std::vector<Tile_intersect>::iterator it;
+		for(it = tiles.begin(); it != tiles.end(); ++it){
+			SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
+			Util::render_rectangle(&ren, &rect, Util::colour_white());
+		}
+	}
+
+	// render all the intersect vertices
+	if(_debug.board_vertices){
+		std::vector< vertex_face_t_intersect>::iterator it;
+		for(it = vertices.begin(); it != vertices.end(); ++it){
+			SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
+			Util::render_rectangle(&ren, &rect, Util::colour_white());
+		}
+	}
+	// render all the intersect faces
+	if(_debug.board_faces){
+		std::vector< vertex_face_t_intersect>::iterator it;
+		for(it = faces.begin(); it != faces.end(); ++it){
+			SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
+			Util::render_rectangle(&ren, &rect, Util::colour_white());
+		}
+	}
+
+	// draw a rectangle around the selected pane
+	if(selected_pane != nullptr && _debug.selected_pane){
+		SDL_Rect r = { selected_pane->x, selected_pane->y, selected_pane->w, selected_pane->h };
+		SDL_Color c = { 255, 255, 0, 255 };
+		Util::render_rectangle(&ren, &r, c);
+	}
+
+	// do something with each hex tile.
+	Tiles* hex;
+	for(int row = 0; row < model.get_board_height(); ++row){
+		for(int col = 0; col < model.get_board_width(); ++col){
+			if(model.get_tile(col, row)->active == 0){ continue; }
+			hex = model.get_tile(col, row);
+		}
+	}
+
+	// for the selected tile
+	if(selected_tile != nullptr && model.get_tile(selected_tile->col, selected_tile->row) != nullptr){
+		Tiles* tile = model.get_tile(selected_tile->col, selected_tile->row);
+		SDL_Color dcolour = { 255, 130, 0, 255 };
+		SDL_Rect rect = { 0, 0, 0, 0 };
+
+		if(_debug.selected_tile_vertices){
+			for(int i = 0; i < 6; ++i){
+				if(model.get_vertex(tile->vertices[i]) == nullptr){ continue; }
+				// we need this to determine the x and y position to draw the box
+				vertex_face_t_intersect* intersect = &vertices[tile->vertices[i]];
+				rect = {
+					intersect->x + pane.x,
+					intersect->y + pane.y,
+					intersect->w, intersect->h
+				};
+				Util::render_rectangle(&ren, &rect, dcolour);
+
+				// show the number ordering
+				if(_debug.item_numbering){
+					Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
+				}
 			}
 		}
-		// render all the intersect faces
-		if(debug_faces){
-			std::vector< vertex_face_t_intersect>::iterator it;
-			for(it = faces.begin(); it != faces.end(); ++it){
-				SDL_Rect rect = { it->x + pane.x, it->y + pane.y, it->w, it->h };
-				Util::render_rectangle(&ren, &rect, Util::colour_white());
+		if(_debug.selected_tile_faces){
+			for(int i = 0; i < 6; ++i){
+				if(model.get_face(tile->faces[i]) == nullptr){ continue; }
+				// we need this to determine the x and y position to draw the box
+				vertex_face_t_intersect* intersect = &faces[tile->faces[i]];
+				rect = {
+					intersect->x + pane.x,
+					intersect->y + pane.y,
+					intersect->w, intersect->h
+				};
+				Util::render_rectangle(&ren, &rect, dcolour);
+
+				// show the number ordering
+				if(_debug.item_numbering){
+					Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
+				}
 			}
 		}
 	}
+
+	// for the selected vertex
+	if(selected_vertex != nullptr && model.get_vertex(selected_vertex->num) != nullptr){
+		vertex_face_t* vertex = model.get_vertex(selected_vertex->num);
+		if(_debug.selected_vertex_vertices){
+			render_connecting_vertices(pane, vertex, 3);
+		}
+		if(_debug.selected_vertex_faces){
+			render_connecting_faces(pane, vertex, 3);
+		}
+		if(_debug.selected_vertex_tiles){
+			render_connecting_tiles(pane, vertex, 3);
+		}
+	}
+
+	// for the selected face
+	if(selected_face != nullptr && model.get_face(selected_face->num) != nullptr){
+		vertex_face_t* face = model.get_face(selected_face->num);
+		if(_debug.selected_face_vertices){
+			render_connecting_vertices(pane, face, 2);
+		}
+		if(_debug.selected_face_faces){
+			render_connecting_faces(pane, face, 4);
+		}
+		if(_debug.selected_face_tiles){
+			render_connecting_tiles(pane, face, 2);
+		}
+	}
+
 }
+void View_Game::render_connecting_vertices(pane_t& pane, vertex_face_t* origin, int num)
+{
+	SDL_Color dcolour = { 255, 130, 0, 255 };
+	SDL_Rect rect = { 0, 0, 0, 0 };
+
+	for(int i = 0; i < num; ++i){
+		if(model.get_vertex(origin->vertex(i)) == nullptr){ continue; }
+		// we need this to determine the x and y position to draw the box
+		vertex_face_t_intersect* intersect = &vertices[origin->vertex(i)];
+		rect = {
+			intersect->x + pane.x,
+			intersect->y + pane.y,
+			intersect->w, intersect->h
+		};
+		Util::render_rectangle(&ren, &rect, dcolour);
+
+		// show the number ordering
+		if(_debug.item_numbering){
+			Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
+		}
+	}
+}
+void View_Game::render_connecting_faces(pane_t& pane, vertex_face_t* origin, int num)
+{
+	SDL_Color dcolour = { 255, 130, 0, 255 };
+	SDL_Rect rect = { 0, 0, 0, 0 };
+
+	for(int i = 0; i < num; ++i){
+		if(model.get_vertex(origin->face(i)) == nullptr){ continue; }
+		// we need this to determine the x and y position to draw the box
+		vertex_face_t_intersect* intersect = &faces[origin->face(i)];
+		rect = {
+			intersect->x + pane.x,
+			intersect->y + pane.y,
+			intersect->w, intersect->h
+		};
+		Util::render_rectangle(&ren, &rect, dcolour);
+
+		// show the number ordering
+		if(_debug.item_numbering){
+			Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
+		}
+	}
+}
+void View_Game::render_connecting_tiles(pane_t& pane, vertex_face_t* origin, int num){
+	SDL_Color dcolour = { 255, 130, 0, 255 };
+	SDL_Rect rect = { 0, 0, 0, 0 };
+	// render tiles.
+	for(int i = 0; i < num; ++i){
+		if(model.get_tile(origin->tile_x(i), origin->tile_y(i)) == nullptr){ continue; }
+		Tile_intersect* intersect = &tiles[origin->tile_x(i) + origin->tile_y(i)*model.get_board_width()];
+		rect = {
+			intersect->x + pane.x,
+			intersect->y + pane.y,
+			intersect->w,intersect->h
+		};
+		// Do the rendering for the connected tile.		
+
+		// show the number ordering
+		if(_debug.item_numbering){
+			Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
+		}
+	}
+}
+
+
+
 
 void View_Game::render_buttons(pane_t& pane){
 	std::vector<Button*>::iterator it;
@@ -1133,12 +1326,12 @@ void View_Game::render_bottom_text(pane_t& pane){
 	off_y += line_spacing;
 	int num_dev_cards[dev_cards_t::NUM_OF_DEV_CARDS][2];
 	memset(num_dev_cards,0,dev_cards_t::NUM_OF_DEV_CARDS*sizeof(int)*2);
-	std::vector<dev_cards_t>::iterator it;
+	std::vector<const dev_cards_t*>::iterator it;
 	for(it = player->dev_cards.begin(); it != player->dev_cards.end(); ++it){
-		if(it->visible){
-			num_dev_cards[it->type][0]++;
+		if((*it)->visible){
+			num_dev_cards[(*it)->type][0]++;
 		} else{
-			num_dev_cards[it->type][0]++;
+			num_dev_cards[(*it)->type][0]++;
 		}
 	}	
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
@@ -1174,13 +1367,19 @@ void View_Game::render_top_pane(pane_t& pane){
 		Uint32 buttons;
 		buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y, font_carbon_12_colour,
-			"Mouse(%d,%d,%d)  Debug Data=%d State=%d", mouse_x, mouse_y, buttons, this->debug_data,(int)state);
+			"Mouse(%d,%d,%d)  Debug Page=%d State=%d", mouse_x, mouse_y, buttons, _debug.panel_page,(int)state);
 		// draw the fps 
 		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 18, font_carbon_12_colour,
-			"FPS:%d.%d", fps.fps, total_frame_count);
+			"FPS:%d.%d %d,%d,%d,%d,%d", fps.fps, total_frame_count,
+			model.get_bank()->res[resource_t::WHEAT],
+			model.get_bank()->res[resource_t::SHEEP],
+			model.get_bank()->res[resource_t::BRICK],
+			model.get_bank()->res[resource_t::ORE],
+			model.get_bank()->res[resource_t::WOOD]
+			);
 
 
-		if(selected_tile != nullptr && this->debug_data == 0){
+		if(selected_tile != nullptr && _debug.panel_page == 0){
 			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
 				"Tile col=%d row=%d x=%d y=%d w=%d h=%d",
 				selected_tile->col, selected_tile->row,
@@ -1207,7 +1406,7 @@ void View_Game::render_top_pane(pane_t& pane){
 
 
 		}
-		if(selected_vertex != nullptr && this->debug_data == 1){
+		else if(selected_vertex != nullptr && _debug.panel_page == 1){
 			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
 				"Vertex [num=%d] : x=%d y=%d z=%d w=%d h=%d",
 				selected_vertex->num,
@@ -1233,7 +1432,7 @@ void View_Game::render_top_pane(pane_t& pane){
 					);
 			}
 		}
-		if(selected_face != nullptr && this->debug_data == 2){
+		else if(selected_face != nullptr && _debug.panel_page == 2){
 			Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 36, font_carbon_12_colour,
 				"Face [num=%d]: x=%d y=%d z=%d w=%d h=%d",
 				selected_face->num,
@@ -1259,55 +1458,54 @@ void View_Game::render_top_pane(pane_t& pane){
 					);
 			}
 		}
-
-		// draw a rectangle around the selected pane
-		if(selected_pane != nullptr && true){
-			SDL_Rect r = { selected_pane->x, selected_pane->y, selected_pane->w, selected_pane->h };
-			SDL_Color c = { 255, 255, 0, 255 };
-			Util::render_rectangle(&ren, &r, c);
-		}
 	}
 }
 
 void View_Game::render(){
 	++total_frame_count;
 
-	SDL_RenderClear(&ren);
-	render_top_pane(top_pane);
-	render_model(mid_pane);
-	render_buttons(bot_pane);
-	// draw the UI text for stuff...
-	render_bottom_text(bot_pane);
-		
-	// draw the message box
-	if(message_pane.isVisible()){
-		SDL_Rect r = {
-			message_pane.x, message_pane.y,
-			message_pane.w, message_pane.h
-		};
-		// clear to black
-		SDL_Color c = { 0,0,0, 255 };
-		Util::render_fill_rectangle(&ren, &r, c);
-		// draw the border
-		c = { 255, 255, 0, 255 };
-		Util::render_rectangle(&ren, &r, c);
-		// draw the error text
-		Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
-			font_carbon_12_colour, "%s",
-			(message_pane.message == nullptr) ? "" : message_pane.message
-			);
-	}
+	if( dialog_in_focus != nullptr &&
+		dialog_in_focus->isvisible() &&
+		dialog_in_focus->modal)
+	{
+		dialog_in_focus->render();
+	} else{
 
-	// draw the misc pane
-	if(misc_pane.isVisible()){
-		SDL_Rect r = {
-			misc_pane.x, misc_pane.y,
-			misc_pane.w, misc_pane.h
-		};
-		SDL_Color c = { 255, 255, 0, 255 };
-		Util::render_rectangle(&ren, &r, c);
-	}
+		SDL_RenderClear(&ren);
+		render_top_pane(top_pane);
+		render_model(mid_pane);
+		render_buttons(bot_pane);
+		render_bottom_text(bot_pane);// draw the UI text for stuff...
 
+		// draw the message box
+		if(message_pane.isVisible()){
+			SDL_Rect r = {
+				message_pane.x, message_pane.y,
+				message_pane.w, message_pane.h
+			};
+			// clear to black
+			SDL_Color c = { 0, 0, 0, 255 };
+			Util::render_fill_rectangle(&ren, &r, c);
+			// draw the border
+			c = { 255, 255, 0, 255 };
+			Util::render_rectangle(&ren, &r, c);
+			// draw the error text
+			Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
+				font_carbon_12_colour, "%s",
+				(message_pane.message == nullptr) ? "" : message_pane.message
+				);
+		}
+
+		// draw the misc pane
+		if(misc_pane.isVisible()){
+			SDL_Rect r = {
+				misc_pane.x, misc_pane.y,
+				misc_pane.w, misc_pane.h
+			};
+			SDL_Color c = { 255, 255, 0, 255 };
+			Util::render_rectangle(&ren, &r, c);
+		}
+	}
 	SDL_RenderPresent(&ren);
 }
 
@@ -1440,17 +1638,43 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 		else if(s == View_Game::BUILD_SETTLEMENT)
 		{
 			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building settlement", (int)s);
-			set_state(View_Game::NORMAL);
+			if(selected_vertex != nullptr){
+				bool rs = model.build_building(
+					building_t::SETTLEMENT,
+					selected_vertex->num,
+					model.get_current_player());
+				if(rs) {
+					set_state(View_Game::NORMAL);
+				}
+			}
 		}
 		else if(s == View_Game::BUILD_CITY)
 		{
 			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building City", (int)s);
-			set_state(View_Game::NORMAL);
+
+			if(selected_vertex != nullptr){
+				bool rs = model.build_building(
+					building_t::CITY,
+					selected_vertex->num,
+					model.get_current_player());
+				if(rs) {
+					set_state(View_Game::NORMAL);
+				}
+			}
 		}
 		else if(s == View_Game::BUILD_ROAD)
 		{
 			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building Road", (int)s);
-			set_state(View_Game::NORMAL);
+			if(selected_face != nullptr){
+				bool rs = model.build_building(
+					building_t::ROAD,
+					selected_face->num,
+					model.get_current_player());
+				if(rs) {
+					set_state(View_Game::NORMAL);
+				}
+			}
+			
 		}
 		else if(s == View_Game::PLAY_DEV_CARD)
 		{
@@ -1494,6 +1718,9 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 }
 
 void View_Game::handle_keyboard_given_state(SDL_Event& ev,View_Game::state_e s){
+	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
+
+	// handle keyboard base on the given state.
 	if(s == View_Game::NONE){}
 	else if(s == View_Game::START){}
 	else if(s == View_Game::PLACE_SETTLEMENT_1){}
@@ -1502,10 +1729,45 @@ void View_Game::handle_keyboard_given_state(SDL_Event& ev,View_Game::state_e s){
 	else if(s == View_Game::PLACE_ROAD_2){}
 	else if(s == View_Game::START_RESOURCES){}
 	else if(s == View_Game::NORMAL){}
-	else if(s == View_Game::TRADING){}
-	else if(s == View_Game::BUILD_SETTLEMENT){}
-	else if(s == View_Game::BUILD_CITY){}
-	else if(s == View_Game::BUILD_ROAD){}
-	else if(s == View_Game::PLAY_DEV_CARD){}
-	else if(s == View_Game::NUM_state_e){}
+	switch(s){
+		case(View_Game::TRADING) :
+		case(View_Game::BUILD_SETTLEMENT) :
+		case(View_Game::BUILD_CITY) :
+		case(View_Game::BUILD_ROAD) :
+		case(View_Game::PLAY_DEV_CARD) :{
+			if(keyboard[SDL_SCANCODE_Q]){
+				set_state(View_Game::NORMAL);
+			}
+		}break;
+		default:{}
+	}	
+}
+
+
+void View_Game::open_debug_dialog(){
+	// dialog already exists, so just make it visible and open it up again
+	if(debug_dialog == nullptr){ 
+		debug_dialog = new View_Game_Debug_Dialog(
+			*this,
+			misc_pane.x,
+			misc_pane.y,
+			misc_pane.z,
+			misc_pane.w,
+			misc_pane.h
+			);
+	}	
+	debug_dialog->open(&_debug);
+	dialog_in_focus = debug_dialog;
+}
+void View_Game::close_debug_dialog(){
+	if(debug_dialog == nullptr){ return;}	
+	debug_dialog->close();
+	dialog_in_focus = nullptr;
+}
+
+void View_Game::open_trade_dialog(){
+	return;
+}
+void View_Game::close_trade_dialog(){
+	return;
 }
