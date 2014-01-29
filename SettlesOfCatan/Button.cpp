@@ -5,9 +5,11 @@
 #include "Sprite.h"
 #include "Button.h"
 
+#include "Player.h"
 #include "Model.h"
 #include "View_Game.h"
 #include "IDialog.h"
+
 
 Button::Button(){ hit_flag = false; }
 Button::Button(const char* text, int x, int y, int z, int w, int h){
@@ -73,9 +75,17 @@ void add_road_action(View_Game& view, Model& model){
 	view.set_state(View_Game::BUILD_ROAD);
 }
 void roll_action(View_Game& view, Model& model){
+	// TODO: Fuck this hack. I need a static stirng to set the message text.
+
+	static std::string msg = "Roll = ";
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "roll_action");
 	model.roll(2, 6);
 	model.give_resources_from_roll(model.get_roll_value());
+	
+	msg = "Roll =";
+	msg += std::to_string(model.get_roll_value());
+
+	view.set_message_pane_text(msg.c_str());
 }
 void enable_debug_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "enabe_debug_action");
@@ -91,8 +101,14 @@ void add_city_action(View_Game& view, Model& model){
 	view.set_state(View_Game::BUILD_CITY);
 }
 void buy_dev_card_action(View_Game& view, Model& model){
+	static std::string message = "";
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "buy_dev_card_action");
-	model.buy_dev_card(model.get_current_player());
+	if(model.buy_dev_card(model.get_current_player()) ){
+		Player* p = model.get_player(model.get_current_player());
+		dev_cards_t* card = (dev_cards_t*) p->dev_cards.back();
+		message = card->title();
+		view.set_message_pane_text(message.c_str());
+	}
 }
 void play_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "play_dev_card_action");
@@ -101,6 +117,7 @@ void play_dev_card_action(View_Game& view, Model& model){
 void trade_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "trade_action");
 	view.set_state(View_Game::state_e::TRADING);
+	view.open_trade_dialog();
 }
 void empty_action(View_Game& view, Model& model){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "empty_action");

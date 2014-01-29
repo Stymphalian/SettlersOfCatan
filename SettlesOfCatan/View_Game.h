@@ -4,15 +4,15 @@
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
-
-#include "Timer.h"
-#include "Tiles.h"
+class Timer;
+class Tiles;
 #include "Collision.h"
 #include "Button.h"
 #include "Model.h"
 #include "model_structs.h"
 #include "IView.h"
-#include "IDialog.h"
+class IDialog;
+class View_Game_Debug_Dialog;
 
 /*
 Concrete class for the Game View
@@ -224,6 +224,7 @@ public:
 	void close_debug_dialog();
 	void open_trade_dialog();
 	void close_trade_dialog();
+	void set_message_pane_text(const char* message);
 private:
 	// Variables  and resources
 	SDL_Texture* hextile_spritesheet;	

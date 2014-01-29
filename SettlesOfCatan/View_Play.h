@@ -28,8 +28,7 @@ public:
 
 
 	// M Y  S T U F F   S T A R T
-	view_debug_t debug;
-	View_Game_Debug_Dialog* dialog;
+
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor

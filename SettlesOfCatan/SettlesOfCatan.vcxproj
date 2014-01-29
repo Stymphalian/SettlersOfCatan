@@ -150,6 +150,7 @@
     <ClCompile Include="Util.cpp" />
     <ClCompile Include="IView.cpp" />
     <ClCompile Include="View_Game.cpp" />
+    <ClCompile Include="View_Game_Debug_Dialog.cpp" />
     <ClCompile Include="View_Play.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -173,6 +174,7 @@
     <ClInclude Include="Util.h" />
     <ClInclude Include="IView.h" />
     <ClInclude Include="View_Game.h" />
+    <ClInclude Include="View_Game_Debug_Dialog.h" />
     <ClInclude Include="View_Play.h" />
   </ItemGroup>
   <ItemGroup>

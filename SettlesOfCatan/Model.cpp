@@ -1078,6 +1078,8 @@ bool Model::build_road(int player, int pos){
 		_players[player].building_cap[building_t::ROAD]--;
 		_players[player].roads.push_back(pos);
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
+
+		_player_holding_longest_road_card2();
 		return true;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Unable to build road.");
@@ -1140,6 +1142,7 @@ bool Model::_can_build_road(int player, int pos){
 	// check every face for a road that belong to the player
 	vertex_face_t* edge = nullptr;
 	road_exists = false;
+	int connecting_road = -1;
 	for(int i = 0; i < 4; ++i){
 		if(face->face(i) == -1){ continue; }
 		if(face->face(i) < 0 || face->face(i) >= (int)_face_array.size()){
@@ -1150,29 +1153,64 @@ bool Model::_can_build_road(int player, int pos){
 
 		if(edge->type == vertex_face_t::ROAD && edge->player == player){
 			road_exists = true;
+			connecting_road = face->face(i);
 			break;
 		}
 	}
 
 	// check that there doesn't exist a city/settlement that
 	// is blocking the placement of the road
-	vertex_face_t* vert = nullptr;
 	blocked = false;
+	bool blocked_i[2] = { false, false };
+	bool always_okay_to_build = false;
+	//check the two vertices attached to this face.
 	for(int i = 0; i < 2; ++i){
-		if(face->vertex(i) == -1){ continue; }
-		if(face->vertex(i) < 0 || face->vertex(i) >= (int)_vertex_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d vertex index out of range", face->vertex(i), (int)_vertex_array.size());
-			continue;
-		}
-		vert = &_vertex_array[face->vertex(i)];
-
-		if((vert->type == vertex_face_t::CITY || vert->type == vertex_face_t::SETTLEMENT)
-			&& vert->player != player)
+		if(!(vertex_in_range(face->vertex(i))) ){ continue; }
+		vertex_face_t* target = &_vertex_array[face->vertex(i)];
+		// if one of the vertices is a player owned settlement || city the
+		// it is always possibel to build a road
+		if((target->type == vertex_face_t::CITY || target->type == vertex_face_t::SETTLEMENT) &&
+			target->player == player)
 		{
-			blocked = true;
+			always_okay_to_build = true;
 			break;
 		}
+
+		// check the two edges attached to the target vertex
+		bool need = false;
+		for(int i2 = 0; i2 < 3; i2++){
+			// doesn't exist.
+			if(!face_in_range(target->face(i2))){ continue; }
+			// skip the target face.
+			if(target->face(i2) == pos){ continue; }
+		
+			vertex_face_t* e = &_face_array[target->face(i2)];
+			if(e->type == vertex_face_t::ROAD && e->player == player){
+				need = true;
+				break;
+			}			
+		}
+
+		// if we don't need this vertex, then we can consider it as blocked
+		if(need == false){
+			blocked_i[i] = true;
+		}else{
+			if(target->player != player &&
+				(target->type == vertex_face_t::CITY || target->type == vertex_face_t::SETTLEMENT)
+				)
+			{
+				blocked_i[i] = true;
+			}
+		}
 	}
+
+	if(always_okay_to_build){
+		blocked = false;
+	} else{
+		blocked = (blocked_i[0] && blocked_i[1]);
+	}
+
+
 
 	// TODO: Remove this condition somewhere else.
 	// handle the special case in which the player is placing their first roads.
@@ -1365,6 +1403,370 @@ int Model::num_possiblities_dice(int sum, int num_dice, int num_sides){
 	}
 	return count;
 }
+int Model::largest_army_size(int player){
+	if(player < 0 || player >= (int)_players.size()){ return -1; }
+	return _players[player].num_soldiers;
+}
+
+int Model::longest_road_length(int player){
+	if(player < 0 || player >= (int)_players.size()){ return -1; }
+	std::vector<int> cover;
+	cover.reserve(20);
+
+	Player* p = &_players[player];
+	int longest = 0;
+
+	// for every player owned settlement and city 
+	// check how long each of their longests roads are.
+	for(int i = 0; i < (int)p->buildings.size(); ++i){
+		int  v_key = p->buildings[i];
+		int candidate = _longest_road_stack(player, v_key, &cover);
+
+		// it the candidate length is longer than the currently 
+		// recorded longest, then we now have a NEW longest
+		if(candidate  > longest){
+			longest = candidate;
+		}
+	}
+	return longest;
+}
+
+
+bool is_in_array(int key, std::vector<int>* cover){
+	for(int i = 0; i < (int)cover->size(); ++i){
+		if(key == (*cover)[i]){ return true; }
+	}
+	return false;
+}
+
+int Model::_longest_road(int player, int v_key, std::vector<int>* cover){
+	// the vertex has already been covered
+	if(is_in_array(v_key, cover)){ return 0; }
+
+	// add this vertex to the cover list.
+	cover->push_back(v_key);
+
+	// for every vertex connected to the current vertex.
+	int neighbour_edge = 0;
+	int neighbour_vertex = 0;
+	int candidate = 0;
+	int longest = 0;
+	vertex_face_t* current = &_vertex_array[v_key];
+	for(int i = 0; i < 3; ++i){
+		// make sure the edge is connected by a player owned road.
+		neighbour_edge = current->face(i);
+		if(neighbour_edge == -1){ continue; }
+		vertex_face_t* face = &_face_array[neighbour_edge];
+		if(face->type != vertex_face_t::ROAD || face->player != player){
+			continue;
+		}
+
+		// ask the neightbour the length of her longest road.
+		neighbour_vertex = current->vertex(i);
+		// make sure the neightbour exists, and is not an enemy city/settlement
+		// an unowned vertex is okay.
+		if(neighbour_vertex == -1){ continue; }
+		if(_vertex_array[neighbour_vertex].player != player &&
+			_vertex_array[neighbour_vertex].player != -1){
+			continue;
+		}
+		candidate = _longest_road(player, neighbour_vertex, cover);
+
+		// one of the neighbours has a longer road.
+		if(candidate > longest){
+			longest = candidate;
+		}
+	}
+	return longest + 1;
+}
+
+int Model::_longest_road_stack(int player, int v, std::vector<int>* cover){
+	std::list<int> stack;
+	std::list<int> length_stack; //keeps track of what level/length the node is on.
+
+	// push the first vertex onto the stack.
+	stack.push_back(v);
+	length_stack.push_back(0);
+
+	int v_key = 0;
+	int length = 0;
+	int longest = 0;
+	int neighbour_edge = 0;
+	int neighbour_vertex = 0;
+	int candidate = 0;
+	vertex_face_t* current;
+	vertex_face_t* face;
+
+	// while the stack is NOT empty
+	while(!stack.empty()){
+		// pop off the top of the stack.
+		v_key = stack.front();
+		length = length_stack.front();
+		stack.erase(stack.begin());
+		length_stack.erase(length_stack.begin());
+
+		// check to see if reaching this node gives us the longest road.
+
+		if(length + 1 >= longest){
+			longest = length + 1;
+		}
+
+		// the vertex has already been covered
+		if(is_in_array(v_key, cover)){ continue; }
+
+		// add this vertex to the cover list.
+		cover->push_back(v_key);
+
+		// for every vertex connected to the current vertex.		
+		current = &_vertex_array[v_key];
+		for(int i = 0; i < 3; ++i){
+			// make sure the edge is connected by a player owned road.
+			neighbour_edge = current->face(i);
+			if(neighbour_edge == -1){ continue; }
+			face = &_face_array[neighbour_edge];
+			if(face->type != vertex_face_t::ROAD || face->player != player){
+				continue;
+			}
+
+			// ask the neighbour the length of her longest road.
+			neighbour_vertex = current->vertex(i);
+			// make sure the neightbour exists, and is not an enemy city/settlement
+			// an unowned vertex is okay.
+			if(neighbour_vertex == -1){ continue; }
+			if(_vertex_array[neighbour_vertex].player != player &&
+				_vertex_array[neighbour_vertex].player != -1){
+				continue;
+			}
+
+
+			stack.push_back(neighbour_vertex);
+			length_stack.push_back(length + 1);
+
+		}
+	}
+
+	return longest;
+}
+
+int Model::_path_to_vertex(int player, int v1, int v2){
+	std::vector<int> cover;
+	cover.reserve(20);
+	std::list<int> stack;
+	std::list<int> length_stack;
+
+	stack.push_back(v1);
+	length_stack.push_back(0);
+
+	int v_key = 0;
+	int length = 0;
+	int longest = 0;
+	int neighbour_edge = 0;
+	int neighbour_vertex = 0;
+	int candidate = 0;
+	int connected = 0;
+	vertex_face_t* current;
+	vertex_face_t* face;
+
+	while(!stack.empty()){
+		v_key = stack.front();
+		length = length_stack.front();
+		stack.erase(stack.begin());
+		length_stack.erase(length_stack.begin());
+
+		if(length + 1 > longest){
+			longest = length + 1;
+		}
+		// we have found a path to the target vertex.
+		if(v_key == v2){
+			connected = length;
+		}
+
+		// the vertex has alreay been covered.
+		if(is_in_array(v_key, &cover)){ continue; }
+
+		// mark the vertex as covered.
+		cover.push_back(v_key);
+
+		current = &_vertex_array[v_key];
+		for(int i = 0; i < 3; ++i){
+			// make sure the edge is connect by a player owned road
+			neighbour_edge = current->face(i);
+			if(neighbour_edge == -1){ continue; }
+			face = &_face_array[neighbour_edge];
+			if(face->type != vertex_face_t::ROAD || face->player != player){
+				continue;
+			}
+
+			// ask the neighbour the length of their longest road
+			neighbour_vertex = current->vertex(i);
+
+			// this is to handle the case in which the target vertex is enemy owned.
+			if(neighbour_vertex == v2){
+				connected = length + 1;
+			}
+
+			if(neighbour_vertex == -1){ continue; }
+			if(_vertex_array[neighbour_vertex].player != player &&
+				_vertex_array[neighbour_vertex].player != -1 &&
+				neighbour_vertex != v2){
+				continue;
+			}
+
+			stack.push_back(neighbour_vertex);
+			length_stack.push_back(length + 1);
+		}
+	}
+
+	return connected;
+}
+
+
+int Model::_player_holding_longest_road_card2(){
+	int length = 4;
+	int player = -1;
+	int candidate = 0;
+
+	if(_player_holding_longest_road_card == -1){
+		// TODO : This 4 should be a configurable value.
+		player = -1;
+		length = 4;
+	} else {
+		player = _player_holding_longest_road_card;
+		length = longest_road_length(player);
+	}
+
+	// check all the other player to see if anyone has a longer road.
+	for(int i = 0; i < (int)_players.size(); ++i){
+		if(_player_holding_longest_road_card == i){ continue; }
+		candidate = longest_road_length(i);
+		if(candidate > length){
+			length = candidate;
+			player = i;
+		}
+	}
+
+	_player_holding_longest_road_card = player;
+	return player;
+}
+
+bool Model::clear_path_to_edge(int player, int e){
+	std::vector<int> cover;
+	std::list<int> stack;
+
+	vertex_face_t* edge = &_face_array[e];
+	stack.push_back(edge->vertex(1));
+	stack.push_back(edge->vertex(2));
+	cover.push_back(edge->vertex(1));
+	cover.push_back(edge->vertex(2));
+
+	int key;
+	while(!stack.empty()){
+		key = stack.front();
+		stack.erase(stack.begin());
+		if(key == -1){ continue; }
+		if(is_in_array(key, &cover)){ continue; }
+
+		cover.push_back(key);
+
+		vertex_face_t* current = &_vertex_array[key];
+		// check if we have reached a player settlement or city
+		if(current->player == player &&
+			(current->type == vertex_face_t::CITY || current->type == vertex_face_t::SETTLEMENT)){
+			return true;
+		}
+
+		vertex_face_t* face;
+		int neighbour_edge;
+		int neighbour_vertex;
+		for(int i = 0; i < 3; ++i){
+			// make sure the edge is connect by a player owned road
+			neighbour_edge = current->face(i);
+			if(neighbour_edge == -1){ continue; }
+			face = &_face_array[neighbour_edge];
+			if(face->type != vertex_face_t::ROAD || face->player != player){
+				continue;
+			}
+
+			neighbour_vertex = current->vertex(i);
+			if(neighbour_vertex == -1){ continue; }
+			if(_vertex_array[neighbour_vertex].player != player &&
+				_vertex_array[neighbour_vertex].player != -1){
+				continue;
+			}
+
+			stack.push_back(neighbour_vertex);
+		}
+	}
+	return false;
+}
+
+
+/*
+Make sure that the key is within range of _face_array.size();
+*/
+bool Model::face_in_range(int key){
+	return (key >= 0 && key < (int)_face_array.size());
+}
+/*
+Make sure that the key is within the range of _vertex_array.size()
+*/
+bool Model::vertex_in_range(int key){
+	return (key >= 0 && key < (int)_vertex_array.size());
+}
+
+/*
+Find the vertex key of the common vertex between these two edges.
+@Parameter int edge1 -- One of the edges
+@Parameter int edge2 -- One of the edges
+@Return -1 if there does NOT exists a common vertex.
+*/
+int Model::get_common_vertex(int edge1, int edge2){
+	if(!face_in_range(edge1) || !face_in_range(edge2)){
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::get_common_vertex out of range edge1=%d/%d, edge2=%d,%d",
+			edge1, (int)_face_array.size(), edge2, (int)_face_array.size());
+		return -1;
+
+	}
+
+	vertex_face_t* e1 = &_face_array[edge1];
+	vertex_face_t* e2 = &_face_array[edge2];
+	for(int i = 0; i < 2; ++i){
+		if(!vertex_in_range(e1->vertex(i))){ continue; }
+		for(int j = 0; j < 2; ++j){
+			if(!vertex_in_range(e2->vertex(j))){ continue; }
+			// we have found a common vertex between the two faces.
+			if(e1->vertex(i) == e2->vertex(j)){ return e1->vertex(i); }
+		}
+	}
+	return -1;
+}
+
+/*
+Find the common face between theses two vertices
+@Parameter int vertex1 - the first vertex
+@Parameter int vertex2 - the second vertex
+@Return -1 if there does NOT exist a common face.
+*/
+int Model::get_common_face(int vertex1, int vertex2){
+	if(!vertex_in_range(vertex1) || !vertex_in_range(vertex2)){
+		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::get_common_edge out of range vertex1=%d/%d, vertex2=%d,%d",
+			vertex1, (int)_vertex_array.size(), vertex2, (int)_vertex_array.size());
+		return -1;
+	}
+
+	vertex_face_t* v1 = &_vertex_array[vertex1];
+	vertex_face_t* v2 = &_vertex_array[vertex2];
+	for(int i = 0; i < 3; ++i){
+		if(face_in_range(v1->face(i)) == false){ continue; }
+		for(int j = 0; j < 3; ++j){
+			if(face_in_range(v2->face(j)) == false){ continue; }
+
+			// we have foudn a common edge between the two vertices
+			if(v1->face(i) == v2->face(j)) { return v1->face(i); }
+		}
+	}
+	return -1;
+}
 
 
 
@@ -1378,6 +1780,39 @@ bool Model::set_error(Model::model_error_codes_e code){
 int Model::get_error(){
 	return _model_error;
 }
+
+/*
+@Paramter int col -- The column in which our target tile exists
+@Paramter int row -- The Row in which our target tile exists
+@Return -- return nullptr on faliure
+*/
+Tiles* Model::get_tile(int col, int row){
+	if(col < 0 || row < 0 || col >= _board_width || row >= _board_height){
+		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return nullptr;
+	}
+	return &_board[col + row*_board_width];
+}
+
+/*
+@Paramter int face -- face num in which we want to retrieve a Tile from
+@Paramter int* c -- if not nullptr, it is filled with the col of the retieved tile
+@Paramter int* r -- if not nullptr, it is filled with the row of the retieved tile
+@Return -- return nullptr on failure
+*/
+Tiles* Model::get_tile_from_face(int face, int* c, int* r){
+	return _find_tile_from_face(face, c, r);
+}
+/*
+@Paramter int vertex -- vertex in which we want to retrieve a Tile from
+@Paramter int* c -- if not nullptr, it is filled with the col of the retieved tile
+@Paramter int* r -- if not nullptr, it is filled with the row of the retieved tile
+@Return -- return nullptr on failure
+*/
+Tiles* Model::get_tile_from_vertex(int vertex, int* c, int* r){
+	return _find_tile_from_vertex(vertex, c, r);
+}
+
 
 /*
 @Paramter int num -- the key to the vertex in which we wan to retrieve.
@@ -1416,38 +1851,6 @@ std::vector<vertex_face_t>::iterator Model::get_faces_end(){
 	return _face_array.end();
 }
 
-
-/*
-@Paramter int col -- The column in which our target tile exists
-@Paramter int row -- The Row in which our target tile exists
-@Return -- return nullptr on faliure
-*/
-Tiles* Model::get_tile(int col, int row){
-	if(col < 0 || row < 0 || col >= _board_width || row >= _board_height){
-		set_error(Model::MODEL_ERROR_INVALID_TILE);
-		return nullptr;
-	}
-	return &_board[col + row*_board_width];
-}
-
-/*
-@Paramter int face -- face num in which we want to retrieve a Tile from
-@Paramter int* c -- if not nullptr, it is filled with the col of the retieved tile
-@Paramter int* r -- if not nullptr, it is filled with the row of the retieved tile
-@Return -- return nullptr on failure
-*/
-Tiles* Model::get_tile_from_face(int face, int* c, int* r){
-	return _find_tile_from_face(face, c, r);
-}
-/*
-@Paramter int vertex -- vertex in which we want to retrieve a Tile from
-@Paramter int* c -- if not nullptr, it is filled with the col of the retieved tile
-@Paramter int* r -- if not nullptr, it is filled with the row of the retieved tile
-@Return -- return nullptr on failure
-*/
-Tiles* Model::get_tile_from_vertex(int vertex, int* c, int* r){
-	return _find_tile_from_vertex(vertex, c,r);
-}
 
 /*
 @Return: A point to a dev_cards_t object.
@@ -1665,6 +2068,8 @@ bool Model::build_building(building_t::buildings building, int pos, int player){
 
 	
 	if(rs == true){
+		// DONT, need to pay
+		return true;
 		// TODO: Remove this logic, and place in a player-to-model interface.
 		// don't need to pay if you are placing the first couple of buildings.
 		if((int)get_player(player)->buildings.size() - 1 < 2 &&
@@ -1893,6 +2298,9 @@ void Model::init_players(std::vector<Player>* players){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::init_players()");
 	resource_t start_resources;
 	start_resources.zero_out();
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		start_resources.res[i] = 5;
+	}
 
 	for(int i = 0; i < (int)players->size(); ++i){
 		(*players)[i].init(

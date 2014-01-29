@@ -190,4 +190,19 @@ private:
 	Tiles* _find_tile_from_face(int face_key, int* col, int* row);
 	
 	int num_possiblities_dice(int sum, int num_dice, int num_sides);	
+
+	int largest_army_size(int player);
+	int longest_road_length(int player);
+	int _longest_road(int player,int v_key, std::vector<int>* covered);
+	int _longest_road_stack(int player, int v_key, std::vector<int>* covered);
+	int _path_to_vertex(int player, int v1, int v2);
+	int _player_holding_longest_road_card2();
+
+	bool clear_path_to_edge(int player, int edge);
+
+	bool face_in_range(int key);
+	bool vertex_in_range(int key);
+	int get_common_vertex(int edge1, int edge2);
+	int get_common_face(int vertex1, int vertex2);
+
 };

@@ -4,14 +4,17 @@
 #include <SDL.h>
 #include "Logger.h"
 #include "Util.h"
+#include "Timer.h"
 #include "Model.h"
+#include "model_structs.h"
+#include "Player.h"
+#include "IDialog.h"
+#include "View_Game_Debug_Dialog.h"
+#include "CheckBox.h"
+#include "Button.h"
+#include "lizz_lua.h"
 #include "IView.h"
 #include "View_Game.h"
-#include "Player.h"
-#include "Button.h"
-#include "IDialog.h"
-#include "CheckBox.h"
-#include "lizz_lua.h"
 
 std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_codes_e] = {
 	"",
@@ -995,7 +998,7 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 	int target, type;
 	int r, c;
 
-	// render all the roads/faces and Vertices(settlements/cities)
+	// render all the roads/faces
 	for(int row = 0; row < model.get_board_height(); ++row){
 		for(int col = 0; col < model.get_board_width(); ++col){
 			getPixelPosFromTilePos(col, row, &c, &r);
@@ -1007,7 +1010,7 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 
 			// render all the faces
 			for(int i = 0; i < 6; ++i){
-				target = model.get_tile(col,row)->faces[i];
+				target = model.get_tile(col, row)->faces[i];
 				if(target == -1 || face_covered[target] == 1){
 					continue;
 				}
@@ -1025,7 +1028,18 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 
 				Util::render_texture(&ren, player_buildings_spritesheet[model.get_face(target)->player], x, y, &road_clips[i]);
 			}
+		}
+	}
 
+	// Render all the vertices ( settlements and cities )
+	for(int row = 0; row < model.get_board_height(); ++row){
+		for(int col = 0; col < model.get_board_width(); ++col){
+			getPixelPosFromTilePos(col, row, &c, &r);
+			r += screen_offset_y;
+			c += screen_offset_x;
+			if(model.get_tile(col, row)->type == 0){
+				continue;
+			};
 			// render all the vertices
 			for(int i = 0; i < 6; ++i){
 				target = model.get_tile(col, row)->vertices[i];
@@ -1044,7 +1058,6 @@ void View_Game::render_model_face_vertex_tiles(pane_t& pane){
 				int y = r + vertex_pos[i][1] - sprite_small[1] / 2;
 				Util::render_texture(&ren, player_buildings_spritesheet[model.get_vertex(target)->player], x, y, &building_clips[type]);
 			}
-
 		}
 	}
 }
@@ -1227,7 +1240,7 @@ void View_Game::render_connecting_faces(pane_t& pane, vertex_face_t* origin, int
 	SDL_Rect rect = { 0, 0, 0, 0 };
 
 	for(int i = 0; i < num; ++i){
-		if(model.get_vertex(origin->face(i)) == nullptr){ continue; }
+		if(model.get_face(origin->face(i)) == nullptr){ continue; }
 		// we need this to determine the x and y position to draw the box
 		vertex_face_t_intersect* intersect = &faces[origin->face(i)];
 		rect = {
@@ -1770,4 +1783,10 @@ void View_Game::open_trade_dialog(){
 }
 void View_Game::close_trade_dialog(){
 	return;
+}
+
+void View_Game::set_message_pane_text(const char* text){
+	if(text == nullptr) { return; }
+	message_pane.setMessage(text);
+	message_pane.reset();
 }
