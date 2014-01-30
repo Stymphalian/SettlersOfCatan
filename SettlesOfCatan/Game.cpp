@@ -97,7 +97,7 @@ void Game::run(){
 	logger.log(Logger::DEBUG, "Game::run()");
 	
 	// HACK !^0^!
-	Model model(1);
+	Model model(2);
 	View_Game game_view(model,*win,*ren);
 	if(game_view.active == false){ return; }
 	View_Play play_view(*win, *ren);
@@ -147,7 +147,7 @@ void Game::run(){
 				}
 			} else {		
 				// any uncaught events
-				logger.log(Logger::DEBUG, "Uncaught event %u", e.type);
+				//logger.log(Logger::DEBUG, "Uncaught event %u", e.type);
 			}
 		}
 		if(exit_flag){ break; }

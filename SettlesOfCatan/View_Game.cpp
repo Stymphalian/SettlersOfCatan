@@ -131,7 +131,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	offset_y = this->mid_pane.y + this->mid_pane.h;
 	offset_z = 3;
 	this->message_pane.init(offset_x, offset_y, offset_z, disp_w - 2*(disp_w/8),18);
-	this->message_pane.setMessage(nullptr);
+	this->message_pane.setMessage("");
 	this->message_pane.setTimeout((unsigned)(this->desired_fps*1.5));
 	this->message_pane.stop();
 
@@ -701,7 +701,7 @@ void View_Game::handle_user_events(SDL_Event& e){
 			message_pane.tick();
 			if(message_pane.just_finished){
 				model.set_error(Model::MODEL_ERROR_NONE);
-				message_pane.setMessage(nullptr);
+				message_pane.setMessage("");
 			}
 		} 
 		
@@ -1412,7 +1412,7 @@ void View_Game::render_top_pane(pane_t& pane){
 				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour, "Model Tile = nullptr");
 			} else{
 				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 48, font_carbon_12_colour,
-					"Model Tile active=%d type=%d roll=%d ringleve=%d",
+					"Model Tile active=%d type=%d roll=%d ringlevel=%d",
 					t->active, t->type, t->roll, t->ring_level);
 
 				Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 64, font_carbon_12_colour,
@@ -1509,9 +1509,7 @@ void View_Game::render(){
 			Util::render_rectangle(&ren, &r, c);
 			// draw the error text
 			Util::render_text(&ren, font_carbon_12, message_pane.x, message_pane.y,
-				font_carbon_12_colour, "%s",
-				(message_pane.message == nullptr) ? "" : message_pane.message
-				);
+				font_carbon_12_colour,"%s",message_pane.message.c_str());
 		}
 
 		// draw the misc pane

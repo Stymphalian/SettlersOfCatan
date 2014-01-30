@@ -129,7 +129,7 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	// Create the surface, which we will load onto the texture.
 	SDL_Surface* surface = TTF_RenderText_Blended(font, msg, color);
 	if(surface == nullptr){
-		logger.TTF_log(logger.ERROR, "TTF_RenderText_Blended");
+		logger.TTF_log(logger.ERROR, "TTF_RenderText_Blended with text %s",format);
 		return;
 	}
 
@@ -137,7 +137,7 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
 	SDL_FreeSurface(surface);
 	if(texture == nullptr){
-		logger.SDL_log(logger.ERROR, "SDL_CreateTextureFromSurface");
+		logger.SDL_log(logger.ERROR, "SDL_CreateTextureFromSurface with text %s",format);
 		return;
 	}
 

@@ -26,6 +26,7 @@ void Model::set_defaults(){
 	_thief_pos_y = -1;
 	_roll_value = 0;
 	_turn_count = 0;
+	_dirty_flag_for_longest_road = false;
 	_num_levels = 0;
 	_num_extensions = 0;
 	_even_middle_row = false;
@@ -86,6 +87,7 @@ void Model::init(int num_players){
 	this->_thief_pos_y = -1;
 	this->_roll_value = 0;
 	this->_turn_count = 0;
+	this->_dirty_flag_for_longest_road = false;
 	logger.log(Logger::DEBUG, "Model::init() num_dice=%d,num_dice_sides=%d", _num_dice, _num_dice_sides);
 	logger.log(Logger::DEBUG, "Model::init() thief_pos_x=%d,thief_pos_y=%d", _thief_pos_x, _thief_pos_y);
 	logger.log(Logger::DEBUG, "Model::init() roll_value=%d,turn_count=%d", _roll_value, _turn_count);
@@ -1438,7 +1440,7 @@ int Model::compute_longest_road_length(int player){
 	road_vertices.reserve(20);
 
 	// add all the vertices that the roads are connected to
-	// don't add duplicates.
+	// dont add duplicates.
 	for(int i = 0; i < (int)p->roads.size(); ++i){
 		vertex_face_t* face = &_face_array[p->roads[i]];
 
@@ -1451,20 +1453,18 @@ int Model::compute_longest_road_length(int player){
 	}
 
 	int len = road_vertices.size();
-	int* longest_path = new int[len*len];
+	int* longest_path = new int[len*len]; // ALLOCATION
 	memset(longest_path, 0, sizeof(int)*len*len);
 	int longest = 0;
 	int v1 = -1;
 	int v2 = -1;
 
 	// for every pair of vertices find the greatest distance between them.
-	int temp;
 	for(int row = 0; row < len; ++row){
 		for(int col = 0; col < len; ++col){
 			v1 = road_vertices[row];
 			v2 = road_vertices[col];
-			temp = _path_to_vertex(player, v1, v2);
-			longest_path[col + row*len] = temp;
+			longest_path[col + row*len] = _path_to_vertex(player, v1, v2);
 		}
 	}
 
@@ -1500,6 +1500,24 @@ int Model::compute_longest_road_length(int player){
 		Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
 		Logger::getLog("jordan.log").log(Logger::DEBUG,"Model::compute_longest_road_length(player=%d) longest=%d from %d to %d", player, longest, v1, v2);
 	}
+
+	if(true){	
+		printf("      ");
+		for(int col = 0; col < len; ++col){
+			printf("%3d ", road_vertices[col]);
+		}
+		printf("\n");
+	
+		for(int row = 0; row < len; ++row){
+			printf("[%3d] ", road_vertices[row]);
+			for(int col = 0; col < len; ++col){
+				printf("%3d ", longest_path[col + row*len]);
+			}
+			printf("\n");
+		}
+		printf("player=%d longest=%d from %d to %d\n", player, longest, v1, v2);
+	}
+
 	
 
 	delete[] longest_path;
@@ -1509,7 +1527,7 @@ int Model::compute_longest_road_length(int player){
 /*
 Determines the longest path between vertices v1 and v2, given that
 we can only follow edges/roads owned by the player, and any enemy
-settlement/city whcih is in the way breaks the path.
+settlement/city/vertices whcih are in the way breaks the path.
 
 Details on how the algorithm works.
 This is basically a modified DFS on a undirected dis-connnected cyclic graph.
@@ -1578,7 +1596,6 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 	int v;
 	int e;
 	int len;
-	int longest = 0;
 	int connected = 0;
 	while(!stack.empty()){
 		v = stack.front();
@@ -1592,11 +1609,6 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 		// special case of the first vertex
 		if(e != -1){ ecover.push_back(e); }
 					
-		// record the longest path so far.
-		if(len > longest){
-			longest = len;
-		}
-
 		// check to see if this is the target vertex
 		if(v == v2){
 			// connected by the current length.
@@ -1612,7 +1624,7 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 		// make sure that the vertex is not an enemy owned city.
 		vertex_face_t* vertex = &_vertex_array[v];
 		if(vertex->player != player && vertex->player != -1 &&
-			(vertex->type == vertex_face_t::CITY && vertex->type == vertex_face_t::SETTLEMENT)
+			(vertex->type == vertex_face_t::CITY || vertex->type == vertex_face_t::SETTLEMENT)
 			)
 		{
 			continue; 
@@ -1674,7 +1686,8 @@ std::vector<int> Model::determine_longest_road_of_players(){
 		_players[i].longest_road = len_list[i];
 	}
 
-	Logger::getLog("jordan.log").log("Model::player_holding_longest_road_card() time taken for %d players = (%5f s)",_num_players, (double)(clock()-time)/CLOCKS_PER_SEC);
+	Logger::getLog("jordan.log").log("Model::player_holding_longest_road_card() \
+time taken for %d players = (%5f s)",_num_players, (double)(clock()-time)/CLOCKS_PER_SEC);
 	return len_list;
 }
 
@@ -1804,7 +1817,7 @@ int Model::get_error(){
 */
 Tiles* Model::get_tile(int col, int row){
 	if(col < 0 || row < 0 || col >= _board_width || row >= _board_height){
-		set_error(Model::MODEL_ERROR_INVALID_TILE);
+		//set_error(Model::MODEL_ERROR_INVALID_TILE);
 		return nullptr;
 	}
 	return &_board[col + row*_board_width];
@@ -1836,7 +1849,7 @@ Tiles* Model::get_tile_from_vertex(int vertex, int* c, int* r){
 */
 vertex_face_t* Model::get_vertex(int num){
 	if(num < 0 || num >= (int)_vertex_array.size()){
-		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
+		//set_error(Model::MODEL_ERROR_INVALID_VERTEX);
 		return nullptr;
 	}
 	return &_vertex_array[num];
@@ -1847,7 +1860,7 @@ vertex_face_t* Model::get_vertex(int num){
 */
 vertex_face_t* Model::get_face(int num){
 	if(num < 0 || num >= (int)_face_array.size()){
-		set_error(Model::MODEL_ERROR_INVALID_FACE);
+		//set_error(Model::MODEL_ERROR_INVALID_FACE);
 		return nullptr;
 	}
 	return &_face_array[num];
@@ -2131,7 +2144,7 @@ TODO Create a player interface which will accomplish these tasks
 */
 Player* Model::get_player(int player){
 	if(player < 0 || player >= _num_players){
-		set_error(Model::MODEL_ERROR_ERROR);
+		//set_error(Model::MODEL_ERROR_ERROR);
 		return nullptr;
 	}
 	return &_players[player];

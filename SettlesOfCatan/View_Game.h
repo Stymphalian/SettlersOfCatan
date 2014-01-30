@@ -67,13 +67,13 @@ private:
 };
 class message_pane_t : public pane_t{
 public:
-	const char* message;
+	std::string message;
 	unsigned timeout;
 	unsigned current_tick;
 	bool just_finished;
 	
 	message_pane_t() : pane_t(){
-		this->message = nullptr;
+		this->message = "";
 		this->timeout = 0;
 		this->current_tick = 0;
 		this->just_finished = false;

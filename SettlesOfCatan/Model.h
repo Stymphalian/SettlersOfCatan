@@ -106,6 +106,7 @@ private:
 	int _thief_pos_y;
 	int _roll_value;
 	int _turn_count;
+	bool _dirty_flag_for_longest_road;
 	
 	int _num_levels; // how many rings are there
 	int _num_extensions; // how many extensions were used
@@ -132,6 +133,7 @@ private:
 
 	int _deck_pos;
 	std::vector<dev_cards_t> _dev_deck; // a list holding the deck of dev cards
+
 			
 	// methods
 	void set_defaults();
@@ -199,7 +201,6 @@ private:
 	std::vector<int> determine_longest_road_of_players(); // expensive!
 	int _get_player_with_longest_road();
 	
-
 	bool face_in_range(int key);
 	bool vertex_in_range(int key);
 	int get_common_vertex(int edge1, int edge2);
