@@ -31,6 +31,8 @@ public:
 	void set_deepest_level_allowed(Logger::levels level);
 	void log(const char* format, ...);	
 	void log(Logger::levels level, const char* format, ...);
+	void log_nnl(Logger::levels level, const char* format, ...);
+	void log_append(Logger::levels level, const char* format, ...);
 	void SDL_log(Logger::levels level, const char* format, ...);
 	void Mix_log(Logger::levels level, const char* format, ...);
 	void TTF_log(Logger::levels level, const char* format, ...);
@@ -48,6 +50,8 @@ private:
 	std::string get_current_time();
 	std::string get_level_from_enum(Logger::levels level);
 	void _log(Logger::levels level, const char* format, va_list args);
+	void _log_nnl(Logger::levels level, const char* format, va_list args);
+	void _log_append(Logger::levels level, const char* format, va_list args);
 
 	// private constructors and destructors
 	Logger(){}

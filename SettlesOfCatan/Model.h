@@ -93,6 +93,8 @@ public:
 	bool buy_dev_card(int player);
 	bool pay_for_item(int player, resource_t* price);
 	void init_players(std::vector<Player>* players);
+	int get_largest_army_size(int player);
+	int get_longest_road_length(int player);
 
 private:
 	Logger& logger;
@@ -191,18 +193,16 @@ private:
 	
 	int num_possiblities_dice(int sum, int num_dice, int num_sides);	
 
-	int largest_army_size(int player);
-	int longest_road_length(int player);
-	int _longest_road(int player,int v_key, std::vector<int>* covered);
-	int _longest_road_stack(int player, int v_key, std::vector<int>* covered);
+	bool is_in_array(int key, std::vector<int>* cover);
+	int compute_longest_road_length(int player);	
 	int _path_to_vertex(int player, int v1, int v2);
-	int _player_holding_longest_road_card2();
-
-	bool clear_path_to_edge(int player, int edge);
+	std::vector<int> determine_longest_road_of_players(); // expensive!
+	int _get_player_with_longest_road();
+	
 
 	bool face_in_range(int key);
 	bool vertex_in_range(int key);
 	int get_common_vertex(int edge1, int edge2);
-	int get_common_face(int vertex1, int vertex2);
-
+	int get_common_face(int vertex1, int vertex2);	
 };
+

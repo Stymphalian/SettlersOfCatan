@@ -48,7 +48,7 @@ void Model::set_defaults(){
 	_vertex_array.clear();
 	_face_array.clear();
 	_deck_pos = 0;
-	_dev_deck.clear();	
+	_dev_deck.clear();		
 }
 
 Model::Model(int num_players) : logger(Logger::getLog("jordan.log")){
@@ -1019,6 +1019,10 @@ bool Model::build_settlement(int player, int pos){
 		_players[player].building_cap[building_t::SETTLEMENT]--;
 		_players[player].buildings.push_back(pos);
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d", player, col, row, pos);
+
+
+		// WEIRD expensive
+		determine_longest_road_of_players();
 		return true;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Unable to build settlement");
@@ -1078,8 +1082,8 @@ bool Model::build_road(int player, int pos){
 		_players[player].building_cap[building_t::ROAD]--;
 		_players[player].roads.push_back(pos);
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
-
-		_player_holding_longest_road_card2();
+	
+		_players[player].longest_road = compute_longest_road_length(player);
 		return true;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Unable to build road.");
@@ -1403,227 +1407,285 @@ int Model::num_possiblities_dice(int sum, int num_dice, int num_sides){
 	}
 	return count;
 }
-int Model::largest_army_size(int player){
-	if(player < 0 || player >= (int)_players.size()){ return -1; }
-	return _players[player].num_soldiers;
-}
-
-int Model::longest_road_length(int player){
-	if(player < 0 || player >= (int)_players.size()){ return -1; }
-	std::vector<int> cover;
-	cover.reserve(20);
-
-	Player* p = &_players[player];
-	int longest = 0;
-
-	// for every player owned settlement and city 
-	// check how long each of their longests roads are.
-	for(int i = 0; i < (int)p->buildings.size(); ++i){
-		int  v_key = p->buildings[i];
-		int candidate = _longest_road_stack(player, v_key, &cover);
-
-		// it the candidate length is longer than the currently 
-		// recorded longest, then we now have a NEW longest
-		if(candidate  > longest){
-			longest = candidate;
-		}
-	}
-	return longest;
-}
 
 
-bool is_in_array(int key, std::vector<int>* cover){
+bool Model::is_in_array(int key, std::vector<int>* cover){
 	for(int i = 0; i < (int)cover->size(); ++i){
 		if(key == (*cover)[i]){ return true; }
 	}
 	return false;
 }
 
-int Model::_longest_road(int player, int v_key, std::vector<int>* cover){
-	// the vertex has already been covered
-	if(is_in_array(v_key, cover)){ return 0; }
+/*
+Determine the longest road length for the given player.
 
-	// add this vertex to the cover list.
-	cover->push_back(v_key);
+The algorithm works as follows:
+let E be all the roads owned by the play
+let V be all the vertices which are the endpoints of the set E.
+let A[][] 
+For every pair of vertice vi,vj in V
+	compute A[vi][vj] = longest road between vi and vj
+Determine the longest road by finding the maximum value in A.
 
-	// for every vertex connected to the current vertex.
-	int neighbour_edge = 0;
-	int neighbour_vertex = 0;
-	int candidate = 0;
-	int longest = 0;
-	vertex_face_t* current = &_vertex_array[v_key];
-	for(int i = 0; i < 3; ++i){
-		// make sure the edge is connected by a player owned road.
-		neighbour_edge = current->face(i);
-		if(neighbour_edge == -1){ continue; }
-		vertex_face_t* face = &_face_array[neighbour_edge];
-		if(face->type != vertex_face_t::ROAD || face->player != player){
-			continue;
-		}
+@Parameter int player - the key to determine which player we are dealing with.
+@Return - int  the length of the longest road for this player.
+*/
+int Model::compute_longest_road_length(int player){
+	if(player < 0 || player >= (int)_players.size()){ return -1; }
 
-		// ask the neightbour the length of her longest road.
-		neighbour_vertex = current->vertex(i);
-		// make sure the neightbour exists, and is not an enemy city/settlement
-		// an unowned vertex is okay.
-		if(neighbour_vertex == -1){ continue; }
-		if(_vertex_array[neighbour_vertex].player != player &&
-			_vertex_array[neighbour_vertex].player != -1){
-			continue;
-		}
-		candidate = _longest_road(player, neighbour_vertex, cover);
+	Player* p = &_players[player];
+	std::vector<int> road_vertices;
+	road_vertices.reserve(20);
 
-		// one of the neighbours has a longer road.
-		if(candidate > longest){
-			longest = candidate;
-		}
-	}
-	return longest + 1;
-}
+	// add all the vertices that the roads are connected to
+	// don't add duplicates.
+	for(int i = 0; i < (int)p->roads.size(); ++i){
+		vertex_face_t* face = &_face_array[p->roads[i]];
 
-int Model::_longest_road_stack(int player, int v, std::vector<int>* cover){
-	std::list<int> stack;
-	std::list<int> length_stack; //keeps track of what level/length the node is on.
+		for(int j = 0; j < 2; ++j){
+			if(face->vertex(j) == -1){ continue; }
+			if(is_in_array(face->vertex(j), &road_vertices)){ continue; }
 
-	// push the first vertex onto the stack.
-	stack.push_back(v);
-	length_stack.push_back(0);
-
-	int v_key = 0;
-	int length = 0;
-	int longest = 0;
-	int neighbour_edge = 0;
-	int neighbour_vertex = 0;
-	int candidate = 0;
-	vertex_face_t* current;
-	vertex_face_t* face;
-
-	// while the stack is NOT empty
-	while(!stack.empty()){
-		// pop off the top of the stack.
-		v_key = stack.front();
-		length = length_stack.front();
-		stack.erase(stack.begin());
-		length_stack.erase(length_stack.begin());
-
-		// check to see if reaching this node gives us the longest road.
-
-		if(length + 1 >= longest){
-			longest = length + 1;
-		}
-
-		// the vertex has already been covered
-		if(is_in_array(v_key, cover)){ continue; }
-
-		// add this vertex to the cover list.
-		cover->push_back(v_key);
-
-		// for every vertex connected to the current vertex.		
-		current = &_vertex_array[v_key];
-		for(int i = 0; i < 3; ++i){
-			// make sure the edge is connected by a player owned road.
-			neighbour_edge = current->face(i);
-			if(neighbour_edge == -1){ continue; }
-			face = &_face_array[neighbour_edge];
-			if(face->type != vertex_face_t::ROAD || face->player != player){
-				continue;
-			}
-
-			// ask the neighbour the length of her longest road.
-			neighbour_vertex = current->vertex(i);
-			// make sure the neightbour exists, and is not an enemy city/settlement
-			// an unowned vertex is okay.
-			if(neighbour_vertex == -1){ continue; }
-			if(_vertex_array[neighbour_vertex].player != player &&
-				_vertex_array[neighbour_vertex].player != -1){
-				continue;
-			}
-
-
-			stack.push_back(neighbour_vertex);
-			length_stack.push_back(length + 1);
-
+			road_vertices.push_back(face->vertex(j));
 		}
 	}
 
+	int len = road_vertices.size();
+	int* longest_path = new int[len*len];
+	memset(longest_path, 0, sizeof(int)*len*len);
+	int longest = 0;
+	int v1 = -1;
+	int v2 = -1;
+
+	// for every pair of vertices find the greatest distance between them.
+	int temp;
+	for(int row = 0; row < len; ++row){
+		for(int col = 0; col < len; ++col){
+			v1 = road_vertices[row];
+			v2 = road_vertices[col];
+			temp = _path_to_vertex(player, v1, v2);
+			longest_path[col + row*len] = temp;
+		}
+	}
+
+	// what is the longest path?
+	longest = 0;
+	v1 = v2 = -1;
+	for(int row = 0; row < len; ++row){
+		for(int col = 0; col < len; ++col){
+			if(longest_path[col + row*len] > longest){
+				longest = longest_path[col + row*len];
+				v1 = road_vertices[row];
+				v2 = road_vertices[col];
+			}
+		}
+	}
+
+	// DEBUGGING logging
+	if(false){
+		Logger::getLog("jordan.log").log_nnl(Logger::DEBUG,"Model::compute_longest_road_length(player=%d)      ",player);
+		for(int col = 0; col < len; ++col){
+			Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", road_vertices[col]);
+		}
+		Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
+
+		for(int row = 0; row < len; ++row){			
+			Logger::getLog("jordan.log").log_nnl(Logger::DEBUG, "Model::compute_longest_road_length(player=%d)",player);
+			Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", road_vertices[row]);
+			for(int col = 0; col < len; ++col){
+				Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", longest_path[col + row*len]);
+			}
+			Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
+		}
+		Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
+		Logger::getLog("jordan.log").log(Logger::DEBUG,"Model::compute_longest_road_length(player=%d) longest=%d from %d to %d", player, longest, v1, v2);
+	}
+	
+
+	delete[] longest_path;
 	return longest;
 }
 
+/*
+Determines the longest path between vertices v1 and v2, given that
+we can only follow edges/roads owned by the player, and any enemy
+settlement/city whcih is in the way breaks the path.
+
+Details on how the algorithm works.
+This is basically a modified DFS on a undirected dis-connnected cyclic graph.
+
+function(v,v2):
+	let ecover be an array recording which edges we have already visited.
+	let stack be a stack holding vertices to visit.
+	let estack be a stack holding the edge that was taken to reach the current vertex
+	let len_stack be a stack recording what is the length to the next vertex.
+	let connected = 0 be the initial length of the longest path connecting v1 and v2
+
+	push v onto the stack the starting vertex
+	push 0 onto the len_stack
+
+	while( stack is not empty):
+		let e = estack.pop()
+		let v = stack.pop()
+		let len = len_stack.pop()
+
+		add e to the ecover list
+
+		if v is the target vertex v2 AND
+		the current length 'len' is greater than the recorded length 'connected',
+		then let connected == len
+
+		if the current vertex is an enemy owned city
+		then continue
+
+		for every (vertex,road) pair connecting to vertex v
+			if the road has already been covered
+			then continue
+
+			if the road is not a player owned road
+			then add the road to the ecover AND continue
+
+			push onto the stack vertex
+			push onto the estack road
+			push onto the len_stack (len+1)
+		end for
+	end while
+	return connected
+end function
+
+
+@Parameter int player -- the player for which we can follow roads along
+@Parameter int v1 -- the start vertex for the path
+@Parameter int v2 -- the ending destination for the path.
+@Return : the longest path from v1 to v2
+// assuming player,v1 and v2 are within their appropriate ranges.
+*/
+
 int Model::_path_to_vertex(int player, int v1, int v2){
 	std::vector<int> cover;
+	std::vector<int> ecover;
 	cover.reserve(20);
+	ecover.reserve(20);
 	std::list<int> stack;
-	std::list<int> length_stack;
-
+	std::list<int> edge_stack; // used to keep track of what edge we used to get here.
+	std::list<int> len_stack;
+	
+	// push the start vertex onto the stack
 	stack.push_back(v1);
-	length_stack.push_back(0);
+	len_stack.push_back(0);
+	edge_stack.push_back(-1);
 
-	int v_key = 0;
-	int length = 0;
+	int v;
+	int e;
+	int len;
 	int longest = 0;
-	int neighbour_edge = 0;
-	int neighbour_vertex = 0;
-	int candidate = 0;
 	int connected = 0;
-	vertex_face_t* current;
-	vertex_face_t* face;
-
 	while(!stack.empty()){
-		v_key = stack.front();
-		length = length_stack.front();
+		v = stack.front();
+		e = edge_stack.front();
+		len = len_stack.front();
+		edge_stack.erase(edge_stack.begin());
 		stack.erase(stack.begin());
-		length_stack.erase(length_stack.begin());
+		len_stack.erase(len_stack.begin());
 
-		if(length + 1 > longest){
-			longest = length + 1;
+		// mark this edge as traveresed.
+		// special case of the first vertex
+		if(e != -1){ ecover.push_back(e); }
+					
+		// record the longest path so far.
+		if(len > longest){
+			longest = len;
 		}
-		// we have found a path to the target vertex.
-		if(v_key == v2){
-			connected = length;
+
+		// check to see if this is the target vertex
+		if(v == v2){
+			// connected by the current length.
+			if(len > connected){
+				connected = len;
+			}
 		}
 
-		// the vertex has alreay been covered.
-		if(is_in_array(v_key, &cover)){ continue; }
+		// make sure that the vertex has not already been covered
+		//if(is_in_array(v,&cover)){ continue; }
+		cover.push_back(v);
 
-		// mark the vertex as covered.
-		cover.push_back(v_key);
-
-		current = &_vertex_array[v_key];
+		// make sure that the vertex is not an enemy owned city.
+		vertex_face_t* vertex = &_vertex_array[v];
+		if(vertex->player != player && vertex->player != -1 &&
+			(vertex->type == vertex_face_t::CITY && vertex->type == vertex_face_t::SETTLEMENT)
+			)
+		{
+			continue; 
+		}
+		
+		// add all the other neighbours to the stack
+		vertex = &_vertex_array[v];
 		for(int i = 0; i < 3; ++i){
-			// make sure the edge is connect by a player owned road
-			neighbour_edge = current->face(i);
-			if(neighbour_edge == -1){ continue; }
-			face = &_face_array[neighbour_edge];
-			if(face->type != vertex_face_t::ROAD || face->player != player){
+			// make sure that a player owned road is connecting the target vertex
+			if(vertex->face(i) == -1){ continue; }
+			vertex_face_t* road = &_face_array[vertex->face(i)];
+			if(road->type != vertex_face_t::ROAD || road->player != player){
+				if(!is_in_array(vertex->face(i),&ecover)){
+					ecover.push_back(vertex->face(i));
+				}
 				continue;
 			}
+			// if this is a back-edge then keep going.
+			if(is_in_array(vertex->face(i), &ecover)){continue;}
+			
+			// check to make sure that the neighbour exists
+			if(!vertex_in_range(vertex->vertex(i))){ continue; }
 
-			// ask the neighbour the length of their longest road
-			neighbour_vertex = current->vertex(i);
-
-			// this is to handle the case in which the target vertex is enemy owned.
-			if(neighbour_vertex == v2){
-				connected = length + 1;
-			}
-
-			if(neighbour_vertex == -1){ continue; }
-			if(_vertex_array[neighbour_vertex].player != player &&
-				_vertex_array[neighbour_vertex].player != -1 &&
-				neighbour_vertex != v2){
-				continue;
-			}
-
-			stack.push_back(neighbour_vertex);
-			length_stack.push_back(length + 1);
+			stack.push_front(vertex->vertex(i));
+			len_stack.push_front(len + 1);
+			edge_stack.push_front(vertex->face(i));
 		}
 	}
-
 	return connected;
 }
+/*
+Determines the longest road for each player.
+This will interate through each player and determine from the game board
+the length of their longest road.
 
+This is a relatively expensive call when the number of roads on the board
+is around 30. This is the case because we use a (n^2)*(n^3) algoritm
+to determine the longest road for the player( ie compute_longest_road_length )
+@Return: A vector-list with the length of the longest road for each player.
 
-int Model::_player_holding_longest_road_card2(){
-	int length = 4;
-	int player = -1;
+TODO: To make this call a little less expensive, we can cache the result.
+We can save the road length for each player, so that if the users needs
+to know the lenght for that player it is a O(1) look-up instead
+of needing do this entire beast.
+*/
+std::vector<int> Model::determine_longest_road_of_players(){
+	clock_t time = clock();
+	std::vector<int> len_list;
+	len_list.reserve(_num_players);
+	for(int i = 0; i < _num_players; ++i){
+		len_list.push_back(0);
+	}
+
+	// compute the longest road lenght for every player.
+	for(int i = 0; i < (int)_players.size(); ++i){
+		len_list[i] = compute_longest_road_length(i);
+
+		// WEIRD!
+		_players[i].longest_road = len_list[i];
+	}
+
+	Logger::getLog("jordan.log").log("Model::player_holding_longest_road_card() time taken for %d players = (%5f s)",_num_players, (double)(clock()-time)/CLOCKS_PER_SEC);
+	return len_list;
+}
+
+/*
+Determines which player has the longest road.
+Preconditions:
+	the player object already hold the value of their longest road.
+*/
+int Model::_get_player_with_longest_road(){
+	int length = 0;
+	int player = 0;
 	int candidate = 0;
 
 	if(_player_holding_longest_road_card == -1){
@@ -1632,13 +1694,18 @@ int Model::_player_holding_longest_road_card2(){
 		length = 4;
 	} else {
 		player = _player_holding_longest_road_card;
-		length = longest_road_length(player);
+		length = _players[player].longest_road;
 	}
 
 	// check all the other player to see if anyone has a longer road.
 	for(int i = 0; i < (int)_players.size(); ++i){
-		if(_player_holding_longest_road_card == i){ continue; }
-		candidate = longest_road_length(i);
+		// assigne the longest road to the player object.
+		_players[i].longest_road = _players[i].longest_road;
+
+		if(_player_holding_longest_road_card == i){
+			continue;
+		}
+		candidate = _players[i].longest_road;
 		if(candidate > length){
 			length = candidate;
 			player = i;
@@ -1647,57 +1714,6 @@ int Model::_player_holding_longest_road_card2(){
 
 	_player_holding_longest_road_card = player;
 	return player;
-}
-
-bool Model::clear_path_to_edge(int player, int e){
-	std::vector<int> cover;
-	std::list<int> stack;
-
-	vertex_face_t* edge = &_face_array[e];
-	stack.push_back(edge->vertex(1));
-	stack.push_back(edge->vertex(2));
-	cover.push_back(edge->vertex(1));
-	cover.push_back(edge->vertex(2));
-
-	int key;
-	while(!stack.empty()){
-		key = stack.front();
-		stack.erase(stack.begin());
-		if(key == -1){ continue; }
-		if(is_in_array(key, &cover)){ continue; }
-
-		cover.push_back(key);
-
-		vertex_face_t* current = &_vertex_array[key];
-		// check if we have reached a player settlement or city
-		if(current->player == player &&
-			(current->type == vertex_face_t::CITY || current->type == vertex_face_t::SETTLEMENT)){
-			return true;
-		}
-
-		vertex_face_t* face;
-		int neighbour_edge;
-		int neighbour_vertex;
-		for(int i = 0; i < 3; ++i){
-			// make sure the edge is connect by a player owned road
-			neighbour_edge = current->face(i);
-			if(neighbour_edge == -1){ continue; }
-			face = &_face_array[neighbour_edge];
-			if(face->type != vertex_face_t::ROAD || face->player != player){
-				continue;
-			}
-
-			neighbour_vertex = current->vertex(i);
-			if(neighbour_vertex == -1){ continue; }
-			if(_vertex_array[neighbour_vertex].player != player &&
-				_vertex_array[neighbour_vertex].player != -1){
-				continue;
-			}
-
-			stack.push_back(neighbour_vertex);
-		}
-	}
-	return false;
 }
 
 
@@ -1880,7 +1896,7 @@ int Model::get_num_faces(){ return (int)_face_array.size(); }
 int Model::get_thief_x(){ return _thief_pos_x; }
 int Model::get_thief_y(){ return _thief_pos_y; }
 int Model::get_player_with_largest_army(){ return _player_holding_largest_army_card; }
-int Model::get_player_with_longest_road(){ return _player_holding_longest_road_card; }
+int Model::get_player_with_longest_road(){ return _get_player_with_longest_road(); }
 int Model::get_turn_count(){ return _turn_count; }
 int Model::get_roll_value(){ return _roll_value;}
 int Model::get_num_dice(){ return _num_dice; }
@@ -2309,4 +2325,13 @@ void Model::init_players(std::vector<Player>* players){
 			_config.buildings_cap
 			);
 	}
+}
+
+int Model::get_largest_army_size(int player){
+	if(player < 0 || player >= (int)_players.size()){ return -1; }
+	return _players[player].num_soldiers;
+}
+int Model::get_longest_road_length(int player){
+	if(player < 0 || player >= (int)_players.size()){ return -1; }
+	return _players[player].longest_road;
 }

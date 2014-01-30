@@ -1365,12 +1365,17 @@ void View_Game::render_bottom_text(pane_t& pane){
 	// TODO: longest road  and largest army.
 	off_x = 0;
 	off_y += line_spacing;
+	int p = model.get_player_with_longest_road();
+	int value = (model.get_player(p) == nullptr) ? 0 : model.get_player(p)->longest_road;
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
-		"Longest road %d segments by player %d ",0,model.get_player_with_longest_road());
+		"Longest road %d segments by player %d",value,p);
+
 	off_x = 0;
 	off_y += line_spacing;
+	p = model.get_player_with_largest_army();
+	value = (model.get_player(p) == nullptr) ? 0 : model.get_player(p)->num_soldiers;
 	Util::render_text(&ren, font_carbon_12, pane.x + off_x, pane.y + off_y, font_carbon_12_colour,
-		"Largest army %d soldiers owned by player %d",0, model.get_player_with_largest_army());
+		"Largest army %d soldiers owned by player %d",value,p);
 }
 
 void View_Game::render_top_pane(pane_t& pane){

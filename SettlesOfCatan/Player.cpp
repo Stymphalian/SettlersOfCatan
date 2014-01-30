@@ -11,6 +11,7 @@ Player::Player()
 	buildings.clear();
 	roads.clear();
 	this->num_soldiers = 0;
+	this->longest_road = 0;
 	for(int i = 0; i < building_t::NUM_OF_BUILDINGS; ++i){
 		this->building_cap[i] = 0;
 	}

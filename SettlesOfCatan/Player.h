@@ -16,6 +16,7 @@ public:
 	std::vector<int> buildings; // the vertex number
 	std::vector<int> roads; // the face number
 	int num_soldiers;
+	int longest_road;
 	int building_cap[building_t::NUM_OF_BUILDINGS];
 
 	//construtor and destructor

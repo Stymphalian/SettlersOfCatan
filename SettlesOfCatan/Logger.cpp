@@ -79,6 +79,48 @@ void Logger::_log(Logger::levels level, const char* format, va_list args){
 		fflush(stderr);
 	}
 }
+void Logger::_log_nnl(Logger::levels level, const char* format, va_list args){
+	// Output to the log
+	fprintf(file_stream, "%s | %-10s |\t",
+		get_current_time().c_str(), get_level_from_enum(level).c_str()
+		);
+	vfprintf(file_stream, format, args);
+	//fprintf(file_stream, "\n");
+	// Flush out the data from the file stream
+	fflush(file_stream);
+
+	// Ouput to stderr as well
+	if(output_to_stderr_flag){
+		fprintf(stderr, "%s | %-10s |\t",
+			get_current_time().c_str(), get_level_from_enum(level).c_str()
+			);
+		vfprintf(stderr, format, args);
+		//fprintf(stderr, "\n");
+		// Flush out the data from the file stream
+		fflush(stderr);
+	}
+}
+void Logger::_log_append(Logger::levels level, const char* format, va_list args){
+	// Output to the log
+	/*fprintf(file_stream, "%s | %-10s |\t",
+		get_current_time().c_str(), get_level_from_enum(level).c_str()
+		);*/
+	vfprintf(file_stream, format, args);
+	//fprintf(file_stream, "\n");
+	// Flush out the data from the file stream
+	fflush(file_stream);
+
+	// Ouput to stderr as well
+	if(output_to_stderr_flag){
+		/*fprintf(stderr, "%s | %-10s |\t",
+			get_current_time().c_str(), get_level_from_enum(level).c_str()
+			);*/
+		vfprintf(stderr, format, args);
+		//fprintf(stderr, "\n");
+		// Flush out the data from the file stream
+		fflush(stderr);
+	}
+}
 
 
 void Logger::set_level(Logger::levels level){
@@ -114,6 +156,30 @@ void Logger::log(Logger::levels level, const char* format, ...){
 
 	// Do the logging
 	_log(level, format, args);
+	va_end(args);
+}
+void Logger::log_nnl(Logger::levels level, const char* format, ...){
+	if(!format){ return; }
+	if(good_flag == false){ return; }
+
+	// Open up all the variable arguments
+	va_list args;
+	va_start(args, format);
+
+	// Do the logging
+	_log_nnl(level, format, args);
+	va_end(args);
+}
+void Logger::log_append(Logger::levels level, const char* format, ...){
+	if(!format){ return; }
+	if(good_flag == false){ return; }
+
+	// Open up all the variable arguments
+	va_list args;
+	va_start(args, format);
+
+	// Do the logging
+	_log_append(level, format, args);
 	va_end(args);
 }
 
