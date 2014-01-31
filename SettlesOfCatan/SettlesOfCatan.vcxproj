@@ -53,13 +53,19 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Jordan|Win32'">
+    <LibraryPath>C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LibraryPath>C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -83,7 +89,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -109,14 +115,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\include;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\include;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\include;C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua522.lib;sqlite3.lib;SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_mixer.lib;SDL2_net.lib;SDL2_ttf.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>

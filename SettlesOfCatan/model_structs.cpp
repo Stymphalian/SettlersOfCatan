@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "Util.h"
 
+
 // static variables
 std::string dev_cards_t::default_messages[dev_cards_t::NUM_OF_DEV_CARDS] = {
 	"Move the robber. Steal 1 resource card from the owner of an adjacent settlemnt or city.",

@@ -63,7 +63,7 @@ void Game::construct(const char* title,int w, int h){
 									default_window_w, default_window_h,
 									SDL_WINDOW_SHOWN);
 	if(win == nullptr){
-		logger.SDL_log(logger.ERROR, "SDL_CreateWindow");
+		logger.SDL_log(Logger::ERROR, "SDL_CreateWindow");
 		active = false;
 	}
 
@@ -72,7 +72,7 @@ void Game::construct(const char* title,int w, int h){
 		SDL_RENDERER_ACCELERATED |
 		SDL_RENDERER_PRESENTVSYNC);
 	if(ren == nullptr) {
-		logger.SDL_log(logger.ERROR, "SDL_CreateRenderer");
+		logger.SDL_log(Logger::ERROR, "SDL_CreateRenderer");
 		active = false;
 	}
 	

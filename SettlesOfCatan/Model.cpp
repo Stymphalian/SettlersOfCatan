@@ -18,6 +18,7 @@
 	Setting the model to default empty values.
 	Therefore usually 0 or -1.
 */
+
 void Model::set_defaults(){
 	_model_error = Model::MODEL_ERROR_NONE;
 	_num_dice = 0;
@@ -1206,6 +1207,8 @@ bool Model::_can_build_road(int player, int pos){
 				)
 			{
 				blocked_i[i] = true;
+			} else{
+				always_okay_to_build = true;
 			}
 		}
 	}
@@ -1259,6 +1262,9 @@ bool Model::_can_build_road(int player, int pos){
 		} while(false);
 	}
 
+
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::_can_build_road() building road conditions road_exist=%d blocked=%d water_tiled=%d special_condition=%d",
+					road_exists, blocked, water_tiled, special_condition);
 	return (road_exists && !blocked && special_condition && !water_tiled);
 }
 
@@ -1610,25 +1616,17 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 		if(e != -1){ ecover.push_back(e); }
 					
 		// check to see if this is the target vertex
-		if(v == v2){
-			// connected by the current length.
-			if(len > connected){
-				connected = len;
-			}
+		if(v == v2 && len > connected){
+			connected = len;
 		}
 
-		// make sure that the vertex has not already been covered
-		//if(is_in_array(v,&cover)){ continue; }
-		cover.push_back(v);
-
+	
 		// make sure that the vertex is not an enemy owned city.
 		vertex_face_t* vertex = &_vertex_array[v];
-		if(vertex->player != player && vertex->player != -1 &&
-			(vertex->type == vertex_face_t::CITY || vertex->type == vertex_face_t::SETTLEMENT)
-			)
-		{
-			continue; 
-		}
+		if(vertex->player != player && 
+			vertex->player != -1 &&
+			(vertex->type == vertex_face_t::CITY || vertex->type == vertex_face_t::SETTLEMENT) )
+		{continue; }
 		
 		// add all the other neighbours to the stack
 		vertex = &_vertex_array[v];

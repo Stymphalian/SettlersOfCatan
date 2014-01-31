@@ -2,7 +2,6 @@
 #include "Logger.h"
 #include "M_math.h"
 
-
 M_math::~M_math(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "M_math destructor");
 }

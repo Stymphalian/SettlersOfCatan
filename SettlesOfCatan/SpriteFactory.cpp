@@ -5,7 +5,6 @@
 #include "Sprite.h"
 #include "Logger.h"
 
-
 SpriteFactory& SpriteFactory::get(SDL_Renderer* ren){
 	static SpriteFactory instance(ren);
 	return instance;

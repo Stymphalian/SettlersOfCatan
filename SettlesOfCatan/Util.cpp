@@ -30,7 +30,7 @@ SDL_Texture* Util::load_texture(const char* file, SDL_Renderer* ren){
 	SDL_Texture*  texture = IMG_LoadTexture(ren, file);
 	if(texture == nullptr){
 		Logger& logger = Logger::getLog("jordan.log");
-		logger.IMG_log(logger.ERROR, "IMG_LoadTexture(%s)",file);
+		logger.IMG_log(Logger::ERROR, "IMG_LoadTexture(%s)",file);
 		return 0;
 	}
 	return texture;
@@ -40,14 +40,14 @@ SDL_Texture* Util::load_texture_bmp(const char* file, SDL_Renderer* ren){
 	Logger& logger = Logger::getLog("jordan.log");
 	SDL_Surface* bmp = SDL_LoadBMP(file);
 	if(bmp == nullptr){
-		logger.SDL_log(logger.ERROR, "SDL_LoadBMP(%s)",file);
+		logger.SDL_log(Logger::ERROR, "SDL_LoadBMP(%s)",file);
 		return 0;
 	}
 
 	SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, bmp);
 	SDL_FreeSurface(bmp);
 	if(tex == nullptr) {
-		logger.SDL_log(logger.ERROR, "SDL_CreateTextureFromSurface");
+		logger.SDL_log(Logger::ERROR, "SDL_CreateTextureFromSurface");
 		return 0;
 	}
 	return tex;
@@ -121,7 +121,7 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	char msg[2056];
 	int size = vsprintf(msg, format, args);
 	if(size == -1){
-		logger.log(logger.ERROR, "vsprintf");
+		logger.log(Logger::ERROR, "vsprintf");
 		return;
 	}
 	va_end(args);
@@ -129,7 +129,7 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	// Create the surface, which we will load onto the texture.
 	SDL_Surface* surface = TTF_RenderText_Blended(font, msg, color);
 	if(surface == nullptr){
-		logger.TTF_log(logger.ERROR, "TTF_RenderText_Blended with text %s",format);
+		logger.TTF_log(Logger::ERROR, "TTF_RenderText_Blended with text %s",format);
 		return;
 	}
 
@@ -137,7 +137,7 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(ren, surface);
 	SDL_FreeSurface(surface);
 	if(texture == nullptr){
-		logger.SDL_log(logger.ERROR, "SDL_CreateTextureFromSurface with text %s",format);
+		logger.SDL_log(Logger::ERROR, "SDL_CreateTextureFromSurface with text %s",format);
 		return;
 	}
 
@@ -225,7 +225,7 @@ Uint32 Util::get_userev(const char* ev){
 	type.name = ev;
 	type.ev = SDL_RegisterEvents(1);
 	if(type.ev == ((Uint32)-1)){
-		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
+		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
 		//printf("error userev");
 		return (Uint32)-1;
 	}	

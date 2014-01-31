@@ -23,7 +23,7 @@ Uint32 Timer::get_interval(){ return interval; };
 bool Timer::start(){
 	timer_id = SDL_AddTimer(interval, Timer::timer_callback,this);
 	if(timer_id == 0){
-		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_AddTimer");
+		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "SDL_AddTimer");
 		return false;
 	}
 	running = true;
@@ -32,7 +32,7 @@ bool Timer::start(){
 bool Timer::stop(){
 	if(running == false){ return true; }
 	if(SDL_RemoveTimer(timer_id) == SDL_FALSE){
-		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "SDL_RemoveTimer %d",timer_id);
+		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "SDL_RemoveTimer %d",timer_id);
 		return false;
 	}
 	running = false;
@@ -72,7 +72,7 @@ TimerFactory::TimerFactory(int param){
 	
 	m_user_event_type_timer = SDL_RegisterEvents(1);
 	if(m_user_event_type_timer == ((Uint32)-1)){
-		Logger::getLog("jordan.log").SDL_log(Logger::levels::ERROR, "TimerFactory::SDL_RegisterEvents");
+		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "TimerFactory::SDL_RegisterEvents");
 		m_user_event_type_timer = 0;
 	}
 }

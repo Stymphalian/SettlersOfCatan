@@ -1,6 +1,8 @@
 #include "Player.h"
 #include "Logger.h"
 
+
+
 Player::Player()
 {
 	this->name = "Player";

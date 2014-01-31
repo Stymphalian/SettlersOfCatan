@@ -2,7 +2,6 @@
 #include "CheckBox.h"
 #include "Collision.h"
 
-
 CheckBox::CheckBox(){
 	this->x = 0;
 	this->y = 0;

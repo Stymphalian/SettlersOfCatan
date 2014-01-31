@@ -20,16 +20,17 @@ log( level,
 #include <ctime>
 #include <SDL.h>
 
+
 class Logger{
 public:
 	// static enumerations and getLog()
-	enum levels{ NONE=0, DEBUG, ERROR, WARN, INFO };
+	enum levels { NONE = 0, DEBUG, ERROR, WARN, INFO };
 	static Logger& getLog(const char* file);
 
 	// public methods
 	void set_level(Logger::levels level);
 	void set_deepest_level_allowed(Logger::levels level);
-	void log(const char* format, ...);	
+	void log(const char* format, ...);
 	void log(Logger::levels level, const char* format, ...);
 	void log_nnl(Logger::levels level, const char* format, ...);
 	void log_append(Logger::levels level, const char* format, ...);
@@ -55,10 +56,8 @@ private:
 
 	// private constructors and destructors
 	Logger(){}
-	Logger(const char* filename,bool output_to_stderr_aswell);
+	Logger(const char* filename, bool output_to_stderr_aswell);
 	Logger(const Logger& orig); // copy constructor
 	virtual ~Logger();
 	void operator= (Logger const&); // assignment
 };
-
-
