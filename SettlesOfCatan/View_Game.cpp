@@ -982,10 +982,26 @@ void View_Game::render_model_board_tiles(pane_t& pane){
 
 	// render the thief on the board
 	if(model.get_thief_x() != -1  && 
-		model.get_tile(model.get_thief_x(), model.get_thief_y()) != nullptr){
+		model.get_tile(model.get_thief_x(), model.get_thief_y()) != nullptr)
+	{
 		Tile_intersect* intersect = &tiles[model.get_thief_x() + model.get_thief_y()*model.get_board_width()];
-		SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
-		Util::render_texture(&ren, hextile_spritesheet, intersect->x + pane.x ,intersect->y + pane.y, &clip);
+		//SDL_Rect clip = { tile_w * 4, tile_h * 2, tile_w, tile_h };
+		int type = model.get_tile(model.get_thief_x(), model.get_thief_y())->type;
+	
+		// TODO : We should have a configurable parameter to check to see if
+		// coloure moduliation is possible.
+		// TODO: Make the amout of alpha shading configurable?
+		Uint8 r, g, b,a;
+		SDL_GetTextureColorMod(hextile_spritesheet, &r, &g, &b);
+		SDL_GetTextureAlphaMod(hextile_spritesheet, &a);
+		SDL_SetTextureColorMod(hextile_spritesheet, 0,0,0);
+		SDL_SetTextureAlphaMod(hextile_spritesheet, 200);
+		//printf("%d,%d,%d,%d\n", r, g, b, a);
+
+		Util::render_texture(&ren, hextile_spritesheet, intersect->x + pane.x, intersect->y + pane.y, &hextile_clips[type]);
+		//Util::render_texture(&ren, hextile_spritesheet, intersect->x + pane.x ,intersect->y + pane.y, &clip);
+		SDL_SetTextureColorMod(hextile_spritesheet,r,g,b);
+		SDL_SetTextureAlphaMod(hextile_spritesheet,a);
 	}
 
 }
@@ -1268,8 +1284,18 @@ void View_Game::render_connecting_tiles(pane_t& pane, vertex_face_t* origin, int
 			intersect->y + pane.y,
 			intersect->w,intersect->h
 		};
-		// Do the rendering for the connected tile.		
+		int type = model.get_tile(origin->tile_x(i), origin->tile_y(i))->type;
 
+		// Do the rendering for the connected tile.
+		Uint8 r, g, b, a;
+		SDL_GetTextureColorMod(hextile_spritesheet, &r, &g, &b);
+		SDL_GetTextureAlphaMod(hextile_spritesheet, &a);
+		SDL_SetTextureColorMod(hextile_spritesheet,dcolour.r,dcolour.g,dcolour.b);
+		SDL_SetTextureAlphaMod(hextile_spritesheet, 180);
+		Util::render_texture(&ren, hextile_spritesheet, rect.x, rect.y,&hextile_clips[type]);
+		SDL_SetTextureColorMod(hextile_spritesheet, r, g, b);
+		SDL_SetTextureAlphaMod(hextile_spritesheet, a);
+	
 		// show the number ordering
 		if(_debug.item_numbering){
 			Util::render_text(&ren, font_carbon_12, rect.x, rect.y, Util::colour_black(), "%d", i);
@@ -1522,6 +1548,7 @@ void View_Game::render(){
 			Util::render_rectangle(&ren, &r, c);
 		}
 	}
+
 	SDL_RenderPresent(&ren);
 }
 

@@ -42,6 +42,7 @@
 class Util{
 public:
 	// static methods
+	static Uint32 render_count;
 	static SDL_Surface* load_surface(const char* file);
 	static SDL_Texture* load_texture(const char* file, SDL_Renderer* ren);
 	static SDL_Texture* load_texture_bmp(const char* file, SDL_Renderer* ren);

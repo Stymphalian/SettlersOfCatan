@@ -21,8 +21,8 @@ View_Play::View_Play(SDL_Window& win, SDL_Renderer& ren): IView(win,ren){
 	mouse_intersect.hook(&mouse_x, &mouse_y);
 	mouse_intersect.add_rect(0, 0, 0, 1, 1);
 	// MY STUFF STARt
-
-
+	texture = Util::load_texture("data/hextiles_spritesheet.png", &ren);
+	amount = 100000;
 	// MY STUFF END
 	font_carbon_12 = TTF_OpenFont("data/carbon.ttf", 12);
 	font_carbon_12_colour = { 177, 177, 98, 255 };
@@ -66,7 +66,8 @@ void View_Play::handle_keyboard_events(SDL_Event& ev){
 
 		// MY STUFF START
 		if(keyboard[SDL_SCANCODE_1]){
-
+			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
+			amount += dir;
 		}
 		// MY STUFF END
 
@@ -106,6 +107,20 @@ void View_Play::update(SDL_Event& ev){
 
 void View_Play::render(){
 	SDL_RenderClear(&ren);
+	//Util::render_text(&ren, font_carbon_12, 5, 5, font_carbon_12_colour, "ticks = %5f      amount = %d", (float)SDL_GetTicks()/1000,amount);
+
+	Uint32 start = SDL_GetTicks();
+	for(int i = 0; i < amount; ++i){
+		Uint8 r, g, b, a;
+		SDL_GetTextureColorMod(texture, &r, &g, &b);
+		SDL_GetTextureAlphaMod(texture, &a);
+		SDL_SetTextureColorMod(texture, 200,200,200);
+		SDL_SetTextureAlphaMod(texture, 180);
+		SDL_SetTextureColorMod(texture, r,g,b);
+		SDL_SetTextureAlphaMod(texture, a);
+	}
+	Util::render_text(&ren, font_carbon_12, 5, 5, font_carbon_12_colour, "ticks = %5f      amount = %d", (float)(SDL_GetTicks()-start) / 1000, amount);
+
 	
 	SDL_RenderPresent(&ren);
 }

@@ -4,6 +4,9 @@
 #include "Util.h"
 #include "Logger.h"
 
+
+Uint32 Util::render_count = 0;
+
 Util::Util(){}
 Util::~Util(){
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Util destructor");
@@ -56,6 +59,8 @@ SDL_Texture* Util::load_texture_bmp(const char* file, SDL_Renderer* ren){
 
 void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y,
 	SDL_Rect* clip){
+	Util::render_count++;
+
 	// Query the texture to gets its width/height to use
 	SDL_Rect dst;
 	dst.x = x;
@@ -78,6 +83,7 @@ void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y,
 void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex,
 	int x, int y, int w, int h, SDL_Rect* clip)
 {
+	Util::render_count++;
 	// Query the texture to gets its width/height to use
 	SDL_Rect dst;
 	dst.x = x;
@@ -91,7 +97,9 @@ void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex,
 	}
 }
 
-void Util::render_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color color = { 0, 0, 0, 0 }){
+void Util::render_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color color = { 0, 0, 0, 0 })
+{
+	Util::render_count++;
 	Uint8 red, green, blue, alpha;
 	SDL_GetRenderDrawColor(ren, &red, &green, &blue, &alpha);
 	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b,color.a);
@@ -102,6 +110,7 @@ void Util::render_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color color =
 	SDL_SetRenderDrawColor(ren, red, green, blue, alpha);
 }
 void Util::render_fill_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color color = { 0, 0, 0, 0 }){
+	Util::render_count++;
 	Uint8 red, green, blue, alpha;
 	SDL_GetRenderDrawColor(ren, &red, &green, &blue, &alpha);
 	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b, color.a);
@@ -114,6 +123,7 @@ void Util::render_fill_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color co
 
 void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Color color, const char* format, ...){
 	Logger& logger = Logger::getLog("jordan.log");
+	Util::render_count++;
 
 	// Create a string with the message
 	va_list args;

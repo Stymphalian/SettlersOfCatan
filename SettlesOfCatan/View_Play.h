@@ -26,9 +26,8 @@ public:
 	Uint32 button;
 	int mouse_x, mouse_y;
 
-
 	// M Y  S T U F F   S T A R T
-
+	int amount;
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor

@@ -98,7 +98,7 @@ void Game::run(){
 	logger.log(Logger::DEBUG, "Game::run()");
 	
 	// HACK !^0^!
-	Model model(2);
+	Model model(1);
 	View_Game game_view(model,*win,*ren);
 	if(game_view.active == false){ return; }
 	View_Play play_view(*win, *ren);
