@@ -50,6 +50,7 @@ Game::~Game(){
 
 void Game::construct(const char* title,int w, int h){
 	Logger& logger = Logger::getLog("jordan.log");
+	start_load_time = SDL_GetTicks();
 	active = true;
 	default_window_w = w;
 	default_window_h = h;
@@ -105,6 +106,11 @@ void Game::run(){
 	current_view = &game_view;
 	//current_view = &play_view;
 	Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,nullptr,nullptr);
+	
+	// WEIRD
+	Uint32 end_load_time = SDL_GetTicks();
+	//printf("Game::run() Load time = %5f s", ((float)end_load_time - start_load_time) / 1000);
+	Logger::getLog("jordan.log").log(Logger::DEBUG, "Game::run() Load time = %5f s", ((float)end_load_time - start_load_time)/1000);
 
 	// main event loop
 	SDL_Event e;

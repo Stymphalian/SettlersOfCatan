@@ -11,6 +11,7 @@ Player::Player()
 	this->resources.zero_out();
 	dev_cards.clear();
 	buildings.clear();
+	owned_ports.clear();
 	roads.clear();
 	this->num_soldiers = 0;
 	this->longest_road = 0;
@@ -25,6 +26,7 @@ Player::~Player(){
 	dev_cards.clear();
 	buildings.clear();
 	roads.clear();
+	owned_ports.clear();
 }
 
 void Player::init(std::string name,
@@ -47,6 +49,7 @@ void Player::init(std::string name,
 	}
 	buildings.clear();
 	roads.clear();
+	owned_ports.clear();
 }
 
 int Player::get_hand_size(){
@@ -62,4 +65,11 @@ bool Player::add_resource(int type,int amount){
 	if(resources.res[type] + amount < 0){ return false; }
 	resources.res[type] += amount;
 	return true;
+}
+
+bool Player::owns_port(Tiles::tiles port_type){
+	for(int i = 0; i < (int)owned_ports.size(); ++i){
+		if(port_type == owned_ports[i]){ return true; }
+	}
+	return false;
 }

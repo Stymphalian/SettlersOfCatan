@@ -127,16 +127,17 @@
 		this->level = level;
 	}
 	void Logger::set_deepest_level_allowed(Logger::levels level){
-		if(level == Logger::levels::NONE){
+		/*if(level == Logger::levels::NONE){
 			this->depth_level = Logger::levels::DEBUG;
 			return;
-		}
+		}*/
 		this->depth_level = level;
 	}
 
 	void Logger::log(const char* format, ...){
 		if(!format){ return; }
 		if(good_flag == false){ return; }
+		if(level < depth_level){ return; }
 
 		// Open up all the variable arguments
 		va_list args;
@@ -149,6 +150,7 @@
 	void Logger::log(Logger::levels level, const char* format, ...){
 		if(!format){ return; }
 		if(good_flag == false){ return; }
+		if(level < depth_level){ return; }
 
 		// Open up all the variable arguments
 		va_list args;

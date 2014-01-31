@@ -24,7 +24,7 @@ log( level,
 class Logger{
 public:
 	// static enumerations and getLog()
-	enum levels { NONE = 0, DEBUG, ERROR, WARN, INFO };
+	enum levels { NONE = 0, DEBUG, ERROR, WARN, INFO,NO_LOGGING };
 	static Logger& getLog(const char* file);
 
 	// public methods

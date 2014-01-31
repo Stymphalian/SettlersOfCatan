@@ -1005,7 +1005,7 @@ bool Model::build_settlement(int player, int pos){
 		return false;
 	}
 
-	// find the tile associate with this vertex
+	// find the tile associated with this vertex
 	int col, row;
 	Tiles* tile = _find_tile_from_vertex(pos, &col, &row);
 	if(tile == nullptr){
@@ -1024,8 +1024,49 @@ bool Model::build_settlement(int player, int pos){
 		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d", player, col, row, pos);
 
 
-		// WEIRD expensive
-		determine_longest_road_of_players();
+		
+		// WEIRD. Notice that we only need to check for road breaks
+		// if atleast two out of the three vertices are owned by a different player.
+		// we only need to re-calculate the length of that 'different' player's longest road.
+		int marked_count = 0;
+		int marked[2] = { -1, -1 };
+		vertex_face_t* vert = &_vertex_array[pos];
+		for(int i = 0; i < 3; ++i){
+			if(vert->face(i) != -1){
+				vertex_face_t* f = &_face_array[vert->face(i)];
+				if(f->player == player){ continue; }
+				if(f->player == -1){ continue; }
+				if(f->type != vertex_face_t::ROAD){ continue; }
+				if(marked_count >= 2){ continue; }
+				marked[marked_count++] = f->player;
+			}
+		}		
+		// make sure that the two roads connecting are owned by the same player
+		// and is not -1.
+		if(marked_count == 2 && marked[0] == marked[1] && marked[0] != -1){
+			// recalculate the longest road for that player.
+			_players[marked[0]].longest_road = compute_longest_road_length(marked[0]);
+			Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::build_settlement() Recalculating the longest road length for player %d to be %d",
+				marked[0],_players[marked[0]].longest_road);
+		}
+
+
+		// WEIRD
+		// Add any new ports that the player might own
+		vert = &_vertex_array[pos];
+		for(int i = 0; i < 3; ++i){
+			Tiles* tiles = _get_tile(vert->tile_x(i), vert->tile_y(i));
+			if(tiles == nullptr){ continue; }
+			if(tiles->type >= Tiles::SHEEP_PORT && tiles->type <= Tiles::TRADE_PORTS){
+				// don't add duplicate ports to the owned_ports list.
+				if(is_in_array(tiles->type, &_players[player].owned_ports) == false){
+					Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::build_settlement() Player %d can now use port %d from tile col=%d,row=%d",
+						player, tiles->type,vert->tile_x(i),vert->tile_y(i));
+					_players[player].owned_ports.push_back(tiles->type);
+				}
+			}
+		}
+		
 		return true;
 	}
 	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Unable to build settlement");
@@ -1524,8 +1565,6 @@ int Model::compute_longest_road_length(int player){
 		printf("player=%d longest=%d from %d to %d\n", player, longest, v1, v2);
 	}
 
-	
-
 	delete[] longest_path;
 	return longest;
 }
@@ -1603,6 +1642,7 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 	int e;
 	int len;
 	int connected = 0;
+	bool first_time = true;
 	while(!stack.empty()){
 		v = stack.front();
 		e = edge_stack.front();
@@ -1625,8 +1665,16 @@ int Model::_path_to_vertex(int player, int v1, int v2){
 		vertex_face_t* vertex = &_vertex_array[v];
 		if(vertex->player != player && 
 			vertex->player != -1 &&
-			(vertex->type == vertex_face_t::CITY || vertex->type == vertex_face_t::SETTLEMENT) )
-		{continue; }
+			(vertex->type == vertex_face_t::CITY || vertex->type == vertex_face_t::SETTLEMENT))
+		{
+			if(first_time && v == v1 && v == v2){
+				// special condition in which the origin and destination vertex
+				// is a enemy owned vertex.
+				first_time = false;
+			}else{ 
+				continue; 
+			}
+		}
 		
 		// add all the other neighbours to the stack
 		vertex = &_vertex_array[v];
@@ -1796,6 +1844,39 @@ int Model::get_common_face(int vertex1, int vertex2){
 }
 
 
+Tiles* Model::_get_tile(int col, int row){
+	if(col < 0 || row < 0 || col >= _board_width || row >= _board_height){
+		//set_error(Model::MODEL_ERROR_INVALID_TILE);
+		return nullptr;
+	}
+	return &_board[col + row*_board_width];
+}
+
+std::vector<int> Model::determine_ports_owned_by_player(int player){
+	std::vector<int> owned_ports;
+	if(player < 0 || player >= _num_players){ return owned_ports; }	
+
+	Player* p = &_players[player];
+	for(int i = 0; i < (int) p->buildings.size(); ++i){
+		vertex_face_t* vertex = &_vertex_array[p->buildings[i]];
+
+		// for every tile attached to the 
+		for(int i = 0; i < 3; ++i){
+			Tiles* tile = _get_tile(vertex->tile_x(i), vertex->tile_y(i));
+			if(tile == nullptr){ continue; }
+
+			// if the tile is a port, then we can mark it as player owned.
+			if(tile->type >= Tiles::SHEEP_PORT && tile->type <= Tiles::TRADE_PORTS){
+				// don't add duplicates.
+				if(is_in_array(tile->type, &owned_ports) == false){
+					owned_ports.push_back(tile->type);
+				}
+			}
+		}
+	}
+	return owned_ports;
+}
+
 
 // -----------------------------------------------------------------
 //				 P U B L I C			 M E T H O D S
@@ -1814,11 +1895,7 @@ int Model::get_error(){
 @Return -- return nullptr on faliure
 */
 Tiles* Model::get_tile(int col, int row){
-	if(col < 0 || row < 0 || col >= _board_width || row >= _board_height){
-		//set_error(Model::MODEL_ERROR_INVALID_TILE);
-		return nullptr;
-	}
-	return &_board[col + row*_board_width];
+	return _get_tile(col, row);
 }
 
 /*
@@ -1992,7 +2069,9 @@ bool Model::reset(){
 		_players[i].buildings.clear();
 		_players[i].roads.clear();
 		_players[i].num_soldiers = 0;
+		_players[i].longest_road = 0;
 		_players[i].resources.zero_out();
+		_players[i].owned_ports.clear();
 		
 		// reset the number of buildings a player can place.
 		for(int j = 0; j < building_t::NUM_OF_BUILDINGS; ++j){
@@ -2003,7 +2082,6 @@ bool Model::reset(){
 	// reset the modelerror code
 	_model_error = Model::MODEL_ERROR_NONE;	
 
-	
 
 	return true;
 }

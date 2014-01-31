@@ -8,6 +8,7 @@ class IView;
 class Game{
 public:
 	// variables
+	Uint32 start_load_time;
 	int active;
 	SDL_Window* win;
 	SDL_Renderer* ren;

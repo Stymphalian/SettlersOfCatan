@@ -205,5 +205,8 @@ private:
 	bool vertex_in_range(int key);
 	int get_common_vertex(int edge1, int edge2);
 	int get_common_face(int vertex1, int vertex2);	
+
+	Tiles* _get_tile(int col, int row);
+	std::vector<int> determine_ports_owned_by_player(int player);
 };
 
