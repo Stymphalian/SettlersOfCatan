@@ -111,8 +111,8 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	_selected_face_group.can_only_select_one = true;
 
 
-	// TODO : Have a resource class for fonts.
-	font_carbon_12 = TTF_OpenFont("data/carbon.ttf", 12);
+	// TODO : Have a resource class for fonts
+	font_carbon_12 = TTF_OpenFont(Util::data_resource("carbon.ttf").c_str(), 12);
 	font_carbon_12_colour = { 177, 177, 98, 255 };
 	if(font_carbon_12 == nullptr){
 		Logger::getLog().TTF_log(Logger::ERROR, "View_Game::load() TTF_OpenFont data/carbon.ttf ");
@@ -121,6 +121,8 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 
 View_Game_Debug_Dialog::~View_Game_Debug_Dialog(){
 	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Destructor");
+	TTF_CloseFont(font_carbon_12);
+	font_carbon_12 = nullptr;
 	_data = nullptr;
 	_checkboxes.clear();
 	_board_group.clear();

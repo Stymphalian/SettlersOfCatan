@@ -3,6 +3,7 @@
 #include <string>
 #include "Logger.h"
 #include "Util.h"
+#include "Configuration.h"
 
 
 // static variables
@@ -111,53 +112,50 @@ void configuration_t::apply_defaults(){
 	Logger::getLog().log(Logger::DEBUG, "configuaration_t::apply_defaults() Setting values to default values");
 	// set the building costs
 	memset(building_costs, 0, sizeof(building_costs));
-	building_costs[building_t::buildings::ROAD].res[resource_t::WOOD] = 1;
-	building_costs[building_t::buildings::ROAD].res[resource_t::BRICK] = 1;
-	building_costs[building_t::buildings::SETTLEMENT].res[resource_t::WOOD] = 1;
-	building_costs[building_t::buildings::SETTLEMENT].res[resource_t::SHEEP] = 1;
-	building_costs[building_t::buildings::SETTLEMENT].res[resource_t::BRICK] = 1;
-	building_costs[building_t::buildings::SETTLEMENT].res[resource_t::WHEAT] = 1;
-	building_costs[building_t::buildings::CITY].res[resource_t::WHEAT] = 2;
-	building_costs[building_t::buildings::CITY].res[resource_t::ORE] = 3;
-	building_costs[building_t::buildings::DEV_CARD].res[resource_t::ORE] = 1;
-	building_costs[building_t::buildings::DEV_CARD].res[resource_t::SHEEP] = 1;
-	building_costs[building_t::buildings::DEV_CARD].res[resource_t::WHEAT] = 1;
+	for(int i = 0; i < 5; ++i){
+		building_costs[building_t::buildings::ROAD].res[resource_t::BRICK+i] = Configuration::road_costs[i];
+		building_costs[building_t::buildings::SETTLEMENT].res[resource_t::BRICK + i] = Configuration::settlement_costs[i];
+		building_costs[building_t::buildings::CITY].res[resource_t::BRICK + i] = Configuration::city_costs[i];	
+		building_costs[building_t::buildings::DEV_CARD].res[resource_t::BRICK + i] = Configuration::dev_card_costs[i];
+	}
 
 	// set the number of buildings that a player starts with
 	memset(buildings_cap, 0, sizeof(buildings_cap));
-	buildings_cap[building_t::buildings::ROAD] = 15;
-	buildings_cap[building_t::buildings::SETTLEMENT] = 5;
-	buildings_cap[building_t::buildings::CITY] = 4;
-	buildings_cap[building_t::buildings::DEV_CARD] = 0;
+	buildings_cap[building_t::buildings::ROAD] = Configuration::default_player_road;
+	buildings_cap[building_t::buildings::SETTLEMENT] = Configuration::default_player_settlement;
+	buildings_cap[building_t::buildings::CITY] = Configuration::default_player_city;
+	buildings_cap[building_t::buildings::DEV_CARD] = Configuration::default_player_dev_cards;
 
 	// setup the maximum number of tiles 
 	// default values for the num of tiles
 	memset(num_tiles, 0, sizeof(num_tiles));
-	num_tiles[Tiles::SHEEP_TILE] = 4;
-	num_tiles[Tiles::BRICK_TILE] = 3;
-	num_tiles[Tiles::WOOD_TILE] = 4;
-	num_tiles[Tiles::WHEAT_TILE] = 4;
-	num_tiles[Tiles::ORE_TILE] = 3;
-	num_tiles[Tiles::SHEEP_PORT] = 1;
-	num_tiles[Tiles::BRICK_PORT] = 1;
-	num_tiles[Tiles::WOOD_PORT] = 1;
-	num_tiles[Tiles::WHEAT_PORT] = 1;
-	num_tiles[Tiles::ORE_PORT] = 1;
-	num_tiles[Tiles::TRADE_PORTS] = 4;
-	num_tiles[Tiles::DESERT_TILE] = 1;
+	num_tiles[Tiles::SHEEP_TILE]  = Configuration::default_sheep_tiles;
+	num_tiles[Tiles::BRICK_TILE]  = Configuration::default_brick_tiles;
+	num_tiles[Tiles::WOOD_TILE]	= Configuration::default_wood_tiles;
+	num_tiles[Tiles::WHEAT_TILE]  = Configuration::default_wheat_tiles;
+	num_tiles[Tiles::ORE_TILE]    = Configuration::default_ore_tiles;
+	num_tiles[Tiles::SHEEP_PORT]  = Configuration::default_sheep_port;
+	num_tiles[Tiles::BRICK_PORT]  = Configuration::default_brick_port;
+	num_tiles[Tiles::WOOD_PORT]   = Configuration::default_wood_port;
+	num_tiles[Tiles::WHEAT_PORT]  = Configuration::default_wheat_port;
+	num_tiles[Tiles::ORE_PORT]    = Configuration::default_ore_port;
+	num_tiles[Tiles::TRADE_PORTS] = Configuration::default_trade_ports;
+	num_tiles[Tiles::DESERT_TILE] = Configuration::default_desert_tiles;
 
 	// Setup the default amount of bank resources
-	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
-		resource_cards_cap[i] = 20;
-	}
+	resource_cards_cap[0] = Configuration::default_bank_brick;
+	resource_cards_cap[1] = Configuration::default_bank_ore;
+	resource_cards_cap[2] = Configuration::default_bank_sheep;
+	resource_cards_cap[3] = Configuration::default_bank_wheat;
+	resource_cards_cap[4] = Configuration::default_bank_wood;
 
 	// setup the default number of dev cards
 	memset(dev_cards_cap, 0, sizeof(dev_cards_cap));
-	dev_cards_cap[dev_cards_t::MONOPOLY] = 2;
-	dev_cards_cap[dev_cards_t::ROAD_BUILDING] = 2;
-	dev_cards_cap[dev_cards_t::YEAR_PLENTY] = 2;
-	dev_cards_cap[dev_cards_t::SOLDIER] = 15;
-	dev_cards_cap[dev_cards_t::VICTORY] = 4;
+	dev_cards_cap[dev_cards_t::MONOPOLY]		= Configuration::default_bank_dev_monopoly;
+	dev_cards_cap[dev_cards_t::ROAD_BUILDING] = Configuration::default_bank_dev_road_building;
+	dev_cards_cap[dev_cards_t::YEAR_PLENTY]	= Configuration::default_bank_dev_year_plenty;
+	dev_cards_cap[dev_cards_t::SOLDIER]			= Configuration::default_bank_dev_soldier;
+	dev_cards_cap[dev_cards_t::VICTORY]			= Configuration::default_bank_dev_victory;
 }
 void configuration_t::apply_extensions(int num_extensions){
 	Logger::getLog().log(Logger::DEBUG, "configuaration_t::apply_extensions(%d)",num_extensions);
@@ -205,15 +203,15 @@ void configuration_t::apply_extensions(int num_extensions){
 
 		// extend the number of resources held by the bank/default
 		for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
-			resource_cards_cap[i] += 5;
+			resource_cards_cap[i] += Configuration::extensions_bank_resources;
 		}
 
 		// extend the number of dev cards in the deck
-		dev_cards_cap[dev_cards_t::MONOPOLY] += 1;
-		dev_cards_cap[dev_cards_t::ROAD_BUILDING] += 1;
-		dev_cards_cap[dev_cards_t::YEAR_PLENTY] += 1;
-		dev_cards_cap[dev_cards_t::SOLDIER] += 5;
-		dev_cards_cap[dev_cards_t::VICTORY] += 1;
+		dev_cards_cap[dev_cards_t::MONOPOLY]		+= Configuration::extensions_bank_dev_monopoly;
+		dev_cards_cap[dev_cards_t::ROAD_BUILDING] += Configuration::extensions_bank_dev_road_building;
+		dev_cards_cap[dev_cards_t::YEAR_PLENTY]	+= Configuration::extensions_bank_dev_year_plenty;
+		dev_cards_cap[dev_cards_t::SOLDIER]			+= Configuration::extensions_bank_dev_soldier;
+		dev_cards_cap[dev_cards_t::VICTORY]			+= Configuration::extensions_bank_dev_victory;
 	}
 }
 

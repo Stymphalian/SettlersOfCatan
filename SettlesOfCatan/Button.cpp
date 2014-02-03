@@ -16,19 +16,8 @@ Button::Button(const char* text, int x, int y, int z, int w, int h){
 }
 Button::~Button(){
 	Logger::getLog().log(Logger::DEBUG, "Button destructor");
-	baction = nullptr;
 }
-void Button::action(View_Game& view,Model& model){
-	if(baction != nullptr){
-		baction(view,model);
-	}
-}
-void Button::set_action(Button::button_action baction){
-	this->baction = baction;
-}
-void Button::unset_action(){
-	baction = nullptr;
-}
+
 void Button::init(const char* text, int x, int y, int z,int w, int h){
 	this->text = text;
 	this->x = x;
@@ -54,75 +43,6 @@ void Button::set_pad(int pad_x, int pad_y){
 	this->pad_y = pad_y;
 }
 
-void exit_button_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "exit_button_action");
-	SDL_Event ev;
-	SDL_zero(ev);
-	ev.type = SDL_QUIT;
-	ev.quit.type = SDL_QUIT;
-	ev.quit.timestamp = SDL_GetTicks();
-	SDL_PushEvent(&ev);
-}
-void end_turn_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "end_turn_action");
-	model.end_turn();
-	view.set_state(View_Game::state_e::NORMAL);
-	//Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,0,0);
-}
-void add_road_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "add_road_action");
-	view.set_state(View_Game::BUILD_ROAD);
-}
-void roll_action(View_Game& view, Model& model){
-	// TODO: Fuck this hack. I need a static stirng to set the message text.
-
-	static std::string msg = "Roll = ";
-	Logger::getLog().log(Logger::DEBUG, "roll_action");
-	model.roll(2, 6);
-	model.give_resources_from_roll(model.get_roll_value());
-	
-	msg = "Roll =";
-	msg += std::to_string(model.get_roll_value());
-
-	view.set_message_pane_text(msg.c_str());
-}
-void enable_debug_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "enabe_debug_action");
-	//view.debug = (view.debug) ? false : true;
-	view.open_debug_dialog();
-}
-void add_settlement_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "add_settlement_action");
-	view.set_state(View_Game::BUILD_SETTLEMENT);
-}
-void add_city_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "add_city_action");
-	view.set_state(View_Game::BUILD_CITY);
-}
-void buy_dev_card_action(View_Game& view, Model& model){
-	static std::string message = "";
-	Logger::getLog().log(Logger::DEBUG, "buy_dev_card_action");
-	if(model.buy_dev_card(model.get_current_player()) ){
-		Player* p = model.get_player(model.get_current_player());
-		dev_cards_t* card = (dev_cards_t*) p->dev_cards.back();
-		message = card->title();
-		view.set_message_pane_text(message.c_str());
-	}
-}
-void play_dev_card_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "play_dev_card_action");
-	view.set_state(View_Game::PLAY_DEV_CARD);
-}
-void trade_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "trade_action");
-	view.set_state(View_Game::state_e::TRADING);
-	view.open_trade_dialog();
-}
-void empty_action(View_Game& view, Model& model){
-	Logger::getLog().log(Logger::DEBUG, "empty_action");
-	view._debug.panel_page = (view._debug.panel_page + 1) % 3;
-	model.reset();
-}
 
 /*
 Button::Button(SDL_Renderer* ren, int x, int y, int w, int h){

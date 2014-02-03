@@ -10,7 +10,8 @@
 #include "model_structs.h"
 #include "Player.h"
 #include "IDialog.h"
-#include "View_Game_Debug_Dialog.h"
+#include "View_Game_Debug_Dialog.h"	
+#include "View_Game_Trade_Dialog.h"
 #include "CheckBox.h"
 #include "Button.h"
 #include "lizz_lua.h"
@@ -94,7 +95,9 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->draw_face = false;
 	// no debug dialog to beign with.
 	this->debug_dialog = nullptr;
+	this->trade_dialog = nullptr;
 	this->dialog_in_focus = nullptr;
+	
 
 	// setup the static panes to be used for this view
 	// top pane
@@ -156,6 +159,7 @@ View_Game::~View_Game(){
 	delete[] vertex_covered;
 	delete[] face_covered;
 	delete debug_dialog;
+	delete trade_dialog;
 	tiles.clear();
 	vertices.clear();
 	faces.clear();
@@ -531,17 +535,17 @@ bool View_Game::setup_buttons(pane_t& pane){
 	off_x += trade_button.w + horiz_pad;
 
 	// set the actions for all the button
-	exit_button.set_action(exit_button_action);
-	end_turn_button.set_action(end_turn_action);
-	roll_button.set_action(roll_action);
-	enable_debug_button.set_action(enable_debug_action);
-	misc_button.set_action(empty_action);
-	add_road_button.set_action(add_road_action);
-	add_settlement_button.set_action(add_settlement_action);
-	add_city_button.set_action(add_city_action);
-	buy_dev_card_button.set_action(buy_dev_card_action);
-	play_dev_card_button.set_action(play_dev_card_action);
-	trade_button.set_action(trade_action);
+	exit_button.set_action(View_Game_Button::exit_button_action);
+	end_turn_button.set_action(View_Game_Button::end_turn_action);
+	roll_button.set_action(View_Game_Button::roll_action);
+	enable_debug_button.set_action(View_Game_Button::enable_debug_action);
+	misc_button.set_action(View_Game_Button::empty_action);
+	add_road_button.set_action(View_Game_Button::add_road_action);
+	add_settlement_button.set_action(View_Game_Button::add_settlement_action);
+	add_city_button.set_action(View_Game_Button::add_city_action);
+	buy_dev_card_button.set_action(View_Game_Button::buy_dev_card_action);
+	play_dev_card_button.set_action(View_Game_Button::play_dev_card_action);
+	trade_button.set_action(View_Game_Button::trade_action);
 
 	// add to the button list
 	button_list.push_back(&exit_button);
@@ -557,7 +561,7 @@ bool View_Game::setup_buttons(pane_t& pane){
 	button_list.push_back(&trade_button);
 
 	// set the padding for each button
-	std::vector<Button*>::iterator it;
+	std::vector<View_Game_Button*>::iterator it;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		(*it)->set_pad(horiz_pad, vert_pad);
 	}
@@ -666,7 +670,7 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 	// which each have their own mouse,keyboard, and update methods
 	mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
 	if(e.type == SDL_MOUSEBUTTONDOWN){
-		std::vector<Button*>::iterator it;
+		std::vector<View_Game_Button*>::iterator it;
 		for(it = button_list.begin(); it != button_list.end(); ++it){
 			if((*it)->hit_flag){
 				(*it)->action(*this, model);
@@ -711,10 +715,13 @@ void View_Game::handle_user_events(SDL_Event& e){
 	else if(e.user.type == Util::get().get_userev("close_dialog_event"))
 	{
 		IDialog* d = (IDialog*)e.user.data1;
-		if(d != nullptr && d == debug_dialog){
-			close_debug_dialog();
+		if(d != nullptr){
+			if(d == debug_dialog){
+				close_debug_dialog();
+			}else if(d == trade_dialog){
+				close_trade_dialog();
+			}
 		}
-
 	}
 	else
 	{
@@ -827,7 +834,7 @@ void View_Game::update_check_for_collisions(){
 
 	//	Logger::getLog().log(Logger::DEBUG, "mouse.hitbox(%d,%d)", mouse.hitbox.getx(), mouse.hitbox.gety());
 	// TODO: Need a better way to tell which button is being hit
-	std::vector<Button*>::iterator it;
+	std::vector<View_Game_Button*>::iterator it;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		(*it)->hit_flag = false;
 	}
@@ -929,7 +936,7 @@ void View_Game::update_mid_pane(pane_t& pane, Collision& rel_mouse_hitbox){
 }
 
 void View_Game::update_bot_pane(pane_t& pane, Collision& rel_mouse_hitbox){
-	std::vector<Button*>::iterator it;
+	std::vector<View_Game_Button*>::iterator it;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		(*it)->hit_flag = ((*it)->hitbox.collides(rel_mouse_hitbox));
 	}
@@ -1304,11 +1311,8 @@ void View_Game::render_connecting_tiles(pane_t& pane, vertex_face_t* origin, int
 	}
 }
 
-
-
-
 void View_Game::render_buttons(pane_t& pane){
-	std::vector<Button*>::iterator it;
+	std::vector<View_Game_Button*>::iterator it;
 	SDL_Rect rect;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		rect = { (*it)->x + pane.x,
@@ -1820,9 +1824,24 @@ void View_Game::close_debug_dialog(){
 }
 
 void View_Game::open_trade_dialog(){
+	if(trade_dialog == nullptr){
+		trade_dialog = new View_Game_Trade_Dialog(
+			*this,
+			misc_pane.x,
+			misc_pane.y,
+			misc_pane.z,
+			misc_pane.w,
+			misc_pane.h
+			);
+	}
+	trade_dialog->open(&model);
+	dialog_in_focus = trade_dialog;
 	return;
 }
 void View_Game::close_trade_dialog(){
+	if(trade_dialog == nullptr){ return; }
+	trade_dialog->close();
+	dialog_in_focus = nullptr;
 	return;
 }
 
@@ -1830,4 +1849,90 @@ void View_Game::set_message_pane_text(const char* text){
 	if(text == nullptr) { return; }
 	message_pane.setMessage(text);
 	message_pane.reset();
+}
+
+
+// ------------------------------------------------------------------
+// - - - - - --  V I E W _ G A M E _ B U T T O N  - - - - - - - -  -
+// ------------------------------------------------------------------
+
+void View_Game_Button::action(View_Game& view, Model& model){
+	if(baction != nullptr){
+		baction(view, model);
+	}
+}
+void View_Game_Button::set_action(View_Game_Button::button_action baction){
+	this->baction = baction;
+}
+void View_Game_Button::unset_action(){
+	baction = nullptr;
+}
+void View_Game_Button::exit_button_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "exit_button_action");
+	SDL_Event ev;
+	SDL_zero(ev);
+	ev.type = SDL_QUIT;
+	ev.quit.type = SDL_QUIT;
+	ev.quit.timestamp = SDL_GetTicks();
+	SDL_PushEvent(&ev);
+}
+void View_Game_Button::end_turn_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "end_turn_action");
+	model.end_turn();
+	view.set_state(View_Game::state_e::NORMAL);
+	//Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,0,0);
+}
+void View_Game_Button::add_road_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "add_road_action");
+	view.set_state(View_Game::BUILD_ROAD);
+}
+void View_Game_Button::roll_action(View_Game& view, Model& model){
+	// TODO: Fuck this hack. I need a static stirng to set the message text.
+
+	static std::string msg = "Roll = ";
+	Logger::getLog().log(Logger::DEBUG, "roll_action");
+	model.roll(2, 6);
+	model.give_resources_from_roll(model.get_roll_value());
+
+	msg = "Roll =";
+	msg += std::to_string(model.get_roll_value());
+
+	view.set_message_pane_text(msg.c_str());
+}
+void View_Game_Button::enable_debug_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "enabe_debug_action");
+	//view.debug = (view.debug) ? false : true;
+	view.open_debug_dialog();
+}
+void View_Game_Button::add_settlement_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "add_settlement_action");
+	view.set_state(View_Game::BUILD_SETTLEMENT);
+}
+void View_Game_Button::add_city_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "add_city_action");
+	view.set_state(View_Game::BUILD_CITY);
+}
+void View_Game_Button::buy_dev_card_action(View_Game& view, Model& model){
+	static std::string message = "";
+	Logger::getLog().log(Logger::DEBUG, "buy_dev_card_action");
+	if(model.buy_dev_card(model.get_current_player())){
+		Player* p = model.get_player(model.get_current_player());
+		dev_cards_t* card = (dev_cards_t*)p->dev_cards.back();
+		message = card->title();
+		view.set_message_pane_text(message.c_str());
+	}
+}
+void View_Game_Button::play_dev_card_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "play_dev_card_action");
+	view.set_state(View_Game::PLAY_DEV_CARD);
+}
+void View_Game_Button::trade_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "trade_action");
+	view.set_state(View_Game::state_e::TRADING);
+	view.open_trade_dialog();
+}
+void View_Game_Button::empty_action(View_Game& view, Model& model){
+	Logger::getLog().log(Logger::DEBUG, "empty_action");
+	view._debug.panel_page = (view._debug.panel_page + 1) % 3;
+	model.reset();
 }

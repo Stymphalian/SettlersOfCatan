@@ -58,16 +58,16 @@ int Configuration::default_bank_wood;
 
 int Configuration::default_bank_dev_monopoly;
 int Configuration::default_bank_dev_road_building;
-int Configuration::default_bank_year_plenty;
-int Configuration::default_bank_soldier;
-int Configuration::default_bank_victory;
+int Configuration::default_bank_dev_year_plenty;
+int Configuration::default_bank_dev_soldier;
+int Configuration::default_bank_dev_victory;
 
 int Configuration::extensions_bank_resources;
 int Configuration::extensions_bank_dev_monopoly;
 int Configuration::extensions_bank_dev_road_building;
-int Configuration::extensions_bank_year_plenty;
-int Configuration::extensions_bank_soldier;
-int Configuration::extensions_bank_victory;
+int Configuration::extensions_bank_dev_year_plenty;
+int Configuration::extensions_bank_dev_soldier;
+int Configuration::extensions_bank_dev_victory;
 
 
 bool Configuration::defaults(){
@@ -131,16 +131,16 @@ bool Configuration::defaults(){
 	
 	Configuration::default_bank_dev_monopoly = 0;
 	Configuration::default_bank_dev_road_building = 0;
-	Configuration::default_bank_year_plenty = 0;
-	Configuration::default_bank_soldier = 0;
-	Configuration::default_bank_victory = 0;
+	Configuration::default_bank_dev_year_plenty = 0;
+	Configuration::default_bank_dev_soldier = 0;
+	Configuration::default_bank_dev_victory = 0;
 	
 	Configuration::extensions_bank_resources = 0;
 	Configuration::extensions_bank_dev_monopoly = 0;
 	Configuration::extensions_bank_dev_road_building = 0;
-	Configuration::extensions_bank_year_plenty = 0;
-	Configuration::extensions_bank_soldier = 0;
-	Configuration::extensions_bank_victory = 0;
+	Configuration::extensions_bank_dev_year_plenty = 0;
+	Configuration::extensions_bank_dev_soldier = 0;
+	Configuration::extensions_bank_dev_victory = 0;
 
 	return true;
 }
@@ -249,16 +249,16 @@ bool Configuration::load(){
 
 	Configuration::default_bank_dev_monopoly = atoi(config->get_property("default_bank_dev_monopoly","Model").value.c_str());
 	Configuration::default_bank_dev_road_building = atoi(config->get_property("default_bank_dev_road_building","Model").value.c_str());
-	Configuration::default_bank_year_plenty = atoi(config->get_property("default_bank_year_plenty","Model").value.c_str());
-	Configuration::default_bank_soldier = atoi(config->get_property("default_bank_soldier","Model").value.c_str());
-	Configuration::default_bank_victory = atoi(config->get_property("default_bank_victory","Model").value.c_str());
+	Configuration::default_bank_dev_year_plenty = atoi(config->get_property("default_bank_dev_year_plenty","Model").value.c_str());
+	Configuration::default_bank_dev_soldier = atoi(config->get_property("default_bank_dev_soldier","Model").value.c_str());
+	Configuration::default_bank_dev_victory = atoi(config->get_property("default_bank_dev_victory","Model").value.c_str());
 
 	Configuration::extensions_bank_resources = atoi(config->get_property("extensions_bank_resources","Model").value.c_str());
 	Configuration::extensions_bank_dev_monopoly = atoi(config->get_property("extensions_bank_dev_monopoly","Model").value.c_str());
 	Configuration::extensions_bank_dev_road_building = atoi(config->get_property("extensions_bank_dev_road_building","Model").value.c_str());
-	Configuration::extensions_bank_year_plenty = atoi(config->get_property("extensions_bank_year_plenty","Model").value.c_str());
-	Configuration::extensions_bank_soldier = atoi(config->get_property("extensions_bank_soldier","Model").value.c_str());
-	Configuration::extensions_bank_victory = atoi(config->get_property("extensions_bank_victory","Model").value.c_str());
+	Configuration::extensions_bank_dev_year_plenty = atoi(config->get_property("extensions_bank_dev_year_plenty","Model").value.c_str());
+	Configuration::extensions_bank_dev_soldier = atoi(config->get_property("extensions_bank_dev_soldier","Model").value.c_str());
+	Configuration::extensions_bank_dev_victory = atoi(config->get_property("extensions_bank_dev_victory","Model").value.c_str());
 	
 	//Configuration::print();
 	delete config;	
@@ -337,14 +337,14 @@ void Configuration::print(){
 
 	printf("%d=%d\n",count++,Configuration::default_bank_dev_monopoly);
 	printf("%d=%d\n",count++,Configuration::default_bank_dev_road_building);
-	printf("%d=%d\n",count++,Configuration::default_bank_year_plenty);
-	printf("%d=%d\n",count++,Configuration::default_bank_soldier);
-	printf("%d=%d\n",count++,Configuration::default_bank_victory);
+	printf("%d=%d\n",count++,Configuration::default_bank_dev_year_plenty);
+	printf("%d=%d\n",count++,Configuration::default_bank_dev_soldier);
+	printf("%d=%d\n",count++,Configuration::default_bank_dev_victory);
 
 	printf("%d=%d\n",count++,Configuration::extensions_bank_resources);
 	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_monopoly);
 	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_road_building);
-	printf("%d=%d\n",count++,Configuration::extensions_bank_year_plenty);
-	printf("%d=%d\n",count++,Configuration::extensions_bank_soldier);
-	printf("%d=%d\n",count++,Configuration::extensions_bank_victory);
+	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_year_plenty);
+	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_soldier);
+	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_victory);
 }

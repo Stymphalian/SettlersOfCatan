@@ -4,15 +4,42 @@
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
-class Timer;
-class Tiles;
 #include "Collision.h"
 #include "Button.h"
 #include "Model.h"
 #include "model_structs.h"
 #include "IView.h"
+class Timer;
+class Tiles;
 class IDialog;
 class View_Game_Debug_Dialog;
+class View_Game_Trade_Dialog;
+
+
+class View_Game_Button : public Button{
+	typedef void(*button_action)(View_Game& view, Model& model);
+public:
+	void action(View_Game& view, Model& model);
+	void set_action(View_Game_Button::button_action baction);
+	void unset_action();	
+
+	// buttons which you can hook
+	static void exit_button_action(View_Game& view, Model& model);
+	static void end_turn_action(View_Game& view, Model& model);
+	static void roll_action(View_Game& view, Model& model);
+	static void enable_debug_action(View_Game& view, Model& model);
+	static void add_road_action(View_Game& view, Model& model);
+	static void add_settlement_action(View_Game& view, Model& model);
+	static void add_city_action(View_Game& view, Model& model);
+	static void buy_dev_card_action(View_Game& view, Model& model);
+	static void play_dev_card_action(View_Game& view, Model& model);
+	static void trade_action(View_Game& view, Model& model);
+	static void empty_action(View_Game& view, Model& model);
+private:
+	button_action baction;	
+};
+
+
 
 /*
 Concrete class for the Game View
@@ -205,6 +232,7 @@ public:
 	// A debug dialog
 	IDialog* dialog_in_focus;
 	View_Game_Debug_Dialog* debug_dialog;
+	View_Game_Trade_Dialog* trade_dialog;
 	
 	//constructor and destructor
 	View_Game(Model& model, SDL_Window& win, SDL_Renderer& ren);
@@ -253,18 +281,18 @@ private:
 	int vertex_pos[6][2];
 	int face_pos[6][2];
 		// buttons
-	Button exit_button;
-	Button end_turn_button;
-	Button roll_button;
-	Button enable_debug_button;
-	Button misc_button;
-	Button add_road_button;
-	Button add_settlement_button;
-	Button add_city_button;
-	Button buy_dev_card_button;
-	Button play_dev_card_button;
-	Button trade_button;
-	std::vector<Button*> button_list;
+	View_Game_Button exit_button;
+	View_Game_Button end_turn_button;
+	View_Game_Button roll_button;
+	View_Game_Button enable_debug_button;
+	View_Game_Button misc_button;
+	View_Game_Button add_road_button;
+	View_Game_Button add_settlement_button;
+	View_Game_Button add_city_button;
+	View_Game_Button buy_dev_card_button;
+	View_Game_Button play_dev_card_button;
+	View_Game_Button trade_button;
+	std::vector<View_Game_Button*> button_list;
 
 	// methods
 	bool load();

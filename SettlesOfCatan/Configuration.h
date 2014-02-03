@@ -60,16 +60,16 @@ public:
 	 // dev cards
 	static int default_bank_dev_monopoly;
 	static int default_bank_dev_road_building;
-	static int default_bank_year_plenty;
-	static int default_bank_soldier;
-	static int default_bank_victory;
+	static int default_bank_dev_year_plenty;
+	static int default_bank_dev_soldier;
+	static int default_bank_dev_victory;
 	// extensions
 	static int extensions_bank_resources;
 	static int extensions_bank_dev_monopoly;
 	static int extensions_bank_dev_road_building;
-	static int extensions_bank_year_plenty;
-	static int extensions_bank_soldier;
-	static int extensions_bank_victory;
+	static int extensions_bank_dev_year_plenty;
+	static int extensions_bank_dev_soldier;
+	static int extensions_bank_dev_victory;
 
 	static bool defaults();
 	static bool load();
