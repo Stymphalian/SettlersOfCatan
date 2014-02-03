@@ -1,5 +1,8 @@
+/************************************************
+ * @Author: Jordan Yu (shit face #1)
+ * @StartDate: December 28th, 2013
+ **************************************************/
 #include <cstdio>
-
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
