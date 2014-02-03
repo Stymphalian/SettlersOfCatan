@@ -3,7 +3,7 @@
 #include "M_math.h"
 
 M_math::~M_math(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "M_math destructor");
+	Logger::getLog().log(Logger::DEBUG, "M_math destructor");
 }
 
 M_math& M_math::get(){

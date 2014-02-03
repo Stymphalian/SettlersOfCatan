@@ -1,7 +1,9 @@
+#include <string>
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include "Util.h"
+#include "Configuration.h"
 #include "Logger.h"
 
 
@@ -9,7 +11,7 @@ Uint32 Util::render_count = 0;
 
 Util::Util(){}
 Util::~Util(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Util destructor");
+	Logger::getLog().log(Logger::DEBUG, "Util destructor");
 	user_evs.clear();
 }
 Util& Util::get(){
@@ -17,12 +19,11 @@ Util& Util::get(){
 	return instance;
 }
 
-
 SDL_Surface* Util::load_surface(const char* file){
 	if(file == nullptr){ return nullptr; }
 	SDL_Surface* surface = IMG_Load(file);
 	if(surface == nullptr){
-		Logger::getLog("jordan.log").IMG_log(Logger::ERROR, "IMG_Load(%s)", file);	
+		Logger::getLog().IMG_log(Logger::ERROR, "IMG_Load(%s)", file);	
 		return nullptr;
 	}
 	return surface;
@@ -32,7 +33,7 @@ SDL_Texture* Util::load_texture(const char* file, SDL_Renderer* ren){
 	if(file == nullptr || ren == nullptr){ return nullptr; }
 	SDL_Texture*  texture = IMG_LoadTexture(ren, file);
 	if(texture == nullptr){
-		Logger& logger = Logger::getLog("jordan.log");
+		Logger& logger = Logger::getLog();
 		logger.IMG_log(Logger::ERROR, "IMG_LoadTexture(%s)",file);
 		return 0;
 	}
@@ -40,7 +41,7 @@ SDL_Texture* Util::load_texture(const char* file, SDL_Renderer* ren){
 }
 
 SDL_Texture* Util::load_texture_bmp(const char* file, SDL_Renderer* ren){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	SDL_Surface* bmp = SDL_LoadBMP(file);
 	if(bmp == nullptr){
 		logger.SDL_log(Logger::ERROR, "SDL_LoadBMP(%s)",file);
@@ -56,6 +57,15 @@ SDL_Texture* Util::load_texture_bmp(const char* file, SDL_Renderer* ren){
 	return tex;
 }
 
+SDL_Surface* Util::load_surface(std::string file){
+	return load_surface(file.c_str());
+}
+SDL_Texture* Util::load_texture(std::string file, SDL_Renderer* ren){
+	return load_texture(file.c_str(),ren);
+}
+SDL_Texture* Util::load_texture_bmp(std::string file, SDL_Renderer* ren){
+	return load_texture_bmp(file.c_str(),ren);
+}
 
 void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y,
 	SDL_Rect* clip){
@@ -77,7 +87,7 @@ void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y,
 
 	// call render texture to do all the rendering
 	if(SDL_RenderCopy(ren, tex, clip, &dst) == -1){
-		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "SDL_RenderCopy");
+		Logger::getLog().SDL_log(Logger::ERROR, "SDL_RenderCopy");
 	}
 }
 void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex,
@@ -93,7 +103,7 @@ void Util::render_texture(SDL_Renderer* ren, SDL_Texture* tex,
 
 	// call render texture to do all the rendering
 	if(SDL_RenderCopy(ren, tex, clip, &dst) == -1){
-		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "SDL_RenderCopy");
+		Logger::getLog().SDL_log(Logger::ERROR, "SDL_RenderCopy");
 	}
 }
 
@@ -105,7 +115,7 @@ void Util::render_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color color =
 	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b,color.a);
 
 	if(SDL_RenderDrawRect(ren, rect) != 0){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "SDL_RenderDrawRect()");
+		Logger::getLog().log(Logger::ERROR, "SDL_RenderDrawRect()");
 	}
 	SDL_SetRenderDrawColor(ren, red, green, blue, alpha);
 }
@@ -115,14 +125,14 @@ void Util::render_fill_rectangle(SDL_Renderer* ren, SDL_Rect* rect, SDL_Color co
 	SDL_GetRenderDrawColor(ren, &red, &green, &blue, &alpha);
 	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b, color.a);
 	if(SDL_RenderFillRect(ren, rect) != 0){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "SDL_RenderFillRect()");
+		Logger::getLog().log(Logger::ERROR, "SDL_RenderFillRect()");
 	}
 	SDL_SetRenderDrawColor(ren, red, green, blue, alpha);
 }
 
 
 void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Color color, const char* format, ...){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	Util::render_count++;
 
 	// Create a string with the message
@@ -168,7 +178,7 @@ void Util::set_pixel32(SDL_Surface* surface, int x, int y,Uint32 value){
 
 void Util::shuffle(int* arr, int size){
 	if(!arr){ return; }
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Util::shuffle(array,size=%d)", size);
+	Logger::getLog().log(Logger::DEBUG, "Util::shuffle(array,size=%d)", size);
 	// array to keep track of what values have been already used.
 	// temproray array to copy elements into
 	char* taken = new char[size];
@@ -195,7 +205,7 @@ void Util::shuffle(int* arr, int size){
 	// clean up
 	delete[] copy;
 	delete[] taken;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Util::shuffle rolled %u times for %d items", count, size);
+	Logger::getLog().log(Logger::DEBUG, "Util::shuffle rolled %u times for %d items", count, size);
 }
 
 
@@ -219,6 +229,13 @@ SDL_Color Util::colour_black(){
 	static SDL_Color instance = { 0, 0, 0, 255 };
 	return instance;
 }
+std::string Util::data_resource(const char* res){
+	std::string data_resource;
+	data_resource = Configuration::data_directory;
+	data_resource += "/";
+	data_resource += res;
+	return data_resource;
+}
 
 Uint32 Util::get_userev(const char* ev){
 	// check to see if the event has already been registered.
@@ -235,12 +252,12 @@ Uint32 Util::get_userev(const char* ev){
 	type.name = ev;
 	type.ev = SDL_RegisterEvents(1);
 	if(type.ev == ((Uint32)-1)){
-		Logger::getLog("jordan.log").SDL_log(Logger::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
+		Logger::getLog().SDL_log(Logger::ERROR, "Util::get_userev() 2 SDL_RegisterEvents");
 		//printf("error userev");
 		return (Uint32)-1;
 	}	
 	user_evs.push_back(type);
-	Logger::getLog("jordan.log").log("Util::get_userev() Registered event %s=%d", type.name.c_str(), type.ev);
+	Logger::getLog().log("Util::get_userev() Registered event %s=%d", type.name.c_str(), type.ev);
 	return type.ev;
 }
 
@@ -252,8 +269,8 @@ void Util::push_userev(Uint32 user_type, Sint32 code, void* data1, void* data2){
 	ev.user.code = code;
 	ev.user.data1 = data1;
 	ev.user.data2 = data2;
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Util::push_userev %u %u, %d, %x, %x",SDL_USEREVENT,user_type, code, data1,data2);
+	//Logger::getLog().log(Logger::DEBUG, "Util::push_userev %u %u, %d, %x, %x",SDL_USEREVENT,user_type, code, data1,data2);
 	if(SDL_PushEvent(&ev) != 1){
-		Logger::getLog("jordan.log").SDL_log(Logger::DEBUG, "SDL_PushEvent");
+		Logger::getLog().SDL_log(Logger::DEBUG, "SDL_PushEvent");
 	}
 }

@@ -22,7 +22,7 @@ Player::Player()
 }
 
 Player::~Player(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Player destructor");
+	Logger::getLog().log(Logger::DEBUG, "Player destructor");
 	dev_cards.clear();
 	buildings.clear();
 	roads.clear();

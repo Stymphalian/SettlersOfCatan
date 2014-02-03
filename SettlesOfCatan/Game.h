@@ -14,7 +14,7 @@ public:
 	SDL_Renderer* ren;
 	// constructor and destructor
 	Game();
-	Game(const char* title,int w, int h);
+	Game(const char* title,int x, int y,int w, int h);
 	virtual ~Game();
 	//methods
 	void run();	
@@ -29,7 +29,7 @@ private:
 	IView* current_view;
 
 	// methods
-	void construct(const char* title,int w, int h);
+	void construct(const char* title,int x, int y,int w, int h);
 	bool is_keyboard_event(SDL_Event& e);
 	bool is_mouse_event(SDL_Event& e);
 };

@@ -23,7 +23,7 @@ SpriteFactory::SpriteFactory(SDL_Renderer* ren){
 	render = ren;
 }
 SpriteFactory::~SpriteFactory(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "SpriteFactory destructor");
+	Logger::getLog().log(Logger::DEBUG, "SpriteFactory destructor");
 }
 
 

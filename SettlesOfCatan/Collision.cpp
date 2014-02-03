@@ -11,7 +11,7 @@ Collision::Collision(){
 	x = y = z = nullptr;
 }
 Collision::~Collision(){
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Collision destructor");
+	//Logger::getLog().log(Logger::DEBUG, "Collision destructor");
 	rects.clear();
 	x = y = z =nullptr;;
 	active = false;

@@ -1,26 +1,43 @@
+#include <cstdio>
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #include <SDL_mixer.h>
 #include "Game.h"
 #include "Logger.h"
-#include "Graph.h"
+#include "Configuration.h"
+#include "Util.h"
 
 bool init();
 void shutdown();
 
+using namespace CONFIG_INI;
 int main(int argc, char** argv){
 	if(init() == false){ return EXIT_FAILURE; }	
-	Game game;
+	Game game(
+		Configuration::title.c_str(),
+		Configuration::DISP_X,
+		Configuration::DISP_Y,
+		Configuration::DISP_W,
+		Configuration::DISP_H);
 	game.run();
 	shutdown();
 	return 0;
 }
 
 bool init(){
-	Logger& logger = Logger::getLog("jordan.log");
+	// initialize all the configuration settings
+	if(Configuration::load() == false){
+		printf("Configuration::load() ERROR\n");
+		return false;
+	}
+
+	// initialize the logger.
+	Logger::setLog(Configuration::log_name.c_str());
+	Logger& logger = Logger::getLog();
 	logger.set_level(Logger::DEBUG);
-	logger.set_deepest_level_allowed(Logger::DEBUG);	
+	logger.set_deepest_level_allowed(Logger::DEBUG);
 	logger.log(Logger::DEBUG, "SDL init");
 	
 	// initialize SDL for using modules
@@ -57,7 +74,7 @@ bool init(){
 }
 
 void shutdown(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "SDL shutdown");
+	Logger::getLog().log(Logger::DEBUG, "SDL shutdown");
 	Mix_CloseAudio();
 	Mix_Quit();
 	TTF_Quit();

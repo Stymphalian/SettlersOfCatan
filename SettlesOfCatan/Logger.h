@@ -25,7 +25,8 @@ class Logger{
 public:
 	// static enumerations and getLog()
 	enum levels { NONE = 0, DEBUG, ERROR, WARN, INFO,NO_LOGGING };
-	static Logger& getLog(const char* file);
+	static void setLog(const char* file = NULL);
+	static Logger& getLog(const char* file="jordan.log");
 
 	// public methods
 	void set_level(Logger::levels level);

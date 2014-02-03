@@ -8,6 +8,7 @@
 
 #include "Logger.h"
 #include "Util.h"
+#include "Configuration.h"
 #include "Model.h"
 #include "Player.h"
 #include "Tiles.h"
@@ -53,7 +54,7 @@ void Model::set_defaults(){
 	_dev_deck.clear();		
 }
 
-Model::Model(int num_players) : logger(Logger::getLog("jordan.log")){
+Model::Model(int num_players) : logger(Logger::getLog()){
 	logger.log(Logger::DEBUG, "Model Constructor(num_players=%d)", num_players);	
 	_board = nullptr;
 	set_defaults();
@@ -82,8 +83,8 @@ void Model::init(int num_players){
 	logger.log("Model::init(%d) ", num_players);
 	srand((unsigned int)time(NULL));
 	this->_model_error = MODEL_ERROR_NONE;
-	this->_num_dice = 2;
-	this->_num_dice_sides = 6;
+	this->_num_dice = Configuration::num_dice;
+	this->_num_dice_sides = Configuration::num_dice_sides;
 	this->_thief_pos_x = -1;
 	this->_thief_pos_y = -1;
 	this->_roll_value = 0;
@@ -273,7 +274,7 @@ bool Model::fill_board(
 	)
 {
 	if(!board){ return false; }
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	logger.log(Logger::DEBUG, "Model::fill_board(board,num_levels=%d,num_extension=%d,even_middle_row=%d",
 		num_levels, num_extensions, even_middle_row);
 	logger.log(Logger::DEBUG, "Model::fill_board(board,board_width=%d,board_height=%d,board_size=%d,num_game_tiles=%d,num_water_tiles=%d",
@@ -755,7 +756,7 @@ int Model::get_ring_level(int row, int col, int levels,int nextensions,bool even
 		numtiles = numtiles_from_row(row, levels, nextensions);
 		offset = num_offset_tiles_from_row(row, levels, nextensions);
 		center = offset + numtiles / 2;
-		//Logger::getLog("jordan.log").log(Logger::DEBUG, "level =%d,numtiles=%d,offset=%d,center=%d", level, numtiles,offset,center);
+		//Logger::getLog().log(Logger::DEBUG, "level =%d,numtiles=%d,offset=%d,center=%d", level, numtiles,offset,center);
 
 		if(level == 0) {
 			if(col < center){
@@ -911,7 +912,7 @@ const dev_cards_t* Model::draw_dev_card(){
 	} else{
 		dev_cards_t* rs = &_dev_deck[_deck_pos];
 		_deck_pos++;
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::draw_dev_card %d of %d. title=%s,message=%s",
+		Logger::getLog().log(Logger::DEBUG, "Model::draw_dev_card %d of %d. title=%s,message=%s",
 			_deck_pos, _dev_deck.size(), rs->title().c_str(), rs->message().c_str());
 		return (const dev_cards_t*) rs;
 	}
@@ -936,7 +937,7 @@ bool Model::build_city(int player, int pos){
 	if(pos < 0 || pos >= (int)_vertex_array.size() ||
 		player < 0 || player >= _num_players)
 	{
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_city() Out of range (player=%d/%d),(pos=%d/%d)", player, _num_players, pos, (int)_vertex_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::add_city() Out of range (player=%d/%d),(pos=%d/%d)", player, _num_players, pos, (int)_vertex_array.size());
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
@@ -944,14 +945,14 @@ bool Model::build_city(int player, int pos){
 		_vertex_array[pos].type == vertex_face_t::CITY ||
 		_vertex_array[pos].player != player)
 	{
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() Unsuitable Vertex type=%d,player=%d", (int)_vertex_array[pos].type, _vertex_array[pos].player);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_city() Unsuitable Vertex type=%d,player=%d", (int)_vertex_array[pos].type, _vertex_array[pos].player);
 		set_error(Model::MODEL_ERROR_PLACE_CITY);
 		return false;
 	}
 
 	// TODO: Remove once we have a good interface with players and model.
 	if(_players[player].building_cap[building_t::CITY] <= 0){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d Not enough buildings\n", player);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_city() player=%d Not enough buildings\n", player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
 		return false;
 	}
@@ -962,7 +963,7 @@ bool Model::build_city(int player, int pos){
 	// TODO: Remove this.
 	_players[player].building_cap[building_t::CITY]--;
 	_players[player].building_cap[building_t::SETTLEMENT]++;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, _vertex_array[pos].tile_x(0),_vertex_array[pos].tile_y(0), pos);
+	Logger::getLog().log(Logger::DEBUG, "Model::add_city() player=%d,col=%d,row=%d,vertex=%d", player, _vertex_array[pos].tile_x(0),_vertex_array[pos].tile_y(0), pos);
 	return true;
 }
 
@@ -986,21 +987,21 @@ bool Model::build_settlement(int player, int pos){
 	if(pos < 0 || pos >= (int)_vertex_array.size() ||
 		player < 0 || player >= _num_players)
 	{
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_settlement() Out of range (player=%d/%d),(pos=%d/%d)", player, _num_players, pos, (int)_vertex_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::add_settlement() Out of range (player=%d/%d),(pos=%d/%d)", player, _num_players, pos, (int)_vertex_array.size());
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
 	if(_vertex_array[pos].type == vertex_face_t::SETTLEMENT ||
 		_vertex_array[pos].type == vertex_face_t::CITY)
 	{
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Vertex is already occupied  by %d", (int)_vertex_array[pos].type);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_settlement() Vertex is already occupied  by %d", (int)_vertex_array[pos].type);
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
 
 	// TODO : Remove this once we have a good interface.
 	if(_players[player].building_cap[building_t::SETTLEMENT] <= 0){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Player %d does not have enough buildings", player);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_settlement() Player %d does not have enough buildings", player);
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
 		return false;
 	}
@@ -1009,7 +1010,7 @@ bool Model::build_settlement(int player, int pos){
 	int col, row;
 	Tiles* tile = _find_tile_from_vertex(pos, &col, &row);
 	if(tile == nullptr){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_settlement() Tile doesn't exist(col=%d,row=%d)", col, row);
+		Logger::getLog().log(Logger::ERROR, "Model::add_settlement() Tile doesn't exist(col=%d,row=%d)", col, row);
 		set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 		return false;
 	}
@@ -1021,7 +1022,7 @@ bool Model::build_settlement(int player, int pos){
 		// TODO: Remove this.
 		_players[player].building_cap[building_t::SETTLEMENT]--;
 		_players[player].buildings.push_back(pos);
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d", player, col, row, pos);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_settlement player=%d,col=%d,row=%d,vertex=%d", player, col, row, pos);
 
 
 		
@@ -1046,7 +1047,7 @@ bool Model::build_settlement(int player, int pos){
 		if(marked_count == 2 && marked[0] == marked[1] && marked[0] != -1){
 			// recalculate the longest road for that player.
 			_players[marked[0]].longest_road = compute_longest_road_length(marked[0]);
-			Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::build_settlement() Recalculating the longest road length for player %d to be %d",
+			Logger::getLog().log(Logger::DEBUG, "Model::build_settlement() Recalculating the longest road length for player %d to be %d",
 				marked[0],_players[marked[0]].longest_road);
 		}
 
@@ -1060,7 +1061,7 @@ bool Model::build_settlement(int player, int pos){
 			if(tiles->type >= Tiles::SHEEP_PORT && tiles->type <= Tiles::TRADE_PORTS){
 				// don't add duplicate ports to the owned_ports list.
 				if(is_in_array(tiles->type, &_players[player].owned_ports) == false){
-					Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::build_settlement() Player %d can now use port %d from tile col=%d,row=%d",
+					Logger::getLog().log(Logger::DEBUG, "Model::build_settlement() Player %d can now use port %d from tile col=%d,row=%d",
 						player, tiles->type,vert->tile_x(i),vert->tile_y(i));
 					_players[player].owned_ports.push_back(tiles->type);
 				}
@@ -1069,7 +1070,7 @@ bool Model::build_settlement(int player, int pos){
 		
 		return true;
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_settlement() Unable to build settlement");
+	Logger::getLog().log(Logger::DEBUG, "Model::add_settlement() Unable to build settlement");
 	set_error(Model::MODEL_ERROR_PLACE_SETTLEMENT);
 	return false;
 }
@@ -1092,20 +1093,20 @@ bool Model::build_road(int player, int pos){
 	if(pos < 0 || pos >= (int)_face_array.size() ||
 		player <0 || player >= _num_players)
 	{
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_road() Out of bounds( player =%d/%d,pos =%d/%d)", player, _num_players, pos, (int)_face_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::add_road() Out of bounds( player =%d/%d,pos =%d/%d)", player, _num_players, pos, (int)_face_array.size());
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
 		return false;
 	}
 	if(_face_array[pos].type != vertex_face_t::NONE)
 	{
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road() Face is already filled with an object %d", _face_array[pos].type);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_road() Face is already filled with an object %d", _face_array[pos].type);
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
 		return false;
 	}
 	// TODO: Remove this once an interface between players and model is set.
 	if(_players[player].building_cap[building_t::ROAD] <= 0){
 		set_error(Model::MODEL_ERROR_PLAYER_NOT_ENOUGH_BUILDINGS);
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Can't build road. Player %d doesn't have enough builidings", player);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_road()  Can't build road. Player %d doesn't have enough builidings", player);
 		return false;
 	}
 
@@ -1114,7 +1115,7 @@ bool Model::build_road(int player, int pos){
 	Tiles* tile = _find_tile_from_face(pos, &col, &row);
 	if(tile == nullptr){
 		set_error(Model::MODEL_ERROR_PLACE_ROAD);
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::add_road()  Tile can't be found (col=%d,row=%d)", col, row);
+		Logger::getLog().log(Logger::ERROR, "Model::add_road()  Tile can't be found (col=%d,row=%d)", col, row);
 		return false;
 	}
 
@@ -1125,12 +1126,12 @@ bool Model::build_road(int player, int pos){
 		// TODO: Revmoe this.
 		_players[player].building_cap[building_t::ROAD]--;
 		_players[player].roads.push_back(pos);
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
+		Logger::getLog().log(Logger::DEBUG, "Model::add_road player=%d,col=%d,row=%d,face=%d", player, col, row, pos);
 	
 		_players[player].longest_road = compute_longest_road_length(player);
 		return true;
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::add_road()  Unable to build road.");
+	Logger::getLog().log(Logger::DEBUG, "Model::add_road()  Unable to build road.");
 	set_error(Model::MODEL_ERROR_PLACE_ROAD);
 	return false;
 }
@@ -1168,7 +1169,7 @@ Note:
 bool Model::_can_build_road(int player, int pos){
 	if(player < 0 || player >= _num_players){ return false; }
 	if(pos < 0 || pos >= (int)_face_array.size()){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() pos is out of range %d/%d", pos, (int)_face_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::can_build_road() pos is out of range %d/%d", pos, (int)_face_array.size());
 		return false;
 	}
 
@@ -1194,7 +1195,7 @@ bool Model::_can_build_road(int player, int pos){
 	for(int i = 0; i < 4; ++i){
 		if(face->face(i) == -1){ continue; }
 		if(face->face(i) < 0 || face->face(i) >= (int)_face_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_road() %d/%d index out of range.", face->face(i), (int)_face_array.size());
+			Logger::getLog().log(Logger::ERROR, "Model::can_build_road() %d/%d index out of range.", face->face(i), (int)_face_array.size());
 			continue;
 		}
 		edge = &_face_array[face->face(i)];
@@ -1304,7 +1305,7 @@ bool Model::_can_build_road(int player, int pos){
 	}
 
 
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::_can_build_road() building road conditions road_exist=%d blocked=%d water_tiled=%d special_condition=%d",
+	Logger::getLog().log(Logger::DEBUG, "Model::_can_build_road() building road conditions road_exist=%d blocked=%d water_tiled=%d special_condition=%d",
 					road_exists, blocked, water_tiled, special_condition);
 	return (road_exists && !blocked && special_condition && !water_tiled);
 }
@@ -1314,7 +1315,7 @@ bool Model::_can_build_road(int player, int pos){
 bool Model::_can_build_city(int player, int v){
 	if(player < 0 || player >= _num_players){ return false; }
 	if(v < 0 || v >= (int)_vertex_array.size()){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() index out of range v=%d/%d", v, (int)_vertex_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::can_build_settlement() index out of range v=%d/%d", v, (int)_vertex_array.size());
 		return false;
 	}
 	vertex_face_t* vertex = &_vertex_array[v];
@@ -1339,7 +1340,7 @@ The first  two settlments do not need a connecting road.
 bool Model::_can_build_settlement(int player, int v){
 	if(player <0 || player >= _num_players){ return false; }
 	if(v < 0 || v >= (int)_vertex_array.size()){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() index out of range v=%d/%d", v, (int)_vertex_array.size());
+		Logger::getLog().log(Logger::ERROR, "Model::can_build_settlement() index out of range v=%d/%d", v, (int)_vertex_array.size());
 		return false;
 	}
 
@@ -1362,7 +1363,7 @@ bool Model::_can_build_settlement(int player, int v){
 	for(int i = 0; i < 3; ++i){
 		if(vertex->vertex(i) == -1){ continue; }
 		if(vertex->vertex(i) < 0 || vertex->vertex(i) >= (int)_vertex_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d vertex index out of range", vertex->vertex(i), (int)_vertex_array.size());
+			Logger::getLog().log(Logger::ERROR, "Model::can_build_settlement() %d/%d vertex index out of range", vertex->vertex(i), (int)_vertex_array.size());
 			continue;
 		}
 		point = &_vertex_array[vertex->vertex(i)];
@@ -1380,7 +1381,7 @@ bool Model::_can_build_settlement(int player, int v){
 	for(int i = 0; i < 3; ++i){
 		if(vertex->face(i) == -1){ continue; }
 		if(vertex->face(i) < 0 || vertex->face(i) >= (int)_face_array.size()){
-			Logger::getLog("jordan.log").log(Logger::ERROR, "Model::can_build_settlement() %d/%d face index out of range", vertex->face(i), (int)_face_array.size());
+			Logger::getLog().log(Logger::ERROR, "Model::can_build_settlement() %d/%d face index out of range", vertex->face(i), (int)_face_array.size());
 			continue;
 		}
 
@@ -1412,7 +1413,7 @@ Retrieves a Tile which contains the vertex key
 Tiles* Model::_find_tile_from_vertex(int vertex, int* col, int* row)
 {
 	if(vertex < 0 || (unsigned)vertex >= _vertex_array.size()){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::find_tile_from_vertex() %d out of range %d-%d",
+		Logger::getLog().log(Logger::ERROR, "Model::find_tile_from_vertex() %d out of range %d-%d",
 			vertex, 0, (int) _vertex_array.size());
 		set_error(Model::MODEL_ERROR_INVALID_VERTEX);
 		return nullptr;
@@ -1431,7 +1432,7 @@ Retrieves a Tile which contains the face key.
 Tiles* Model::_find_tile_from_face(int face, int* col, int* row)
 {
 	if(face < 0 || (unsigned)face >= _face_array.size()){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "Model::find_tile_from_face() %d out of range %d-%d",
+		Logger::getLog().log(Logger::ERROR, "Model::find_tile_from_face() %d out of range %d-%d",
 			face, 0, (int) _face_array.size());
 		set_error(Model::MODEL_ERROR_INVALID_FACE);
 		return nullptr;
@@ -1530,22 +1531,22 @@ int Model::compute_longest_road_length(int player){
 
 	// DEBUGGING logging
 	if(false){
-		Logger::getLog("jordan.log").log_nnl(Logger::DEBUG,"Model::compute_longest_road_length(player=%d)      ",player);
+		Logger::getLog().log_nnl(Logger::DEBUG,"Model::compute_longest_road_length(player=%d)      ",player);
 		for(int col = 0; col < len; ++col){
-			Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", road_vertices[col]);
+			Logger::getLog().log_append(Logger::DEBUG,"%3d ", road_vertices[col]);
 		}
-		Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
+		Logger::getLog().log_append(Logger::DEBUG, "\n");
 
 		for(int row = 0; row < len; ++row){			
-			Logger::getLog("jordan.log").log_nnl(Logger::DEBUG, "Model::compute_longest_road_length(player=%d)",player);
-			Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", road_vertices[row]);
+			Logger::getLog().log_nnl(Logger::DEBUG, "Model::compute_longest_road_length(player=%d)",player);
+			Logger::getLog().log_append(Logger::DEBUG,"%3d ", road_vertices[row]);
 			for(int col = 0; col < len; ++col){
-				Logger::getLog("jordan.log").log_append(Logger::DEBUG,"%3d ", longest_path[col + row*len]);
+				Logger::getLog().log_append(Logger::DEBUG,"%3d ", longest_path[col + row*len]);
 			}
-			Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
+			Logger::getLog().log_append(Logger::DEBUG, "\n");
 		}
-		Logger::getLog("jordan.log").log_append(Logger::DEBUG, "\n");
-		Logger::getLog("jordan.log").log(Logger::DEBUG,"Model::compute_longest_road_length(player=%d) longest=%d from %d to %d", player, longest, v1, v2);
+		Logger::getLog().log_append(Logger::DEBUG, "\n");
+		Logger::getLog().log(Logger::DEBUG,"Model::compute_longest_road_length(player=%d) longest=%d from %d to %d", player, longest, v1, v2);
 	}
 
 	if(true){	
@@ -1732,7 +1733,7 @@ std::vector<int> Model::determine_longest_road_of_players(){
 		_players[i].longest_road = len_list[i];
 	}
 
-	Logger::getLog("jordan.log").log("Model::player_holding_longest_road_card() \
+	Logger::getLog().log("Model::player_holding_longest_road_card() \
 time taken for %d players = (%5f s)",_num_players, (double)(clock()-time)/CLOCKS_PER_SEC);
 	return len_list;
 }
@@ -1797,7 +1798,7 @@ Find the vertex key of the common vertex between these two edges.
 */
 int Model::get_common_vertex(int edge1, int edge2){
 	if(!face_in_range(edge1) || !face_in_range(edge2)){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::get_common_vertex out of range edge1=%d/%d, edge2=%d,%d",
+		Logger::getLog().log(Logger::DEBUG, "Model::get_common_vertex out of range edge1=%d/%d, edge2=%d,%d",
 			edge1, (int)_face_array.size(), edge2, (int)_face_array.size());
 		return -1;
 
@@ -1824,7 +1825,7 @@ Find the common face between theses two vertices
 */
 int Model::get_common_face(int vertex1, int vertex2){
 	if(!vertex_in_range(vertex1) || !vertex_in_range(vertex2)){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::get_common_edge out of range vertex1=%d/%d, vertex2=%d,%d",
+		Logger::getLog().log(Logger::DEBUG, "Model::get_common_edge out of range vertex1=%d/%d, vertex2=%d,%d",
 			vertex1, (int)_vertex_array.size(), vertex2, (int)_vertex_array.size());
 		return -1;
 	}
@@ -2135,7 +2136,7 @@ bool Model::place_thief(int col, int row){
 
 	_thief_pos_x = col;
 	_thief_pos_y = row;
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::move_thief(col=%d,row=%d)", _thief_pos_x, _thief_pos_y);
+	Logger::getLog().log(Logger::DEBUG, "Model::move_thief(col=%d,row=%d)", _thief_pos_x, _thief_pos_y);
 	return true;
 }
 
@@ -2208,7 +2209,7 @@ int Model::roll(int num_dice,int num_sides=6){
 	for(int i = 0; i < num_dice; ++i){
 		_roll_value += rand() % num_sides + 1;
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::roll(dice=%d,num sides=%d) = %d",
+	Logger::getLog().log(Logger::DEBUG, "Model::roll(dice=%d,num sides=%d) = %d",
 												num_dice, num_sides,_roll_value);
 	return _roll_value;
 }
@@ -2258,7 +2259,7 @@ int Model::num_victory_points_for_player(int player){
 bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 	if(!give || !take){ return false; }
 	if(player < 0 || player >= _num_players){ return false; }
-	/*Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange player=%d give=%d,%d,%d,%d,%d take=%d,%d,%d,%d,%d",
+	/*Logger::getLog().log(Logger::DEBUG, "Model::bank_exchange player=%d give=%d,%d,%d,%d,%d take=%d,%d,%d,%d,%d",
 		player,
 		give->res[0], give->res[1], give->res[2], give->res[3], give->res[4],
 		take->res[0], take->res[1], take->res[2], take->res[3], take->res[4]
@@ -2268,7 +2269,7 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 	resource_t player_copy = _players[player].resources;
 	resource_t bank_copy = _bank;
 	bool good_flag = true;;
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange old_bank=%d,%d,%d,%d,%d",
+	//Logger::getLog().log(Logger::DEBUG, "Model::bank_exchange old_bank=%d,%d,%d,%d,%d",
 //		_bank.res[0], _bank.res[1], _bank.res[2], _bank.res[3], _bank.res[4]);
 
 	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
@@ -2295,14 +2296,14 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 		player_copy.res[i] += take->res[i];
 	}
 	if(good_flag == false){
-		//Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange failed");
+		//Logger::getLog().log(Logger::DEBUG, "Model::bank_exchange failed");
 		return false;
 	}	
 
 	// perform the transaction
 	_players[player].resources = player_copy;
 	_bank = bank_copy;
-	/*Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::bank_exchange new_bank=%d,%d,%d,%d,%d",
+	/*Logger::getLog().log(Logger::DEBUG, "Model::bank_exchange new_bank=%d,%d,%d,%d,%d",
 		_bank.res[0],
 		_bank.res[1],
 		_bank.res[2],
@@ -2358,7 +2359,7 @@ void Model::give_resources_from_roll(int roll){
 
 				take.res[res_type] = amount;
 				if(bank_exchange(_vertex_array[hex->vertices[i]].player, &give, &take)){
-					Logger::getLog("jordan.log").log(
+					Logger::getLog().log(
 						Logger::DEBUG, 
 						"Model::give_resource_from_roll col=%d,row=%d,type=%d amount=%d,player=%d",
 						col, row, res_type, amount,
@@ -2395,16 +2396,16 @@ bool Model::pay_for_item(int player, resource_t* price){
 	}
 
 	bool rs = bank_exchange(player, price, &take);
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::pay_for_item=%d", rs);
+	Logger::getLog().log(Logger::DEBUG, "Model::pay_for_item=%d", rs);
 	return rs;
 }
 
 void Model::init_players(std::vector<Player>* players){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Model::init_players()");
+	Logger::getLog().log(Logger::DEBUG, "Model::init_players()");
 	resource_t start_resources;
 	start_resources.zero_out();
 	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
-		start_resources.res[i] = 5;
+		start_resources.res[i] = 0;
 	}
 
 	for(int i = 0; i < (int)players->size(); ++i){

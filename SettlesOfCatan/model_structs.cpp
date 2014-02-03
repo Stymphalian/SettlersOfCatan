@@ -30,7 +30,7 @@ dev_cards_t::dev_cards_t(){
 	player = -1;
 }
 dev_cards_t::~dev_cards_t(){
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "dev_cards_t destructor");
+	//Logger::getLog().log(Logger::DEBUG, "dev_cards_t destructor");
 }
 
 // methods
@@ -65,7 +65,7 @@ vertex_face_t::vertex_face_t(){
 	memset(&node, 0, sizeof(struct node_t));
 }
 vertex_face_t::~vertex_face_t(){
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "vertex_face_t destructor");
+	//Logger::getLog().log(Logger::DEBUG, "vertex_face_t destructor");
 }
 bool vertex_face_t::is_assigned(){
 	return assign_once;
@@ -105,10 +105,10 @@ configuration_t::configuration_t(){
 	num_extensions = 0;
 }
 configuration_t::~configuration_t(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "configuration_t destructor");
+	Logger::getLog().log(Logger::DEBUG, "configuration_t destructor");
 }
 void configuration_t::apply_defaults(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "configuaration_t::apply_defaults() Setting values to default values");
+	Logger::getLog().log(Logger::DEBUG, "configuaration_t::apply_defaults() Setting values to default values");
 	// set the building costs
 	memset(building_costs, 0, sizeof(building_costs));
 	building_costs[building_t::buildings::ROAD].res[resource_t::WOOD] = 1;
@@ -160,7 +160,7 @@ void configuration_t::apply_defaults(){
 	dev_cards_cap[dev_cards_t::VICTORY] = 4;
 }
 void configuration_t::apply_extensions(int num_extensions){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "configuaration_t::apply_extensions(%d)",num_extensions);
+	Logger::getLog().log(Logger::DEBUG, "configuaration_t::apply_extensions(%d)",num_extensions);
 	this->num_extensions = num_extensions;
 
 	int amount = 0;
@@ -182,7 +182,7 @@ void configuration_t::apply_extensions(int num_extensions){
 		}
 		extra_resources = amount % 5;
 				
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "configuration_t::apply_extensions() extension %d, amount = %d, remainder = %d", i,amount,extra_resources);
+		Logger::getLog().log(Logger::DEBUG, "configuration_t::apply_extensions() extension %d, amount = %d, remainder = %d", i,amount,extra_resources);
 		amount = amount / 5;
 		num_tiles[Tiles::SHEEP_TILE] += amount;
 		num_tiles[Tiles::WHEAT_TILE] += amount;
@@ -288,7 +288,7 @@ int configuration_t::num_of_players_from_extension(int exts){
 }
 
 void configuration_t::print_configuration_to_log(){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	logger.log(Logger::DEBUG, "configuration_t %d", num_extensions);
 	for(int i = 0; i < Tiles::NUM_OF_TILES; ++i){
 		logger.log(Logger::DEBUG, "configuration_t num_tiles[%d]=%d",i,num_tiles[i]);

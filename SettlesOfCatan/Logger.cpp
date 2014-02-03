@@ -24,7 +24,7 @@
 	// Destructor
 	Logger::~Logger() {
 		if(good_flag == true){
-			Logger::getLog("jordan.log").log(Logger::DEBUG, "Logger destructor");
+			Logger::getLog().log(Logger::DEBUG, "Logger destructor");
 			fclose(file_stream);
 		}
 	}
@@ -54,10 +54,17 @@
 
 	// public methods
 	// Get the log. Return an function-static instantion of the logger
+
+	void Logger::setLog(const char* file ){
+		if(file == NULL){ Logger::getLog(); }
+		else{Logger::getLog(file);}
+	}
+
 	Logger& Logger::getLog(const char* file){
 		static Logger instance(file);
 		return instance;
 	}
+
 	void Logger::_log(Logger::levels level, const char* format, va_list args){
 		// Output to the log
 		fprintf(file_stream, "%s | %-10s |\t",

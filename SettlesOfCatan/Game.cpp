@@ -5,6 +5,7 @@
 #include <SDL_ttf.h>
 #include <SDL_mixer.h>
 
+#include "Configuration.h"
 #include "Util.h"
 #include "Logger.h"
 #include "IView.h"
@@ -36,27 +37,26 @@ back					save
 */
 
 Game::Game(){
-	construct("Settlers of Catan",UTIL_DISP_W, UTIL_DISP_H);
+	construct("Settlers of Catan",0,0,640,640);
 }
-Game::Game(const char* title,int w, int h){
-	construct(title,w, h);	
+Game::Game(const char* title,int x, int y,int w, int h){
+	construct(title,x,y,w, h);	
 }
 Game::~Game(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Game destructor");
+	Logger::getLog().log(Logger::DEBUG, "Game destructor");
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
 }
 
-
-void Game::construct(const char* title,int w, int h){
-	Logger& logger = Logger::getLog("jordan.log");
+void Game::construct(const char* title,int x, int y,int w, int h){
+	Logger& logger = Logger::getLog();
 	start_load_time = SDL_GetTicks();
 	active = true;
-	default_window_w = w;
-	default_window_h = h;
-	default_window_x = 720;
-	default_window_y = 0;
 	window_title = title;
+	default_window_x = x;
+	default_window_y = y;
+	default_window_w = w;
+	default_window_h = h;		
 
 	// Create a window
 	win = SDL_CreateWindow(window_title.c_str(),
@@ -94,7 +94,7 @@ bool Game::is_mouse_event(SDL_Event& e){
 // every game has a window and rendered associated with it.
 // the window and renderer are then passed to whatever view we create
 void Game::run(){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	logger.log(Logger::DEBUG, "Game::run()");
 	
 	// HACK !^0^!
@@ -110,7 +110,7 @@ void Game::run(){
 	// WEIRD
 	Uint32 end_load_time = SDL_GetTicks();
 	//printf("Game::run() Load time = %5f s", ((float)end_load_time - start_load_time) / 1000);
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Game::run() Load time = %5f s", ((float)end_load_time - start_load_time)/1000);
+	Logger::getLog().log(Logger::DEBUG, "Game::run() Load time = %5f s", ((float)end_load_time - start_load_time)/1000);
 
 	// main event loop
 	SDL_Event e;

@@ -138,8 +138,10 @@
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="Collision.cpp" />
+    <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="IDialog.cpp" />
+    <ClCompile Include="ini_reader.cpp" />
     <ClCompile Include="lizz_lua.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="model_structs.cpp" />
@@ -157,15 +159,18 @@
     <ClCompile Include="IView.cpp" />
     <ClCompile Include="View_Game.cpp" />
     <ClCompile Include="View_Game_Debug_Dialog.cpp" />
+    <ClCompile Include="View_Game_Trade_Dialog.cpp" />
     <ClCompile Include="View_Play.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.h" />
     <ClInclude Include="CheckBox.h" />
     <ClInclude Include="Collision.h" />
+    <ClInclude Include="Configuration.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="IDialog.h" />
+    <ClInclude Include="ini_reader.h" />
     <ClInclude Include="lizz_lua.h" />
     <ClInclude Include="model_structs.h" />
     <ClInclude Include="Logger.h" />
@@ -181,6 +186,7 @@
     <ClInclude Include="IView.h" />
     <ClInclude Include="View_Game.h" />
     <ClInclude Include="View_Game_Debug_Dialog.h" />
+    <ClInclude Include="View_Game_Trade_Dialog.h" />
     <ClInclude Include="View_Play.h" />
   </ItemGroup>
   <ItemGroup>

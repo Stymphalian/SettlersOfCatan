@@ -36,7 +36,7 @@ int main(int argc, char** argv){
 	if(init() == false){ return EXIT_FAILURE; }
 
 	//variables
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	SDL_Window* win = 0;
 	SDL_Renderer* ren = 0;
 	SDL_Texture* background = 0;
@@ -308,7 +308,7 @@ int main(int argc, char** argv){
 
 
 bool init(){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 
 	// initialize SDL for using modules
 	if(SDL_Init(SDL_INIT_EVERYTHING)){
@@ -568,7 +568,7 @@ return (has_space && is_connected);
 
 
 bool View_Game::run_wait(){
-Logger& logger = Logger::getLog("jordan.log");
+Logger& logger = Logger::getLog();
 SDL_Event e;
 
 fps_timer->start();
@@ -733,29 +733,117 @@ g.areAdjacent(*V[col], *V[row]);
 }
 elist = g.edges();
 for(eit = elist.begin(); eit != elist.end(); eit++){
-Logger::getLog("jordan.log").log("g.edges() edge_key=%llu", (*eit)->getKey());
+Logger::getLog().log("g.edges() edge_key=%llu", (*eit)->getKey());
 }
 for(int i = 0; i < 4; ++i){
 elist = g.incidentEdges(*V[i]);
 for(eit = elist.begin(); eit != elist.end(); eit++){
-Logger::getLog("jordan.log").log("g.getIncident() vertex=%llu,edge_key=%llu", V[i]->getKey(), (*eit)->getKey());
+Logger::getLog().log("g.getIncident() vertex=%llu,edge_key=%llu", V[i]->getKey(), (*eit)->getKey());
 }
 }
 vlist = g.vertices();
 for(vit = vlist.begin(); vit != vlist.end(); vit++){
-Logger::getLog("jordan.log").log(Logger::DEBUG, "g.vertices() vertex = %llu", (*vit)->getKey());
+Logger::getLog().log(Logger::DEBUG, "g.vertices() vertex = %llu", (*vit)->getKey());
 
 }
 for(int i = 0; i < 4; ++i){
 vlist = g.adjacentVertices(*V[i]);
 for(vit = vlist.begin(); vit != vlist.end(); vit++){
-Logger::getLog("jordan.log").log(Logger::DEBUG, "g.adjacentVertices() original=%llu,vertex = %llu", V[i]->getKey(), (*vit)->getKey());
+Logger::getLog().log(Logger::DEBUG, "g.adjacentVertices() original=%llu,vertex = %llu", V[i]->getKey(), (*vit)->getKey());
 
 }
 }
 g.removeEdge(*E[2]);
 g.removeVertex(*V[1]);
 }
+
+
+
+
+
+
+
+char buffer[30];
+	printf("Please enter the ini file: ");
+	int rs = scanf("%30s", buffer);
+	if(rs != 1){ return 1; }
+	ini_reader* reader = ini_factory::open(buffer);
+	if(reader == NULL){
+		printf("Reader == NULL\n");
+	} else{
+		printf("Config File(%s):\n", buffer);
+		reader->print();
+	}
+
+	if(false){
+		reader->write_to_file("data/config2.ini");
+	}
+	if(false){
+		reader->modify_value("jordan", "fattyghost");
+		reader->modify_value("rin", "21.0", "section1");
+	}
+
+	if(false){
+		reader->remove_tag("jordan");
+		reader->remove_tag("jordan", "section3");
+		reader->rename_tag("crystal", "fatlady");
+		reader->rename_tag("mom", "momo", "section2");
+	}
+
+	if(false){
+		reader->remove_section();
+		reader->remove_section("section2");
+	}
+
+	if(false){
+		reader->add_comment("fatttghost's age is an unknown quantity");
+		reader->add_item("fatytghost", "11");
+		reader->add_item("sister", "15", "section1");
+		reader->add_item(NULL, "lajsdf", "sectoin1");
+		reader->add_comment("blanket", "section2");
+		reader->add_section("section_rin");
+		reader->add_section("globals");
+	}
+
+	if(false){
+		printf("numsections = %d\n", reader->get_num_sections());
+		printf("numtags(%s) = %d\n", "", reader->get_num_tags());
+		printf("numtags(%s) = %d\n", "section1", reader->get_num_tags("section1"));
+	}
+
+	if(false){
+		std::list<std::string> tags = reader->get_all_tags();
+		std::list<std::string>::iterator it;
+		for(it = tags.begin(); it != tags.end(); ++it){
+			printf("%s\n", it->c_str());
+		}
+		tags = reader->get_all_tags("section1");
+		for(it = tags.begin(); it != tags.end(); ++it){
+			printf("%s\n", it->c_str());
+		}
+	}
+
+	if(false){
+		printf("My testing");
+		ini_property elem = reader->get_property("jordan");
+		printf("get_property = %s,%s,%s\n", elem.section.c_str(), elem.tag.c_str(), elem.value.c_str());
+		elem = reader->get_property("rin", "section1");
+		printf("get_property = %s,%s,%s\n", elem.section.c_str(), elem.tag.c_str(), elem.value.c_str());
+		elem = reader->get_property("rin", "section2");
+		printf("get_property = %s,%s,%s\n", elem.section.c_str(), elem.tag.c_str(), elem.value.c_str());
+		elem = reader->get_property("rin", NULL);
+		printf("get_property = %s,%s,%s\n", elem.section.c_str(), elem.tag.c_str(), elem.value.c_str());
+	}
+
+	printf("----\n");
+	reader->print();
+	int c;
+	scanf("%c", &c);
+	printf("Press Enter....");
+	scanf("%c", &c);
+	return 0;
+	
+
 
 
 

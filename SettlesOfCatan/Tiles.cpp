@@ -12,7 +12,7 @@ Tiles::Tiles(){
 	reset_vertices_faces();
 }
 Tiles::~Tiles(){
-	//Logger::getLog("jordan.log").log(Logger::DEBUG, "Tiles destructor");
+	//Logger::getLog().log(Logger::DEBUG, "Tiles destructor");
 }
 
 

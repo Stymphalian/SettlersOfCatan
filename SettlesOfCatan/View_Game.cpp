@@ -4,6 +4,7 @@
 #include <SDL.h>
 #include "Logger.h"
 #include "Util.h"
+#include "Configuration.h"
 #include "Timer.h"
 #include "Model.h"
 #include "model_structs.h"
@@ -50,21 +51,21 @@ view_debug_t::view_debug_t(){
 View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 : model(_model),IView(win,ren)
 {
-	Logger::getLog("jordan.log").log(Logger::DEBUG,"View_Game::View_Game() constructor");
-	this->disp_w = UTIL_DISP_W;
-	this->disp_h = UTIL_DISP_H;
-	this->tile_w = UTIL_HEXTILE_W;
-	this->tile_h = UTIL_HEXTILE_H;
-	sprite_small[0] = UTIL_SPRITE_SMALL_W;
-	sprite_small[1] = UTIL_SPRITE_SMALL_H;
-	sprite_medium[0] = UTIL_SPRITE_MEDIUM_W;
-	sprite_medium[1] = UTIL_SPRITE_MEDIUM_H;
-	sprite_large[0] = UTIL_SPRITE_LARGE_W;
-	sprite_large[1] = UTIL_SPRITE_LARGE_H;
-	face_size[0] = UTIL_SPRITE_FACE_W;// 40;//20; // width
-	face_size[1] = UTIL_SPRITE_FACE_H;// 20;//10; // height
+	Logger::getLog().log(Logger::DEBUG,"View_Game::View_Game() constructor");
+	this->disp_w = Configuration::DISP_W;
+	this->disp_h = Configuration::DISP_H;
+	this->tile_w = Configuration::HEXTILE_W;
+	this->tile_h = Configuration::HEXTILE_H;
+	sprite_small[0] = Configuration::SPRITE_SMALL_W;
+	sprite_small[1] = Configuration::SPRITE_SMALL_H;
+	sprite_medium[0] = Configuration::SPRITE_MEDIUM_W;
+	sprite_medium[1] = Configuration::SPRITE_MEDIUM_H;
+	sprite_large[0] = Configuration::SPRITE_LARGE_W;
+	sprite_large[1] = Configuration::SPRITE_LARGE_H;
+	face_size[0] = Configuration::SPRITE_FACE_W;// 40;//20; // width
+	face_size[1] = Configuration::SPRITE_FACE_H;// 20;//10; // height
 	this->exit_flag = false;
-	this->desired_fps = UTIL_FPS;
+	this->desired_fps = Configuration::FPS;
 	this->total_frame_count = 0;
 	this->state = state_e::NONE;
 	this->change_state_flag = false;
@@ -83,13 +84,13 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	this->draw_tile = false;
 	// selectd vertex intialization
 	this->selected_vertex = nullptr;
-	this->vertex_hit_w = UTIL_VERTEX_HITBOX_W;
-	this->vertex_hit_h = UTIL_VERTEX_HITBOX_H;
+	this->vertex_hit_w = Configuration::VERTEX_HITBOX_W;
+	this->vertex_hit_h = Configuration::VERTEX_HITBOX_H;
 	this->draw_vertex = false;
 	// selected face initialization
 	this->selected_face = nullptr;
-	this->face_hit_w = UTIL_VERTEX_HITBOX_W;
-	this->face_hit_h = UTIL_VERTEX_HITBOX_H;
+	this->face_hit_w = Configuration::VERTEX_HITBOX_W;
+	this->face_hit_h = Configuration::VERTEX_HITBOX_H;
 	this->draw_face = false;
 	// no debug dialog to beign with.
 	this->debug_dialog = nullptr;
@@ -145,12 +146,12 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	// setup the buttons
 	this->active = this->active && setup_buttons(bot_pane);
 	if(this->active == false){
-		Logger::getLog("jordan.log").log(Logger::ERROR, "View_Game() Error loading view");
+		Logger::getLog().log(Logger::ERROR, "View_Game() Error loading view");
 	}	
 }
 
 View_Game::~View_Game(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG,"View_Game::~View_Game() destructor");
+	Logger::getLog().log(Logger::DEBUG,"View_Game::~View_Game() destructor");
 	delete fps_timer;
 	delete[] vertex_covered;
 	delete[] face_covered;
@@ -171,44 +172,44 @@ View_Game::~View_Game(){
 }
 
 bool View_Game::load(){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	logger.log(logger.DEBUG, "View_Game::load() Loading all View_Game resources");
 
-	hextile_spritesheet = Util::load_texture("data/hextiles_spritesheet.png",&ren);
+	hextile_spritesheet = Util::load_texture(Util::data_resource("hextiles_spritesheet.png"),&ren);
 	if(hextile_spritesheet == nullptr){
 		logger.SDL_log(Logger::ERROR, "View_Game::load() load_texture data/hextiles_spritesheet.png");
 		return false;
 	}
 
-	if(load_player_building_textures("data/buildings_spritesheet.bmp") == false) {
+	if(load_player_building_textures(Util::data_resource("buildings_spritesheet.bmp").c_str()) == false) {
 		logger.SDL_log(Logger::ERROR, "View_Game::load() load_player_building_textures(buildings_spritesheet.bmp)");
 		return false;
 	}	
 
-	hextile_surface = Util::load_surface("data/hextile.png");
+	hextile_surface = Util::load_surface(Util::data_resource("hextile.png"));
 	if(hextile_surface == nullptr){
 		return false;
 	}
 
-	hextile_face_surface = Util::load_surface("data/hextile_faces.png");
+	hextile_face_surface = Util::load_surface(Util::data_resource("hextile_faces.png"));
 	if(hextile_face_surface == nullptr){
 		return false;
 	}
 
-	font_carbon_12 = TTF_OpenFont("data/carbon.ttf", 12);
+	font_carbon_12 = TTF_OpenFont(Util::data_resource("carbon.ttf").c_str(), 12);
 	font_carbon_12_colour = { 177, 177, 98, 255 };
 	if(font_carbon_12 == nullptr){
 		logger.TTF_log(Logger::ERROR, "View_Game::load() TTF_OpenFont data/carbon.ttf ");
 		return false;
 	}
 
-	music = Mix_LoadMUS("data/music.mp3");
+	music = Mix_LoadMUS(Util::data_resource("music.mp3").c_str());
 	if(music == nullptr){
 		logger.Mix_log(Logger::ERROR, "View_Game::load() Mix_LoadMUX data/music.mp3");
 		return false;
 	}
 
-	sound1 = Mix_LoadWAV("data/sound1.wav");
+	sound1 = Mix_LoadWAV(Util::data_resource("sound1.wav").c_str());
 	if(sound1 == nullptr){
 		logger.Mix_log(Logger::ERROR, "View_Game::load() Mix_LoadWAV data/sound1.wav");
 		return false;
@@ -286,7 +287,7 @@ bool View_Game::load(){
 }
 bool View_Game::load_player_building_textures(const char* file){
 	if(!file){ return false; }
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 	SDL_Surface* surface = nullptr;
 	SDL_Palette* palette = nullptr;
 	SDL_Color colors[256];
@@ -394,7 +395,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 			tiles[tiles.size()-1].init(x + pane.padding/2, y + pane.padding/2,0, tile_w, tile_h, col, row);
 		}
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() tiles.size() = %d", tiles.size());
+	Logger::getLog().log(Logger::DEBUG, "View_Game::setup_board_pane() tiles.size() = %d", tiles.size());
 
 	// setup all the vertices
 	int pos =0;
@@ -421,7 +422,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 		vertices[vertices.size() - 1].init(tile_x+x,tile_y+y,0,vertex_hit_w, vertex_hit_h,pos);
 		pos++;
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() vertices.size() = %d", vertices.size());
+	Logger::getLog().log(Logger::DEBUG, "View_Game::setup_board_pane() vertices.size() = %d", vertices.size());
 
 	// setup all the face intersects
 	pos = 0;
@@ -447,14 +448,14 @@ bool View_Game::setup_board_pane(pane_t& pane){
 		faces[faces.size() - 1].init(tile_x + x, tile_y + y,0, face_hit_w, face_hit_h,pos);
 		pos++;
 	}
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::setup_board_pane() faces.size() = %d", faces.size());
+	Logger::getLog().log(Logger::DEBUG, "View_Game::setup_board_pane() faces.size() = %d", faces.size());
 
 
 	// print where the tile_intersect tiles are placed
 	do{
 		std::vector<Tile_intersect>::iterator it;
 		for(it = tiles.begin(); it != tiles.end(); ++it){
-			Logger::getLog("jordan.log").log(Logger::DEBUG, "tile_intersect= x=%d,y=%d,w=%d,h=%d,col=%d,row=%d,hitbox_x=%d,hitbox_y=%d",
+			Logger::getLog().log(Logger::DEBUG, "tile_intersect= x=%d,y=%d,w=%d,h=%d,col=%d,row=%d,hitbox_x=%d,hitbox_y=%d",
 				it->x, it->y, it->w, it->h, it->col, it->row,
 				it->hitbox.getx(), it->hitbox.gety()
 				);
@@ -465,7 +466,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	do{
 		std::vector<vertex_face_t_intersect>::iterator it;
 		for(it = vertices.begin(); it != vertices.end(); ++it){
-			Logger::getLog("jordan.log").log(Logger::DEBUG, "vertex_t_intersect= x=%d,y=%d,w=%d,h=%d,vertex_num=%d,hitbox_x=%d,hitbox_y=%d",
+			Logger::getLog().log(Logger::DEBUG, "vertex_t_intersect= x=%d,y=%d,w=%d,h=%d,vertex_num=%d,hitbox_x=%d,hitbox_y=%d",
 				it->x, it->y, it->w, it->h, it->num,
 				it->hitbox.getx(), it->hitbox.gety()
 				);
@@ -475,7 +476,7 @@ bool View_Game::setup_board_pane(pane_t& pane){
 	do{
 		std::vector<vertex_face_t_intersect>::iterator it;
 		for(it = faces.begin(); it != faces.end(); ++it){
-			Logger::getLog("jordan.log").log(Logger::DEBUG, "face_t_intersect= x=%d,y=%d,w=%d,h=%d,face_num=%d,hitbox_x=%d,hitbox_y=%d",
+			Logger::getLog().log(Logger::DEBUG, "face_t_intersect= x=%d,y=%d,w=%d,h=%d,face_num=%d,hitbox_x=%d,hitbox_y=%d",
 				it->x, it->y, it->w, it->h, it->num,
 				it->hitbox.getx(), it->hitbox.gety()
 				);
@@ -570,19 +571,19 @@ void View_Game::set_state(state_e new_state){
 
 void View_Game::on_start(SDL_Event& e){	
 	if(e.type >= SDL_USEREVENT){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::on_start()");
+		Logger::getLog().log(Logger::DEBUG, "View_Game::on_start()");
 		fps_timer->start();
 	}
 }
 void View_Game::on_switch(SDL_Event& e){
 	if(e.type >= SDL_USEREVENT){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::on_switch()");
+		Logger::getLog().log(Logger::DEBUG, "View_Game::on_switch()");
 		fps_timer->stop();
 	}	
 }
 void View_Game::on_close(SDL_Event& e){
 	if(e.type >= SDL_USEREVENT){
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::on_switch()");
+		Logger::getLog().log(Logger::DEBUG, "View_Game::on_switch()");
 		fps_timer->stop();
 	}
 }
@@ -717,7 +718,7 @@ void View_Game::handle_user_events(SDL_Event& e){
 	}
 	else
 	{
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game::handle_user_events Unhandled user event");
+		Logger::getLog().log(Logger::DEBUG, "View_Game::handle_user_events Unhandled user event");
 	}
 }
 
@@ -824,7 +825,7 @@ void View_Game::update_check_for_collisions(){
 	x = mouse.x;
 	y = mouse.y;
 
-	//	Logger::getLog("jordan.log").log(Logger::DEBUG, "mouse.hitbox(%d,%d)", mouse.hitbox.getx(), mouse.hitbox.gety());
+	//	Logger::getLog().log(Logger::DEBUG, "mouse.hitbox(%d,%d)", mouse.hitbox.getx(), mouse.hitbox.gety());
 	// TODO: Need a better way to tell which button is being hit
 	std::vector<Button*>::iterator it;
 	for(it = button_list.begin(); it != button_list.end(); ++it){
@@ -1553,7 +1554,7 @@ void View_Game::render(){
 }
 
 void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
-	Logger& logger = Logger::getLog("jordan.log");
+	Logger& logger = Logger::getLog();
 
 	if(ev.type == SDL_MOUSEBUTTONDOWN){
 		if(s == View_Game::NONE)
@@ -1565,7 +1566,8 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 		{
 			static bool once = false;
 			if(once == false){
-				once = true;
+				//once = true;
+				once = false;
 				logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start", (int)s);
 				// do roll assignment. for now we just assume we start
 				// from player one and then keep going.
@@ -1657,17 +1659,26 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 		else if(s == View_Game::START_RESOURCES)
 		{
 			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start Resources and Placing the Thief",(int)s);			
-			// place the thief
-			if(selected_tile != nullptr){
-				// give resources.
-				for(int i = model.get_num_dice(); i < model.get_num_dice()*model.get_num_dice_sides(); ++i){
-					model.give_resources_from_roll(i);
-				}
+			// give resources.
+			for(int i = model.get_num_dice(); i < model.get_num_dice()*model.get_num_dice_sides(); ++i){
+				model.give_resources_from_roll(i);
+			}
 
-				// place the thief.
-				model.place_thief(selected_tile->col, selected_tile->row);
-				set_state(View_Game::NORMAL);
-			}			
+			// place the thief on a desert tile.
+			bool placed_thief = false;
+			for(int row = 0; row < model.get_board_width(); ++row){
+				for(int col = 0; col < model.get_board_height(); ++col){
+					if(model.get_tile(col, row)->active == 0){ continue; }
+					if(model.get_tile(col, row)->type == Tiles::DESERT_TILE){
+						model.place_thief(col, row);
+						set_state(View_Game::NORMAL);
+						placed_thief = true;
+						break;
+					}
+				}
+				if(placed_thief == true){ break; }
+			}		
+
 		}
 		else if(s == View_Game::NORMAL)
 		{

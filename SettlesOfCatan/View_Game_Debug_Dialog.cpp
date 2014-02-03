@@ -14,7 +14,7 @@
 View_Game_Debug_Dialog_CheckBox::View_Game_Debug_Dialog_CheckBox()
 : CheckBox(), _monitor_value(nullptr)
 {
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game_Debug_Dialog_CheckBox() Constructor");
+	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog_CheckBox() Constructor");
 }
 
 void View_Game_Debug_Dialog_CheckBox::set_data(void* data){
@@ -44,7 +44,7 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	: IDialog(view, x, y, z, w, h), view_game(view)
 {
 
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "VieW_Game_Debug_Dialog Constructor");
+	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Constructor");
 	// mouse handling
 	_mouse_x = 0;
 	_mouse_y = 0;
@@ -74,7 +74,7 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	_checkboxes.push_back(&_selected_pane);
 	_checkboxes.push_back(&_item_numbering);
 
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "VieW_Game_Debug_Dialog checkboxes size = %d",(int)_checkboxes.size());
+	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog checkboxes size = %d",(int)_checkboxes.size());
 	// Intilize all the checkboxes.
 	// two columns of checkboxes.
 	int offset_x = 5;
@@ -115,12 +115,12 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	font_carbon_12 = TTF_OpenFont("data/carbon.ttf", 12);
 	font_carbon_12_colour = { 177, 177, 98, 255 };
 	if(font_carbon_12 == nullptr){
-		Logger::getLog("jordan.log").TTF_log(Logger::ERROR, "View_Game::load() TTF_OpenFont data/carbon.ttf ");
+		Logger::getLog().TTF_log(Logger::ERROR, "View_Game::load() TTF_OpenFont data/carbon.ttf ");
 	}
 }
 
 View_Game_Debug_Dialog::~View_Game_Debug_Dialog(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "VieW_Game_Debug_Dialog Destructor");
+	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Destructor");
 	_data = nullptr;
 	_checkboxes.clear();
 	_board_group.clear();
@@ -132,7 +132,7 @@ View_Game_Debug_Dialog::~View_Game_Debug_Dialog(){
 // TODO: RUCK This siht1
 bool View_Game_Debug_Dialog::open(void* data) {
 	IDialog::open(data);
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game_Debug_Dialog::open(data=%x) Opening the dialog", data);
+	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog::open(data=%x) Opening the dialog", data);
 	_data = (view_debug_t*)data;
 
 	// set the label for the checkboxes
@@ -169,7 +169,7 @@ bool View_Game_Debug_Dialog::open(void* data) {
 
 void* View_Game_Debug_Dialog::close() {
 	IDialog::close();
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "View_Game_Debug_Dialog::close() Closing the dialog. Passing back %x", _data);
+	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog::close() Closing the dialog. Passing back %x", _data);
 	return _data;
 }
 

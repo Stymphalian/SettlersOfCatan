@@ -1,9 +1,12 @@
 #pragma once
 
+#include <string>
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <vector>
+#include "ini_reader.h"
 
+/*
 #define GAME_SMALL
 #ifdef GAME_SMALL
 	#define UTIL_DISP_W 640
@@ -38,6 +41,7 @@
 	#define UTIL_SPRITE_FACE_H 20
 	#define UTIL_FPS 30
 #endif
+	*/
 
 class Util{
 public:
@@ -46,6 +50,9 @@ public:
 	static SDL_Surface* load_surface(const char* file);
 	static SDL_Texture* load_texture(const char* file, SDL_Renderer* ren);
 	static SDL_Texture* load_texture_bmp(const char* file, SDL_Renderer* ren);
+	static SDL_Surface* load_surface(std::string file);
+	static SDL_Texture* load_texture(std::string file, SDL_Renderer* ren);
+	static SDL_Texture* load_texture_bmp(std::string file, SDL_Renderer* ren);
 	static void render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y, int w, int h, SDL_Rect* clip = nullptr);
 	static void render_texture(SDL_Renderer* ren, SDL_Texture* tex, int x, int y, SDL_Rect* clip = nullptr);
 	static void render_rectangle(SDL_Renderer* rend, SDL_Rect* rect, SDL_Color color);
@@ -59,6 +66,7 @@ public:
 	static SDL_Color colour_blue();
 	static SDL_Color colour_white();
 	static SDL_Color colour_black();
+	static std::string data_resource(const char* res);
 
 	//member methods
 	static Util& get();

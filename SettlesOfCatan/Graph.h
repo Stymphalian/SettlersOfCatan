@@ -8,13 +8,13 @@ public:
 
 	//constructor and destructor
 	GraphVertex(unsigned long long key, T data){
-		//Logger::getLog("jordan.log").log(Logger::DEBUG,"Graph Vertex Constructor(key=%llu,data=%x)", key, data);
+		//Logger::getLog().log(Logger::DEBUG,"Graph Vertex Constructor(key=%llu,data=%x)", key, data);
 		this->key = key;
 		this->data = data;
 		this->num_edges = 0;
 	}
 	virtual ~GraphVertex(){
-		//Logger::getLog("jordan.log").log(Logger::DEBUG, "Graph Vertex Destructor key=%llu,data=%x,num_edge=%d",key,data,num_edges);
+		//Logger::getLog().log(Logger::DEBUG, "Graph Vertex Destructor key=%llu,data=%x,num_edge=%d",key,data,num_edges);
 		key = -1;
 		data = 0;
 		num_edges = 0;
@@ -39,14 +39,14 @@ public:
 	GraphVertex<T>* end;
 	// constructor and destructor
 	GraphEdge(unsigned long long key, T data, GraphVertex<T>* start, GraphVertex<T>* end){
-		//Logger::getLog("jordan.log").log(Logger::DEBUG,"Graph Edge Constructor(key=%llu,data=%x,start=%x,end=%x)", key, data, start, end);
+		//Logger::getLog().log(Logger::DEBUG,"Graph Edge Constructor(key=%llu,data=%x,start=%x,end=%x)", key, data, start, end);
 		this->key = key;
 		this->data = data;
 		this->start = start;
 		this->end = end;
 	}
 	virtual ~GraphEdge(){
-		//Logger::getLog("jordan.log").log(Logger::DEBUG, "Graph Edge Destructor key=%llu,data=%x,start=%x,end=%x",key,data,start,end);
+		//Logger::getLog().log(Logger::DEBUG, "Graph Edge Destructor key=%llu,data=%x,start=%x,end=%x",key,data,start,end);
 		key = -1;
 		data = 0;
 		start = nullptr;
@@ -102,7 +102,7 @@ private:
 };
 
 template<class T>
-Graph<T>::Graph() {//: logger(Logger::getLog("jordan.log")){
+Graph<T>::Graph() {//: logger(Logger::getLog()){
 	//logger.log(Logger::DEBUG, "Graph::Graph() Construtcor");
 	edge_keys = 1;
 	vertex_keys = 1;

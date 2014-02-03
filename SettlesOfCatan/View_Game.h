@@ -54,7 +54,7 @@ public:
 		hitbox.hook(&this->x,&this->y,&this->z);
 		hitbox.add_rect(0,0,0, this->w, this->h);
 		setVisible(true);
-		Logger::getLog("jordan.log").log(Logger::DEBUG, "pane_t(x=%d,y=%d,z=%d,w=%d,h=%d,internal_padding=%d)",
+		Logger::getLog().log(Logger::DEBUG, "pane_t(x=%d,y=%d,z=%d,w=%d,h=%d,internal_padding=%d)",
 			this->x, this->y,this->z, this->w, this->h,this->padding);
 	}
 	bool isVisible(){ return visible; }

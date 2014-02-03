@@ -31,5 +31,5 @@ IDialog::IDialog(IView& view,int x, int y, int z, int w, int h)
 }
 IDialog::~IDialog(){}
 bool IDialog::isvisible(){return _visible;}
-bool IDialog::open(void* data){ return(_visible = true); }
+bool IDialog::open(void* data){ _visible = true; return true; }
 void* IDialog::close(){ _visible = false; return nullptr; }

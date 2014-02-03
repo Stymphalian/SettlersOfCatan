@@ -13,5 +13,5 @@ Sprite::Sprite(int x, int y,SDL_Texture& tex, SDL_Rect* clips,int num_frames)
 }
 
 Sprite::~Sprite(){
-	Logger::getLog("jordan.log").log(Logger::DEBUG, "Sprite destructor");
+	Logger::getLog().log(Logger::DEBUG, "Sprite destructor");
 }
