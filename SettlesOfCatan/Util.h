@@ -6,43 +6,6 @@
 #include <vector>
 #include "ini_reader.h"
 
-/*
-#define GAME_SMALL
-#ifdef GAME_SMALL
-	#define UTIL_DISP_W 640
-	#define UTIL_DISP_H 640
-	#define UTIL_VERTEX_HITBOX_W 12
-	#define UTIL_VERTEX_HITBOX_H 12
-	#define UTIL_HEXTILE_W 40
-	#define UTIL_HEXTILE_H 40
-	#define UTIL_SPRITE_SMALL_W 20
-	#define UTIL_SPRITE_SMALL_H 20
-	#define UTIL_SPRITE_MEDIUM_W 40
-	#define UTIL_SPRITE_MEDIUM_H 40
-	#define UTIL_SPRITE_LARGE_W 64
-	#define UTIL_SPRITE_LARGE_H 64
-	#define UTIL_SPRITE_FACE_W 20
-	#define UTIL_SPRITE_FACE_H 10
-	#define UTIL_FPS 30
-#else 
-	#define UTIL_DISP_W 1200
-	#define UTIL_DISP_H 640
-	#define UTIL_VERTEX_HITBOX_W 24
-	#define UTIL_VERTEX_HITBOX_H 24
-	#define UTIL_HEXTILE_W 80
-	#define UTIL_HEXTILE_H 80
-	#define UTIL_SPRITE_SMALL_W 40
-	#define UTIL_SPRITE_SMALL_H 40
-	#define UTIL_SPRITE_MEDIUM_W 80
-	#define UTIL_SPRITE_MEDIUM_H 80
-	#define UTIL_SPRITE_LARGE_W 128
-	#define UTIL_SPRITE_LARGE_H 128
-	#define UTIL_SPRITE_FACE_W 40
-	#define UTIL_SPRITE_FACE_H 20
-	#define UTIL_FPS 30
-#endif
-	*/
-
 class Util{
 public:
 	// static methods
@@ -58,6 +21,7 @@ public:
 	static void render_rectangle(SDL_Renderer* rend, SDL_Rect* rect, SDL_Color color);
 	static void render_fill_rectangle(SDL_Renderer* rend, SDL_Rect* rect, SDL_Color color);
 	static void render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Color color, const char* msg, ...);
+	static void render_line(SDL_Renderer* ren, SDL_Color color,int x1, int y1, int x2, int y2);
 	static Uint32 get_pixel32(SDL_Surface* surface, int x, int y);
 	static void set_pixel32(SDL_Surface* surface, int x, int y,Uint32 value);
 	static void shuffle(int* bag, int size);

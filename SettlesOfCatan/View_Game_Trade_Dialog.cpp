@@ -9,6 +9,21 @@
 #include "Button.h"
 #include "TextField.h"
 #include "ComboBox.h"
+#include "DropDown.h"
+
+// -----------------------------------------------------------------
+// - V I E W _ G A M E _ T R A D E _ D I A L O G _ D R O P D O W N
+// -----------------------------------------------------------------
+View_Game_Trade_Dialog_DropDown::View_Game_Trade_Dialog_DropDown()
+: DropDown()
+{
+
+}
+
+View_Game_Trade_Dialog_DropDown::~View_Game_Trade_Dialog_DropDown()
+{
+
+}
 
 
 // -----------------------------------------------------------------

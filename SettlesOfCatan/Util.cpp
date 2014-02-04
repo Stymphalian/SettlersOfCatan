@@ -166,6 +166,17 @@ void Util::render_text(SDL_Renderer* ren, TTF_Font* font, int x, int y, SDL_Colo
 	SDL_DestroyTexture(texture);
 }
 
+void Util::render_line(SDL_Renderer* ren, SDL_Color color, int x1, int y1, int x2, int y2){
+	Util::render_count++;
+	Uint8 red, green, blue, alpha;
+	SDL_GetRenderDrawColor(ren, &red, &green, &blue, &alpha);
+	SDL_SetRenderDrawColor(ren, color.r, color.g, color.b, color.a);
+	if(SDL_RenderDrawLine (ren, x1,y1,x2,y2) != 0){
+		Logger::getLog().log(Logger::ERROR, "SDL_RenderDrawLine()");
+	}
+	SDL_SetRenderDrawColor(ren, red, green, blue, alpha);
+}
+
 Uint32 Util::get_pixel32(SDL_Surface* surface, int x, int y){	
 	Uint32* pixels = (Uint32*) surface->pixels;
 	return pixels[x + y*surface->w];

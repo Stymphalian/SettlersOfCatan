@@ -3,11 +3,20 @@
 #include "IDialog.h"
 #include "Button.h"
 #include "ComboBox.h"
+#include "DropDown.h"
 #include "TextField.h"
 class View_Game;
 class Collision;
 class Model;
 class View_Game_Trade_Dialog;
+
+
+class View_Game_Trade_Dialog_DropDown : public DropDown{
+public:
+	View_Game_Trade_Dialog_DropDown();
+	virtual ~View_Game_Trade_Dialog_DropDown();
+private:
+};
 
 class View_Game_Trade_Dialog_ComboBox : public  ComboBox{
 public:

@@ -31,7 +31,7 @@ Thief
 Rules:
 	settlements are placed on the vertices of betwen each hexagonal tile 
 	roads are places on the faces of each hexagonal tile
-	city  ->	 x__			___
+	city  ->	 x__		   ___
 				/   \		  /   * <- road
 				\___/		  \___/
 
@@ -42,6 +42,10 @@ Rules:
 		- for each city , pick up 2
 	
 	Phases:
+		Roll
+		Trade
+		Building
+
 		Roll,
 			- do thief thing.
 		Player builds,initiates trade ( with players or bank)

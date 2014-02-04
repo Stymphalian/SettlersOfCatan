@@ -9,6 +9,7 @@
 #include "IDialog.h"
 #include "CheckBox.h"
 #include "View_Game.h"
+#include "TextField.h"
 
 class View_Play : public IView
 {
@@ -27,7 +28,7 @@ public:
 	int mouse_x, mouse_y;
 
 	// M Y  S T U F F   S T A R T
-	int amount;
+	TextField field;
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor
