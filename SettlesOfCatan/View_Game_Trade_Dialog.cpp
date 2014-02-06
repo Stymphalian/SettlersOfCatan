@@ -89,6 +89,9 @@ void View_Game_Trade_Dialog_Button::submit_button_action(View_Game_Trade_Dialog*
 	// transaction
 	// 2) We pass back an envelope of the changes that we want done
 	// to the model.
+	Util::get().push_userev(
+		Util::get().get_userev("close_dialog_event"),
+		0, dialog, 0);
 	return;
 }
 void View_Game_Trade_Dialog_Button::cancel_button_action(View_Game_Trade_Dialog* dialog, Model* model){
@@ -113,8 +116,13 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	mouse_hitbox.add_rect(0, 0, 0, 1, 1);
 
 	// initialize the buttons
+	selected_button = nullptr;
 	submit_button.set_action(View_Game_Trade_Dialog_Button::submit_button_action);
-	submit_button.set_action(View_Game_Trade_Dialog_Button::cancel_button_action);
+	cancel_button.set_action(View_Game_Trade_Dialog_Button::cancel_button_action);	
+	submit_button.init("Submit", this->w - 130, this->h - 30, 0, 0, 30);
+	cancel_button.init("Cancel", submit_button.x + submit_button.w + 5, this->h - 30, 0, 0, 30);	
+	button_list.push_back(&submit_button);
+	button_list.push_back(&cancel_button);
 
 	// initialize the combos boxes.
 
@@ -135,7 +143,7 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	// place all the textfields on the screen.
 	int x_offset = this->w/4;
 	int y_offset = this->h/8;
-	int padding = 20;
+	int padding = 5;
 	int num_cols = 3;
 	int num_rows = 2;
 	int char_w = 9;
@@ -143,7 +151,8 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	// init the left side
 	for(int i = 0; i < (int)left_textfields.size(); ++i){
 		left_textfields[i]->init(x_offset, y_offset, 0, num_cols, num_rows, char_w,char_h);
-		right_textfields[i]->init(x_offset + this->w / 2, y_offset, 0, num_cols, num_rows,char_w, char_h);
+		left_textfields[i]->set_max_num_chars(3);
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog() textfield  left[%d] = %d,%d", i, left_textfields[i]->x, left_textfields[i]->y);
 
 		x_offset += 0;
 		y_offset += num_rows*char_h + padding;
@@ -153,7 +162,9 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	x_offset = this->w / 4 + this->w / 2;
 	y_offset = this->h/8;
 	for(int i = 0; i < (int)right_textfields.size(); ++i){
-		right_textfields[i]->init(x_offset + this->w / 2, y_offset, 0, num_cols, num_rows, char_w, char_h);
+		right_textfields[i]->init(x_offset, y_offset, 0, num_cols, num_rows, char_w, char_h);
+		right_textfields[i]->set_max_num_chars(3);
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog() textfield right[%d] = %d,%d", i,right_textfields[i]->x, right_textfields[i]->y );
 
 		x_offset += 0;
 		y_offset += num_rows*char_h + padding;
@@ -178,6 +189,9 @@ bool View_Game_Trade_Dialog::open(void* data){
 	IDialog::open(data);
 	_model = (Model*)data;
 
+	selected_button = nullptr;
+	selected_textfield = nullptr;
+
 	// not much that we have to do here.
 	return true; 
 }
@@ -193,6 +207,7 @@ void View_Game_Trade_Dialog::handle_keyboard_events(SDL_Event& ev){
 		return;
 	}
 	// handle the buttons
+		// do nothing
 
 	// handle the combo box
 
@@ -214,6 +229,7 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 	_mouse_y -= this->y;
 
 	// handle any intersections with the mouse.
+	selected_textfield = nullptr;
 	for(int i = 0; i < (int)left_textfields.size(); ++i){
 		left_textfields[i]->handle_mouse_events(ev, mouse_hitbox);
 		if(left_textfields[i]->has_focus){
@@ -223,9 +239,32 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 	for(int i = 0; i < (int)right_textfields.size(); ++i){
 		right_textfields[i]->handle_mouse_events(ev, mouse_hitbox);
 		if(right_textfields[i]->has_focus){
-			selected_textfield = left_textfields[i];
+			selected_textfield = right_textfields[i];
 		}
 	}
+
+
+	selected_button = nullptr;
+	if(ev.type == SDL_MOUSEBUTTONDOWN){
+		for(int i = 0; i < (int)button_list.size(); ++i){
+			if(mouse_hitbox.collides(button_list[i]->hitbox)){
+				button_list[i]->hit_flag = true;
+				selected_button = button_list[i];
+			} else{
+				button_list[i]->hit_flag = false;
+			}
+		}
+	}else if(ev.type == SDL_MOUSEBUTTONUP){
+		for(int i = 0; i < (int)button_list.size(); ++i){
+			if(mouse_hitbox.collides(button_list[i]->hitbox) &&
+				button_list[i]->hit_flag == true)
+			{
+				button_list[i]->action(this, _model);
+			}
+			button_list[i]->hit_flag = false;
+		}		
+	}
+	
 }
 void View_Game_Trade_Dialog::update(SDL_Event& ev){
 	if(selected_textfield != nullptr){
@@ -234,53 +273,76 @@ void View_Game_Trade_Dialog::update(SDL_Event& ev){
 }
 void View_Game_Trade_Dialog::render(){
 	// TODO: this is repeated code.
+	int x_offset = 0;
+	int y_offset = 0;
 	SDL_Rect rect = { 0, 0, 0, 0 };
 	SDL_Color colour = { 180, 90, 0, 255 };
+	std::string resource_strings[5] = {"Bricks:", "Ore:", "Sheep:", "Wheat:", "Wood:"};
 
 	// TODO: This might be a little ineffienct, clearing and drawing
 	// the area again, but we will see.
-	SDL_RenderSetClipRect(&view.ren, &new_clip);
+	//SDL_RenderSetClipRect(&view.ren, &new_clip);
 	SDL_RenderClear(&view.ren);
+	//SDL_RenderSetClipRect(&view.ren, &old_clip);
 
 
-	// render the left side
+	// -- -- -- -- --  L E F T  -- -- -- -- -- -- --
 	// render the player's name
 	int player_num = _model->get_current_player();
 	Player* p = _model->get_player(player_num);
-	Util::render_text(&view.ren, font_carbon_12, 5, 5, font_carbon_12_colour,
+	Util::render_text(&view.ren, font_carbon_12, 5 +this->x, 5 + this->y, font_carbon_12_colour,
 		"%d : %s", player_num, p->name.c_str());
 
-	// render the text fields and labels
-	std::string resource_strings[5] = {
-		"Bricks:","Ore:","Sheep:","Wheat:","Wood:"		
-	};
 
-	int x_offset = 0;
-	int y_offset = 0;
+	// render the text fields and labels
+	rect = { this->x+1 , this->y+1, this->w / 2-1, this->h -1};
+	Util::render_rectangle(&view.ren, &rect, Util::colour_green());
+	x_offset = 0;
+	y_offset = 0;
 	for(int i = 0; i < (int)left_textfields.size(); ++i){
-		x_offset = 0;
-		y_offset = left_textfields[i]->y;
-		Util::render_text(&view.ren, font_carbon_12,0, y_offset, font_carbon_12_colour,
+		x_offset = this->x;
+		y_offset = this->y  + left_textfields[i]->y;
+		Util::render_text(&view.ren, font_carbon_12,x_offset, y_offset, font_carbon_12_colour,
 			"%s", resource_strings[i].c_str());
 
 		SDL_Rect pane_rect = { this->x, this->y, this->w, this->h };
 		left_textfields[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
 	}
 
-	// render the right side
-	// render the combo-box
 
+
+	// -- - - - -- - R I G H T -- - - - -- - -
+	// render the combo-box
 	// render the text fields and labels
+	rect = { this->x + this->w / 2 + 1, this->y+1, this->w / 2-1, this->h -1};
+	Util::render_rectangle(&view.ren, &rect, Util::colour_blue());
 	x_offset = 0;
 	y_offset = 0;
 	for(int i = 0; i < (int)right_textfields.size(); ++i){
-		x_offset = this->w/2;
-		y_offset = right_textfields[i]->y;
+		x_offset = this->x + this->w/2;
+		y_offset = this->y + right_textfields[i]->y;
 		Util::render_text(&view.ren, font_carbon_12, x_offset, y_offset, font_carbon_12_colour,
 			"%s", resource_strings[i].c_str());
 
 		SDL_Rect pane_rect = { this->x, this->y, this->w, this->h };
 		right_textfields[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
+	}
+
+
+	// render the buttons
+	std::vector<View_Game_Trade_Dialog_Button*>::iterator it;
+	for(it = button_list.begin(); it != button_list.end(); ++it){
+		rect = { 
+			(*it)->x + this->x,
+			(*it)->y + this->y,
+			(*it)->w, (*it)->h };
+
+		if((*it)->hit_flag){
+			Util::render_rectangle(&view.ren, &rect, Util::colour_blue());
+		} else{
+			Util::render_rectangle(&view.ren, &rect, Util::colour_green());
+		}
+		Util::render_text(&view.ren, font_carbon_12, rect.x, rect.y, font_carbon_12_colour, "%s", (*it)->text.c_str());
 	}
 
 

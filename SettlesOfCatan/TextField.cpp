@@ -189,7 +189,7 @@ void TextField::render(SDL_Renderer& ren,TTF_Font& font,SDL_Color& font_colour,S
 	get_viewable_range(&start_pos, &end_pos);
 
 
-	// show the selected text.
+	// show the "selected" text ( i.e high the selected par of the text)
 	int start_select = left_pos();
 	int end_select = right_pos();
 	// Only show the text if something is ACTUALLY selected.
@@ -203,20 +203,24 @@ void TextField::render(SDL_Renderer& ren,TTF_Font& font,SDL_Color& font_colour,S
 
 		int start_px = start_select*this->char_w + this->x + this->padding / 2;
 		int end_px = end_select*this->char_w + this->x + this->padding / 2;
+
 		SDL_Rect select_rect = {
-			start_px,
-			this->y + 5,
+			clip.x + start_px,
+			clip.y + this->y + 5,
 			end_px - start_px,
 			this->h - 10
 		};
-
+		
 		Util::render_fill_rectangle(&ren, &select_rect, green);
 	}
 
 	// display the text.
 	if(this->text.length() != 0){
 		std::string temp_str = this->text.substr(start_pos, this->cols);
-		Util::render_text(&ren, &font, rect.x + 5, this->y + this->h - 5 - 10, font_colour, "%s", temp_str.c_str());
+		Util::render_text(&ren, &font,
+			rect.x + this->padding/2, 
+			rect.y + this->h - 5 - 10,
+			font_colour, "%s", temp_str.c_str());
 	}
 
 	// display the blinking cursor
@@ -225,7 +229,10 @@ void TextField::render(SDL_Renderer& ren,TTF_Font& font,SDL_Color& font_colour,S
 		int cursor_pos = get_cursor() - start_pos;
 		int cursor_px = cursor_pos* this->char_w + this->x + this->padding / 2;
 		Util::render_line(&ren, red,
-			cursor_px, this->y + 5, cursor_px, this->y + this->h - 5);
+			clip.x + cursor_px, 
+			clip.y + this->y + 5,
+			clip.x +  cursor_px, 
+			clip.y + this->y + this->h - 5);
 	}
 
 }
@@ -335,7 +342,8 @@ void TextField::get_viewable_range(int* start, int* end){
 // ---------------------
 void TextField::append_character(char c){
 	if(_magnitude != 0){ erase_character_range(); }
-	if((int)text.length() + 1 > _capacity){ return; }
+	if(_capacity >= 0 && (int)text.length() + 1 > _capacity){ return; }
+
 	std::string left = text.substr(0, left_pos());
 	std::string right = text.substr(right_pos(), text.length());
 	text = left;

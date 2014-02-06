@@ -73,8 +73,10 @@ private:
 	SDL_Color font_carbon_12_colour;
 
 	// buttons
+	View_Game_Trade_Dialog_Button* selected_button;
 	View_Game_Trade_Dialog_Button submit_button;
 	View_Game_Trade_Dialog_Button cancel_button;
+	std::vector<View_Game_Trade_Dialog_Button*> button_list;
 
 	TextField* selected_textfield;
 	// left pane
