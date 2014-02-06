@@ -28,7 +28,9 @@ public:
 	int mouse_x, mouse_y;
 
 	// M Y  S T U F F   S T A R T
-	TextField field;
+	TextField field2;
+	TextField field3;
+	TextField* selected_textfield;
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor
@@ -43,5 +45,8 @@ public:
 	void handle_user_events(SDL_Event& ev);
 	void update(SDL_Event& ev);
 	void render();
+
+
+	void render_textfield(TextField& field);
 };
 

@@ -17,6 +17,10 @@ View_Game_Debug_Dialog_CheckBox::View_Game_Debug_Dialog_CheckBox()
 	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog_CheckBox() Constructor");
 }
 
+View_Game_Debug_Dialog_CheckBox::~View_Game_Debug_Dialog_CheckBox()
+{
+	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog_CheckBox() Destructor");
+}
 void View_Game_Debug_Dialog_CheckBox::set_data(void* data){
 	_monitor_value = (bool*)data;
 	if(_monitor_value != nullptr){
@@ -44,7 +48,8 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	: IDialog(view, x, y, z, w, h), view_game(view)
 {
 
-	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Constructor");
+	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Constructor(view=%x,x=%d,y=%d,z=%d,w=%d,h=%d)",
+		&this->view,this->x,this->y,this->z,this->w,this->h);
 	// mouse handling
 	_mouse_x = 0;
 	_mouse_y = 0;
@@ -54,6 +59,21 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 
 	// default nullptr data.
 	_data = nullptr;
+
+	// set the label for the checkboxes
+	_board_tiles.set_label("board tiles");
+	_board_vertices.set_label("board vertices");
+	_board_faces.set_label("board faces");
+	_selected_tile_vertices.set_label("selected tile vertices");
+	_selected_tile_faces.set_label("selected tile faces");
+	_selected_vertex_vertices.set_label("selected vertex vertices");
+	_selected_vertex_faces.set_label("selected vertex faces");
+	_selected_vertex_tiles.set_label("selected vertex tiles");
+	_selected_face_vertices.set_label("selected face vertices");
+	_selected_face_faces.set_label("selected face faces");
+	_selected_face_tiles.set_label("selected faces tiles");
+	_selected_pane.set_label("selected_pane");
+	_item_numbering.set_label("item numbering");
 
 	// add checkboxes to the list.
 	_checkboxes.push_back(&_board_tiles);
@@ -117,6 +137,7 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 	if(font_carbon_12 == nullptr){
 		Logger::getLog().TTF_log(Logger::ERROR, "View_Game::load() TTF_OpenFont data/carbon.ttf ");
 	}
+
 }
 
 View_Game_Debug_Dialog::~View_Game_Debug_Dialog(){
@@ -137,21 +158,6 @@ bool View_Game_Debug_Dialog::open(void* data) {
 	Logger::getLog().log(Logger::DEBUG, "View_Game_Debug_Dialog::open(data=%x) Opening the dialog", data);
 	_data = (view_debug_t*)data;
 
-	// set the label for the checkboxes
-	_board_tiles.set_label("board tiles");
-	_board_vertices.set_label("board vertices");
-	_board_faces.set_label("board faces");
-	_selected_tile_vertices.set_label("selected tile vertices");
-	_selected_tile_faces.set_label("selected tile faces");
-	_selected_vertex_vertices.set_label("selected vertex vertices");
-	_selected_vertex_faces.set_label("selected vertex faces");
-	_selected_vertex_tiles.set_label("selected vertex tiles");
-	_selected_face_vertices.set_label("selected face vertices");
-	_selected_face_faces.set_label("selected face faces");
-	_selected_face_tiles.set_label("selected faces tiles");
-	_selected_pane.set_label("selected_pane");
-	_item_numbering.set_label("item numbering");
-
 	// set the data value that the checkboxes will manipulate
 	_board_tiles.set_data((void*)&_data->board_tiles);
 	_board_vertices.set_data((void*)&_data->board_vertices);
@@ -166,6 +172,7 @@ bool View_Game_Debug_Dialog::open(void* data) {
 	_selected_face_vertices.set_data((void*)&_data->selected_face_vertices);
 	_selected_face_faces.set_data((void*)&_data->selected_face_faces);
 	_selected_face_tiles.set_data((void*)&_data->selected_face_tiles);
+
 	return true;
 }
 
@@ -218,12 +225,10 @@ void View_Game_Debug_Dialog::update(SDL_Event& ev) {
 void View_Game_Debug_Dialog::render(){
 	SDL_Rect rect = { 0, 0, 0, 0 };
 	SDL_Color colour = { 180, 90, 0, 255 };
-	SDL_Rect new_clip = { this->x, this->y, this->w, this->h };
-	SDL_Rect old_clip;
-
+	
 	// TODO: This might be a little ineffienct, clearing and drawing
 	// the area again, but we will see.
-	SDL_RenderSetClipRect(&view.ren, &new_clip);
+	SDL_RenderSetClipRect(&view.ren, &new_clip);	
 	SDL_RenderClear(&view.ren);
 
 	for(int i = 0; i < (int)_checkboxes.size(); ++i){

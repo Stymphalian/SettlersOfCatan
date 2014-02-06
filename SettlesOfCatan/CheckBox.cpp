@@ -1,6 +1,7 @@
 #include <string>
 #include "CheckBox.h"
 #include "Collision.h"
+#include "Logger.h"
 
 CheckBox::CheckBox(){
 	this->x = 0;
@@ -10,12 +11,14 @@ CheckBox::CheckBox(){
 	this->h = 0;
 	_ticked = false;
 	_group = nullptr;
+	Logger::getLog().log(Logger::DEBUG, "CheckBox constructor");
 }
 CheckBox::~CheckBox(){
+	Logger::getLog().log(Logger::DEBUG, "CheckBox destructor");
 	if(_group != nullptr){
 		_group->remove_checkbox(this);
 		_group = nullptr;
-	}	
+	}		
 }
 
 /*
@@ -68,6 +71,7 @@ std::string CheckBox::get_label(){
 // --------------------------------------------------
 CheckBox_Group::CheckBox_Group(){
 	init(0, 0, 0);
+	Logger::getLog().log(Logger::DEBUG, "CheckBox_Group constructor");
 }
 
 CheckBox_Group::~CheckBox_Group(){
@@ -76,6 +80,7 @@ CheckBox_Group::~CheckBox_Group(){
 		(*it)->_group = nullptr;
 	}
 	_group.clear();
+	Logger::getLog().log(Logger::DEBUG, "CheckBox_Group destructor");
 }
 
 void CheckBox_Group::init(int x, int y, int z){

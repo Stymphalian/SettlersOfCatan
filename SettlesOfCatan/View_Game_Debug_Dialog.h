@@ -15,6 +15,7 @@ class View_Game;
 class View_Game_Debug_Dialog_CheckBox : public CheckBox{
 public:
 	View_Game_Debug_Dialog_CheckBox();
+	~View_Game_Debug_Dialog_CheckBox();
 	void set_data(void* data);
 private:
 	bool* _monitor_value;

@@ -28,9 +28,11 @@ public:
 	virtual void handle_mouse_events(SDL_Event& ev) = 0;
 	virtual void update(SDL_Event& ev) = 0;
 	virtual void render() = 0;
-private:
+
+protected:
 	SDL_Rect old_clip;
 	SDL_Rect new_clip;
+private:	
 	bool _visible;
 };
 

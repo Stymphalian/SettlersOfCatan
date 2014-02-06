@@ -1,36 +1,41 @@
 #include <SDL.h>
+#include <SDL_ttf.h>
 #include <string>
 #include "Collision.h"
 #include "Logger.h"
+#include "Util.h"
 
 #include "TextField.h"
 
 
-TextField::TextField()
+TextField::TextField(int tick_interval)
 {
 	this->x = 0;
 	this->y = 0;
 	this->z = 0;
 	this->w = 0;
 	this->h = 0;
+	this->rows = 0;
+	this->cols = 0;
+	this->char_w = 0;
+	this->char_h = 0;
+	this->padding = 0;
 	this->has_focus = false;
 	this->cursor_blink = false;
-	this->left_pos = 0;
-	this->right_pos = 0;
+
 	_anchor_pos = 0;
 	_magnitude = 0;
-	_mouse_buttons = 0;
-	_mouse_x = 0;
-	_mouse_y = 0;	
-	_text_range = 0;
 	_tick = 0;
-	_tick_interval = 15;
-	_relative_mouse.hook(&_mouse_x, &_mouse_y);
-	_relative_mouse.add_rect(0, 0, 0,1, 1);
+	_tick_interval = tick_interval; // Make this configurable?
+	_win_left = 0;
+	_win_right = 0;
+	_capacity = -1;
+
+	Logger::getLog().log(Logger::DEBUG, "TextField constructor");
 }
 
 TextField::~TextField(){
-
+	Logger::getLog().log(Logger::DEBUG, "TextField destructor");
 }
 
 void TextField::init(int x, int y, int z, int cols, int rows, int char_w, int char_h,int padding){
@@ -44,46 +49,35 @@ void TextField::init(int x, int y, int z, int cols, int rows, int char_w, int ch
 	this->char_w = char_w;
 	this->char_h = char_h;
 	this->padding = padding;
-
 	this->has_focus = false;
 	this->cursor_blink = false;
-	//this->only_col_chars = true;
-	
-	_mouse_x = 0;
-	_mouse_y = 0;
-	_mouse_buttons = 0;
-	left_pos = 0;
-	right_pos = 0;
-	_text_range = 0;
-	_tick = 0;
-	_magnitude = 0;
 
+	_anchor_pos = 0;
+	_magnitude = 0;
+	_tick = 0;
+	// _tick_interval is unchanged		
+	_win_left = 0;
+	_win_right = this->cols;
+	_capacity = -1;
+
+	// add the hitbox for the text field.
 	hitbox.rects.clear();
 	hitbox.hook(&this->x, &this->y, &this->z);
 	hitbox.add_rect(0,0,0,this->w, this->h);
 }
 
-void TextField::handle_mouse_events(SDL_Event& ev){
-	_mouse_buttons = SDL_GetMouseState(&_mouse_x, &_mouse_y);
-	_mouse_x -= this->x;
-	_mouse_y -= this->y;	
-	if(_relative_mouse.collides(hitbox)){
+void TextField::handle_mouse_events(SDL_Event& ev,Collision& rel_mouse){
+	if(rel_mouse.collides(hitbox)){
 		if(ev.type == SDL_MOUSEBUTTONDOWN){
-			on_keyboard_focus();
-			has_focus = true;
-			_tick = 0;
-			cursor_blink = false;
+			on_keyboard_focus();			
 		}
 	} else{
 		if(ev.type == SDL_MOUSEBUTTONDOWN){
-			off_keyboard_focus();
-			has_focus = false;
-			cursor_blink = false;
-			_tick = 0;
+			off_keyboard_focus();		
 		}
-	}
-	
+	}	
 }
+
 void TextField::handle_keyboard_events(SDL_Event& ev){
 	if(has_focus == false){ return; }
 	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
@@ -94,56 +88,149 @@ void TextField::handle_keyboard_events(SDL_Event& ev){
 			return;
 		}
 
-		if(ev.key.keysym.sym == SDLK_BACKSPACE){
-			if(_text_range != 0){
+		if(ev.key.keysym.sym == SDLK_BACKSPACE  || ev.key.keysym.sym == SDLK_DELETE){
+			// Handle delete using backsapce or delete
+			int amount = 1;
+			bool at_end_of_str = (get_cursor() >= (int)text.length() - this->cols);
+
+			if(_magnitude != 0){
+				amount = abs(_magnitude);
 				erase_character_range();
-			} else{
+			} else if(ev.key.keysym.sym == SDLK_BACKSPACE){
 				erase_character_left();
-			}
-		} else if( ev.key.keysym.sym == SDLK_DELETE){
-			if(_text_range != 0){
-				erase_character_range();
-			} else{
+			} else {
 				erase_character_right();
 			}
-		//} else if(ev.key.keysym.sym >= SDLK_RETURN && ev.key.keysym.sym < SDLK_a){
-			//append_character(ev.key.keysym.sym);
+
+			// we are in the last segment, therfore we have
+			// special behavriou in what we should be viewing
+			if( at_end_of_str){
+				_win_left  -= amount;
+				_win_right -= amount;
+			}
+
 		} else if(ev.key.keysym.sym >= SDLK_a && ev.key.keysym.sym <= SDLK_z){
+			// handle a-z keys
 			append_character(ev.key.keysym.sym);
 		} else if(ev.key.keysym.sym == SDLK_SPACE || ev.key.keysym.sym == SDLK_TAB){
+			// handle tab and space characters
 			append_character(ev.key.keysym.sym);
 		} else if(ev.key.keysym.sym >= SDLK_0 && ev.key.keysym.sym <= SDLK_9){
+			// handle 0-9
 			append_character(ev.key.keysym.sym);
 		} else if(ev.key.keysym.sym == SDLK_LEFT || ev.key.keysym.sym == SDLK_RIGHT){
+			// handle left and right arrow keys
 			int dir = (ev.key.keysym.sym == SDLK_LEFT) ? -1 : 1;
 			if(keyboard[SDL_SCANCODE_LSHIFT] || keyboard[SDL_SCANCODE_RSHIFT]){
-				left_pos += dir;
-				if(left_pos < 0){ left_pos = 0; }
+				// move 'selection' cursor one character over.
+				_magnitude += dir;
+				validate_mag();
 			} else{
+				// if the we have somethign selected, then the cursor
+				// should appear the far-left or far-right of the selection
+				// depending on the direction.
+				if(_magnitude != 0){
+					_anchor_pos = _anchor_pos + _magnitude;
+				}
+
+				// move the cursor one character over.
 				_anchor_pos += dir;
-				if(_anchor_pos < 0){ _anchor_pos = 0; }
-				if(_anchor_pos >= (int)text.length()) { _anchor_pos = text.length(); }
-				assign_left_right_from_anchor();
+				_magnitude = 0;
+				validate_anchor();
 			}
 		} else if(ev.key.keysym.sym == SDLK_HOME){
+			// handle the HOME key
 			if(keyboard[SDL_SCANCODE_LSHIFT] || keyboard[SDL_SCANCODE_RSHIFT]){
-				left_pos = 0;
+				// select everything from the cursor to the beginning of the string
+				_magnitude = -(_anchor_pos);
+				validate_mag();
 			} else{
-				right_pos = 0;
-				left_pos = 0;
+				// move the cursor to the beginning of the string
+				// select nothing
+				_anchor_pos = 0;
+				_magnitude = 0;
 			}
-			_text_range = right_pos - left_pos;
 		} else if(ev.key.keysym.sym == SDLK_END){
+			// handle they END key
 			if(keyboard[SDL_SCANCODE_LSHIFT] || keyboard[SDL_SCANCODE_RSHIFT]){
-				right_pos = text.length();
+				// select all the way to the end of the string
+				_magnitude = text.length() - _anchor_pos;
+				validate_mag();
 			} else{
-				right_pos = text.length();
-				left_pos = text.length();
+				// move the cursor to the end of the string.
+				// select nothing.
+				_anchor_pos = text.length();
+				_magnitude = 0;
+
 			}
-			_text_range = right_pos - left_pos;
 		}
+
+		// check to see if the cursor position causes a shift in the 
+		// view window.
+		check_for_wall_hit();
 	}
 }
+
+void TextField::render(SDL_Renderer& ren,TTF_Font& font,SDL_Color& font_colour,SDL_Rect& clip){
+	SDL_Color red = { 255, 0, 0, 150 };
+	SDL_Color green = { 0, 255, 0, 180 };
+	SDL_Color blue = { 0, 0, 255, 250 };
+	SDL_Rect rect = { this->x + clip.x,
+							this->y + clip.y,
+							this->w,this->h };
+
+	// draw bounding box which is bounding the text field
+	Util::render_rectangle(&ren, &rect, red);
+
+	// these variables hold the character positions
+	// of the visible charcters in the text field.
+	int start_pos = 0;
+	int end_pos = 0;
+	get_viewable_range(&start_pos, &end_pos);
+
+
+	// show the selected text.
+	int start_select = left_pos();
+	int end_select = right_pos();
+	// Only show the text if something is ACTUALLY selected.
+	if(end_select - start_select != 0){
+		if(start_select < start_pos){ start_select = start_pos; }
+		if(end_select > end_pos) { end_select = end_pos; }
+
+		//normalize to fit into the range of the text field
+		start_select -= start_pos;
+		end_select -= start_pos;
+
+		int start_px = start_select*this->char_w + this->x + this->padding / 2;
+		int end_px = end_select*this->char_w + this->x + this->padding / 2;
+		SDL_Rect select_rect = {
+			start_px,
+			this->y + 5,
+			end_px - start_px,
+			this->h - 10
+		};
+
+		Util::render_fill_rectangle(&ren, &select_rect, green);
+	}
+
+	// display the text.
+	if(this->text.length() != 0){
+		std::string temp_str = this->text.substr(start_pos, this->cols);
+		Util::render_text(&ren, &font, rect.x + 5, this->y + this->h - 5 - 10, font_colour, "%s", temp_str.c_str());
+	}
+
+	// display the blinking cursor
+	if(this->cursor_blink){
+		// show the blinking cursor.
+		int cursor_pos = get_cursor() - start_pos;
+		int cursor_px = cursor_pos* this->char_w + this->x + this->padding / 2;
+		Util::render_line(&ren, red,
+			cursor_px, this->y + 5, cursor_px, this->y + this->h - 5);
+	}
+
+}
+
+
 void TextField::tick(){
 	if(has_focus){		
 		// continue ticking, changing the cursor blink if necessary.
@@ -152,64 +239,58 @@ void TextField::tick(){
 	}
 }
 
+int TextField::right_pos(){
+	return (_magnitude < 0) ? _anchor_pos : _anchor_pos + _magnitude;
+}
+int TextField::left_pos(){
+	return (_magnitude < 0) ? _anchor_pos + _magnitude : _anchor_pos;	
+}
+int TextField::get_cursor(){
+	return _anchor_pos + _magnitude;
+}
+int TextField::get_anchor(){
+	return _anchor_pos;
+}
+
+void TextField::set_text(const char* text){
+	this->text = text;
+	if(_capacity >= 0){
+		if((int)this->text.length() > _capacity){
+			this->text = this->text.substr(0, _capacity);
+		}
+	}
+}
 void TextField::clear_text(){
 	text.clear();
-	left_pos = 0;
-	right_pos = 0;
-	_text_range = 0;
-}
-void TextField::append_character(char c){
-	if(_text_range != 0){ erase_character_range(); }
-	std::string left = text.substr(0, left_pos);
-	std::string right = text.substr(right_pos,text.length());
-	text = left;
-	text += c;
-	text += right;
-
-	right_pos++;
-	left_pos = right_pos;
-	_text_range = right_pos - left_pos;
-}
-void TextField::erase_character_left(){
-	if(text.length() > 0){
-		if(left_pos == right_pos ){
-			if(right_pos - 1 < 0){ return; }
-			text.erase(right_pos-1, 1);
-			// adjust the cursor position.
-			right_pos--;
-			if(right_pos < 0){ right_pos = 0; }
-			left_pos = right_pos;
-		} 
-		_text_range = right_pos - left_pos;
-	}
+	_anchor_pos = 0;
+	_magnitude = 0;
+	check_for_wall_hit();
 }
 
-void TextField::erase_character_right(){
-	if(text.length() > 0){
-		if(left_pos == right_pos ){
-			if(right_pos  >= (int) text.length()){ return; }
-			text.erase(right_pos , 1);
-			// adjust the cursor position.
-			right_pos--;
-			if(right_pos < 0){ right_pos = 0; }
-			left_pos = right_pos;
+void TextField::set_selected(int left, int right){
+	_anchor_pos = left;
+	_magnitude = right - left;
+	validate_anchor();
+	validate_mag();
+	check_for_wall_hit();
+}
+
+void TextField::set_max_num_chars(int cap){
+	_capacity = cap;
+	if(_capacity >= 0){
+		if((int)this->text.length() > _capacity){
+			this->text = this->text.substr(0, _capacity);
 		}
-		_text_range = right_pos - left_pos;
 	}
 }
 
-void TextField::erase_character_range(){
-	if(text.length() > 0){
-		if(_text_range != 0 ){
-			text.erase(left_pos, _text_range);
-			// adjust the cursor position.
-			right_pos -= _text_range;
-			if(right_pos < 0){ right_pos = 0; }
-			left_pos = right_pos;
-		}
-		_text_range = right_pos - left_pos;
-	}
+void TextField::set_cursor(int pos){
+	_anchor_pos = pos;
+	_magnitude = 0;
+	validate_anchor();
+	check_for_wall_hit();
 }
+
 void TextField::set_char_w(int char_w){
 	hitbox.remove_rect(0, 0, 0, this->w, this->h);
 	this->char_w = char_w;
@@ -234,8 +315,80 @@ void TextField::set_num_rows(int rows){
 	this->h = this->char_h*this->rows;
 	hitbox.add_rect(0, 0, 0, this->w, this->h);
 }
+
+void TextField::get_viewable_range(int* start, int* end){
+	int s = 0;
+	int e = 0;
+
+	s = _win_left;
+	e = _win_left + this->cols;
+	if(e > (int)text.length()){ e = (int)text.length(); }
+
+	// assign the values
+	if(start != NULL){ *start = s; }
+	if(end != NULL){ *end = e; }
+}
+
+
+//----------------------
+// P R I V A T E -- M E T H O D S
+// ---------------------
+void TextField::append_character(char c){
+	if(_magnitude != 0){ erase_character_range(); }
+	if((int)text.length() + 1 > _capacity){ return; }
+	std::string left = text.substr(0, left_pos());
+	std::string right = text.substr(right_pos(), text.length());
+	text = left;
+	text += c;
+	text += right;
+
+	_anchor_pos++;
+	_magnitude = 0;
+	validate_anchor();
+}
+
+void TextField::erase_character_left(){
+	if(text.length() > 0){
+		int lpos = left_pos();
+		int rpos = right_pos();
+		if(lpos == rpos){
+			if(rpos - 1 < 0){ return; }
+			text.erase(rpos - 1, 1);
+			// adjust the cursor position.
+			_anchor_pos--;
+			validate_anchor();
+		}
+	}
+}
+
+void TextField::erase_character_right(){
+	if(text.length() > 0){
+		int lpos = left_pos();
+		int rpos = right_pos();
+		if(lpos == rpos){
+			if(rpos >= (int)text.length()){ return; }
+			text.erase(rpos, 1);
+			// adjust the cursor position.
+			_anchor_pos;
+			validate_anchor();
+		}
+	}
+}
+
+void TextField::erase_character_range(){
+	if(text.length() > 0){
+		if(_magnitude != 0){
+			text.erase(left_pos(), abs(_magnitude));
+			// adjust the cursor position.
+			_anchor_pos = left_pos();
+			_magnitude = 0;
+			validate_anchor();
+		}
+	}
+}
+
 void TextField::on_keyboard_focus(){
-	has_focus = false;
+	has_focus = true;
 	cursor_blink = false;
 	_tick = 0;
 }
@@ -243,24 +396,34 @@ void TextField::off_keyboard_focus(){
 	has_focus = false;
 	cursor_blink = false;
 	_tick = 0;
+	_anchor_pos = get_cursor();
+	_magnitude = 0;
+	check_for_wall_hit();
 }
 
-/*
-Assuming _magnitude and _anchor are valid.
-*/
-void TextField::assign_left_right_from_anchor(){
-	if(_magnitude ==0 ){
-		this->left_pos = _anchor_pos;
-		this->right_pos = _anchor_pos;
-		return;
-	} else{
-		if(_magnitude < 0){
-			this->left_pos = _anchor_pos + _magnitude;
-			this->right_pos = _anchor_pos - _magnitude;
-		} else{
-			this->left_pos = _anchor_pos - _magnitude;
-			this->right_pos = _anchor_pos + _magnitude;
-		}
-	}
-	_text_range = this->right_pos - this->left_pos;
+void TextField::validate_anchor(){
+	if(_anchor_pos < 0){ _anchor_pos = 0; } else if(_anchor_pos >(int) text.length()){ _anchor_pos = text.length(); }
 }
+void TextField::validate_mag(){
+	if(_anchor_pos + _magnitude < 0){ _magnitude = -(_anchor_pos); } else if(_anchor_pos + _magnitude >(int)text.length()){ _magnitude = (text.length() - _anchor_pos); }
+
+}
+
+void TextField::check_for_wall_hit(){
+	int anchor = _anchor_pos + _magnitude;
+	if(anchor >= _win_right){
+		_win_left += anchor - _win_right;
+		_win_right += anchor - _win_right;
+	} else if(anchor < _win_left){
+		_win_right -= _win_left - anchor;
+		_win_left -= _win_left - anchor;
+	}
+
+	if(_win_left < 0){
+		_win_left = 0;
+		_win_right = this->cols;
+	} else{
+
+	}
+}
+

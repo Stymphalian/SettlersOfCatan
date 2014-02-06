@@ -1295,14 +1295,19 @@ void View_Game::render_connecting_tiles(pane_t& pane, vertex_face_t* origin, int
 		int type = model.get_tile(origin->tile_x(i), origin->tile_y(i))->type;
 
 		// Do the rendering for the connected tile.
+		Util::push_texture_mods(hextile_spritesheet, dcolour.r, dcolour.g, dcolour.b, 180);;
+		/*
 		Uint8 r, g, b, a;
 		SDL_GetTextureColorMod(hextile_spritesheet, &r, &g, &b);
 		SDL_GetTextureAlphaMod(hextile_spritesheet, &a);
 		SDL_SetTextureColorMod(hextile_spritesheet,dcolour.r,dcolour.g,dcolour.b);
 		SDL_SetTextureAlphaMod(hextile_spritesheet, 180);
+		*/
 		Util::render_texture(&ren, hextile_spritesheet, rect.x, rect.y,&hextile_clips[type]);
-		SDL_SetTextureColorMod(hextile_spritesheet, r, g, b);
-		SDL_SetTextureAlphaMod(hextile_spritesheet, a);
+		Util::pop_texture_mods(hextile_spritesheet);
+		
+		/*SDL_SetTextureColorMod(hextile_spritesheet, r, g, b);
+		SDL_SetTextureAlphaMod(hextile_spritesheet, a);*/
 	
 		// show the number ordering
 		if(_debug.item_numbering){
@@ -1823,7 +1828,7 @@ void View_Game::close_debug_dialog(){
 	dialog_in_focus = nullptr;
 }
 
-void View_Game::open_trade_dialog(){
+void View_Game::open_trade_dialog(){	
 	if(trade_dialog == nullptr){
 		trade_dialog = new View_Game_Trade_Dialog(
 			*this,

@@ -3,6 +3,6 @@ class DropDown
 {
 public:
 	DropDown();
-	~DropDown();
+	virtual ~DropDown();
 };
 

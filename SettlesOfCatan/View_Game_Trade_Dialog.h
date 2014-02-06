@@ -25,6 +25,8 @@ public:
 private:
 };
 
+
+// basically nothing is special about these textfields.s
 class View_Game_Trade_Dialog_TextField : public TextField{
 public:
 	View_Game_Trade_Dialog_TextField();
@@ -35,14 +37,15 @@ private:
 class View_Game_Trade_Dialog_Button : public Button{
 	typedef void (*button_action)(View_Game_Trade_Dialog* dialog, Model* model);
 public:
+	View_Game_Trade_Dialog_Button();
 	virtual ~View_Game_Trade_Dialog_Button();
 	void action(View_Game_Trade_Dialog* dialog, Model* model);
 	void set_action(button_action baction);
 	void unset_action();
 
 	// buttons actions that we can hook
-	static void submit_button(View_Game_Trade_Dialog* dialog, Model* model);
-	static void cancel_button(View_Game_Trade_Dialog* dialog, Model* model);
+	static void submit_button_action(View_Game_Trade_Dialog* dialog, Model* model);
+	static void cancel_button_action(View_Game_Trade_Dialog* dialog, Model* model);
 private:	
 	button_action _baction;
 };
@@ -72,12 +75,15 @@ private:
 	// buttons
 	View_Game_Trade_Dialog_Button submit_button;
 	View_Game_Trade_Dialog_Button cancel_button;
+
+	TextField* selected_textfield;
 	// left pane
 	View_Game_Trade_Dialog_TextField left_brick_textfield;
 	View_Game_Trade_Dialog_TextField left_ore_textfield;
 	View_Game_Trade_Dialog_TextField left_sheep_textfield;
 	View_Game_Trade_Dialog_TextField left_wheat_textfield;
 	View_Game_Trade_Dialog_TextField left_wood_textfield;
+	std::vector<View_Game_Trade_Dialog_TextField*> left_textfields;
 	// right pane
 	View_Game_Trade_Dialog_ComboBox right_combo_box;
 	View_Game_Trade_Dialog_TextField right_brick_textfield;
@@ -85,4 +91,6 @@ private:
 	View_Game_Trade_Dialog_TextField right_sheep_textfield;
 	View_Game_Trade_Dialog_TextField right_wheat_textfield;
 	View_Game_Trade_Dialog_TextField right_wood_textfield;
+	std::vector<View_Game_Trade_Dialog_TextField*> right_textfields;
+	
 };

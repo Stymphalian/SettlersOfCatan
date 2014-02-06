@@ -25,6 +25,7 @@ IDialog::IDialog(IView& view,int x, int y, int z, int w, int h)
 	hitbox.hook(&this->x, &this->y, &this->z);
 	hitbox.add_rect(0, 0, 0, this->w, this->h);
 	
+	// set the clip rects.
 	SDL_RenderGetClipRect(&view.ren, &old_clip);
 	new_clip = { this->x, this->y, this->w, this->h };
 	_visible = false;

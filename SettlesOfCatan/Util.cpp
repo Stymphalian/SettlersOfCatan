@@ -248,6 +248,67 @@ std::string Util::data_resource(const char* res){
 	return data_resource;
 }
 
+
+/*
+This function keesp an internal std::list as a stack for the textures.
+SDL_Rect is used conveniently because it holds 4 int values.
+The mapping that is used:
+x == r
+y == g
+w == b
+h == a
+*/
+void Util::push_pop_texture_mods(int type, SDL_Texture* texture, int r, int g, int b, int a){
+	//static std::vector<SDL_Rect> stack;
+	static SDL_Rect stack = { 0, 0, 0, 0 };
+	if(texture == nullptr){ return; }
+
+	if(type == 0)// push
+	{
+		Uint8 ro, go, bo, ao;
+		SDL_GetTextureColorMod(texture, &ro, &go, &bo);
+		SDL_GetTextureAlphaMod(texture, &ao);
+
+		// push the old values onto the stack.
+		//SDL_Rect mods = { ro, go, bo, ao };
+		//stack.push_back(mods);
+		stack = { ro, go, bo, ao };
+
+		// assign the new values of the mods to the texture;
+		ro = (r < 0) ? ro : r;
+		go = (g < 0) ? go : g;
+		bo = (b < 0) ? bo : b;
+		ao = (a < 0) ? ao : a;
+		SDL_SetTextureColorMod(texture, ro, go, bo);
+		SDL_SetTextureAlphaMod(texture, ao);
+	} 
+	else if(type == 1)// pop
+	{
+		//if(stack.empty()){ return; }
+		//SDL_Rect mods = stack.back();
+		//stack.erase(stack.end()-1);
+
+		SDL_SetTextureColorMod(texture, stack.x, stack.y, stack.w);
+		SDL_SetTextureAlphaMod(texture, stack.h);
+		stack = { 0, 0, 0, 0 };
+	}
+}
+/*
+Modify the textures to use the provided r, g, b, a values.
+if the vlaue is negative, then use the original texture mod.
+(i.e.) if r ==-1, then we will use the original r value of the texture.
+*/
+void Util::push_texture_mods(SDL_Texture* texture,int r, int g, int b, int a){
+	Util::push_pop_texture_mods(0, texture, r, g, b, a);
+}
+/*
+Restore the last used texture mod for the texture.
+*/
+void Util::pop_texture_mods(SDL_Texture*texture){
+	Util::push_pop_texture_mods(1, texture, 0, 0, 0, 0);
+}
+
+
 Uint32 Util::get_userev(const char* ev){
 	// check to see if the event has already been registered.
 	std::vector<userev_and_str>::iterator it;
@@ -285,3 +346,6 @@ void Util::push_userev(Uint32 user_type, Sint32 code, void* data1, void* data2){
 		Logger::getLog().SDL_log(Logger::DEBUG, "SDL_PushEvent");
 	}
 }
+
+
+

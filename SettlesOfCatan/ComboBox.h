@@ -3,6 +3,6 @@ class ComboBox
 {
 public:
 	ComboBox();
-	~ComboBox();
+	virtual ~ComboBox();
 };
 

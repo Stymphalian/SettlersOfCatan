@@ -10,9 +10,13 @@
 #include "View_Game.h"
 #include "IDialog.h"
 
-Button::Button(){ hit_flag = false; }
+Button::Button(){ 
+	Logger::getLog().log(Logger::DEBUG, "Button constructor");
+	hit_flag = false; 
+}
 Button::Button(const char* text, int x, int y, int z, int w, int h){
 	init(text, x, y, z,w, h);
+	Logger::getLog().log(Logger::DEBUG, "Button constructor");
 }
 Button::~Button(){
 	Logger::getLog().log(Logger::DEBUG, "Button destructor");

@@ -31,6 +31,9 @@ public:
 	static SDL_Color colour_white();
 	static SDL_Color colour_black();
 	static std::string data_resource(const char* res);
+	static void push_texture_mods(SDL_Texture* texture, int r, int g, int b, int a);
+	static void pop_texture_mods(SDL_Texture* texture);
+	
 
 	//member methods
 	static Util& get();
@@ -42,6 +45,9 @@ private:
 		Uint32 ev;
 	};
 	std::vector<userev_and_str> user_evs;
+	
+	// static private methods
+	static void push_pop_texture_mods(int type, SDL_Texture* texture, int r, int g, int b, int a);
 
 	Util();
 	virtual ~Util();
