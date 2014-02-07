@@ -125,6 +125,9 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	button_list.push_back(&cancel_button);
 
 	// initialize the combos boxes.
+	selected_dropdown = nullptr;
+	right_dropdown.init(this->w/2 + 5,5,0,25,1,9,10 );	
+	right_dropdown_list.push_back(&right_dropdown);
 
 
 	// initialize the textfields
@@ -191,6 +194,14 @@ bool View_Game_Trade_Dialog::open(void* data){
 
 	selected_button = nullptr;
 	selected_textfield = nullptr;
+	selected_dropdown = nullptr;
+
+	right_dropdown.items.clear();
+	right_dropdown.append_item("Bank");
+	for(int i = 0; i < _model->get_num_players(); ++i){
+		//if(i == _model->get_current_player()){ continue; }
+		right_dropdown.append_item(_model->get_player(i)->name);
+	}
 
 	// not much that we have to do here.
 	return true; 
@@ -206,10 +217,15 @@ void View_Game_Trade_Dialog::handle_keyboard_events(SDL_Event& ev){
 		selected_textfield->handle_keyboard_events(ev);
 		return;
 	}
+
 	// handle the buttons
 		// do nothing
 
 	// handle the combo box
+	if(selected_dropdown != nullptr && selected_dropdown->has_focus){
+		selected_dropdown->handle_keyboard_events(ev);
+		return;
+	}
 
 	// handle the dialog
 	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
@@ -230,6 +246,11 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 
 	// handle any intersections with the mouse.
 	selected_textfield = nullptr;
+	selected_button = nullptr;
+	selected_dropdown = nullptr;
+
+	// intersectsion with the text fields
+	selected_textfield = nullptr;
 	for(int i = 0; i < (int)left_textfields.size(); ++i){
 		left_textfields[i]->handle_mouse_events(ev, mouse_hitbox);
 		if(left_textfields[i]->has_focus){
@@ -243,7 +264,15 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 		}
 	}
 
+	//intersections with the combo boxes.
+	for(int i = 0; i < (int)right_dropdown_list.size(); ++i){
+		right_dropdown_list[i]->handle_mouse_events(ev, mouse_hitbox);
+		if(right_dropdown_list[i]->has_focus){
+			selected_dropdown = right_dropdown_list[i];
+		}
+	}
 
+	// intersetions with the buttons
 	selected_button = nullptr;
 	if(ev.type == SDL_MOUSEBUTTONDOWN){
 		for(int i = 0; i < (int)button_list.size(); ++i){
@@ -278,13 +307,13 @@ void View_Game_Trade_Dialog::render(){
 	SDL_Rect rect = { 0, 0, 0, 0 };
 	SDL_Color colour = { 180, 90, 0, 255 };
 	std::string resource_strings[5] = {"Bricks:", "Ore:", "Sheep:", "Wheat:", "Wood:"};
+	SDL_Rect pane_rect = { this->x, this->y, this->w, this->h };
 
 	// TODO: This might be a little ineffienct, clearing and drawing
 	// the area again, but we will see.
-	//SDL_RenderSetClipRect(&view.ren, &new_clip);
+	SDL_RenderSetClipRect(&view.ren, &new_clip);
 	SDL_RenderClear(&view.ren);
 	//SDL_RenderSetClipRect(&view.ren, &old_clip);
-
 
 	// -- -- -- -- --  L E F T  -- -- -- -- -- -- --
 	// render the player's name
@@ -304,8 +333,7 @@ void View_Game_Trade_Dialog::render(){
 		y_offset = this->y  + left_textfields[i]->y;
 		Util::render_text(&view.ren, font_carbon_12,x_offset, y_offset, font_carbon_12_colour,
 			"%s", resource_strings[i].c_str());
-
-		SDL_Rect pane_rect = { this->x, this->y, this->w, this->h };
+		
 		left_textfields[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
 	}
 
@@ -313,6 +341,10 @@ void View_Game_Trade_Dialog::render(){
 
 	// -- - - - -- - R I G H T -- - - - -- - -
 	// render the combo-box
+	for(int i = 0; i < (int)right_dropdown_list.size(); ++i){
+		right_dropdown_list[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour,pane_rect);
+	}
+
 	// render the text fields and labels
 	rect = { this->x + this->w / 2 + 1, this->y+1, this->w / 2-1, this->h -1};
 	Util::render_rectangle(&view.ren, &rect, Util::colour_blue());
@@ -324,7 +356,6 @@ void View_Game_Trade_Dialog::render(){
 		Util::render_text(&view.ren, font_carbon_12, x_offset, y_offset, font_carbon_12_colour,
 			"%s", resource_strings[i].c_str());
 
-		SDL_Rect pane_rect = { this->x, this->y, this->w, this->h };
 		right_textfields[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
 	}
 

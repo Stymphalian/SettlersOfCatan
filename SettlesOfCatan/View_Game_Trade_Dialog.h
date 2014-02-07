@@ -87,7 +87,10 @@ private:
 	View_Game_Trade_Dialog_TextField left_wood_textfield;
 	std::vector<View_Game_Trade_Dialog_TextField*> left_textfields;
 	// right pane
-	View_Game_Trade_Dialog_ComboBox right_combo_box;
+	View_Game_Trade_Dialog_DropDown* selected_dropdown;
+	View_Game_Trade_Dialog_DropDown right_dropdown;	
+	std::vector<View_Game_Trade_Dialog_DropDown*> right_dropdown_list;
+
 	View_Game_Trade_Dialog_TextField right_brick_textfield;
 	View_Game_Trade_Dialog_TextField right_ore_textfield;
 	View_Game_Trade_Dialog_TextField right_sheep_textfield;

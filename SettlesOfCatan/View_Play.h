@@ -10,6 +10,7 @@
 #include "CheckBox.h"
 #include "View_Game.h"
 #include "TextField.h"
+#include "DropDown.h"
 
 class View_Play : public IView
 {
@@ -28,9 +29,12 @@ public:
 	int mouse_x, mouse_y;
 
 	// M Y  S T U F F   S T A R T
-	TextField field2;
-	TextField field3;
-	TextField* selected_textfield;
+	DropDown dropdown;
+	DropDown dropdown2;
+	DropDown dropdown3;
+	DropDown dropdown4;
+	DropDown* selected_dropdown;
+	std::vector<DropDown*> dropdown_list;
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor

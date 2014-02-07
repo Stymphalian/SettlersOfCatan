@@ -39,7 +39,7 @@ void Button::init(const char* text, int x, int y, int z,int w, int h){
 	hitbox.add_rect(0,0,0,this->w,this->h);
 	hitbox.hook(&this->x, &this->y,&this->z);
 	hit_flag = false;
-	Logger::getLog().log(Logger::DEBUG, "Button::init(text=%s,x=%d,y=%d,z=%d,w=%d,h=&d,hitflag=%d)",
+	Logger::getLog().log(Logger::DEBUG, "Button::init(text=%s,x=%d,y=%d,z=%d,w=%d,h=%d,hitflag=%d)",
 		this->text.c_str(), this->x, this->y,this->z, this->w, this->h, this->hit_flag);
 }
 void Button::set_pad(int pad_x, int pad_y){

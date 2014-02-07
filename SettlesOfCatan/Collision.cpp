@@ -40,32 +40,54 @@ int Collision::getz(){
 	return 0;
 }
 
-
+int Collision::get_index_of_hit(){
+	return index_of_hit;
+	//index_of_hit = -1;
+}
+void Collision::clear(){
+	rects.clear();
+}
 /*
 Checks if Colllsions 'A' intersects with one of OUR collision hitboxes.
 For now, this only supports rectangle collision
 For now, this ignores z values of the Rectangles.
 */
 bool Collision::collides(Collision& A){
-	std::vector<SDL_Rect>::iterator it;
-	std::vector<SDL_Rect>::iterator it2;
-	int _x = getx(), _y = gety();
+	std::vector<SDL_Rect>::iterator it; // iterator for 'this'
+	std::vector<SDL_Rect>::iterator it2;// iterator for 'A'
+
+	int _x = getx();
+	int _y = gety();
 	SDL_Rect r = { _x,_y, 0, 0 };
 	SDL_Rect ra = { A.getx(), A.gety(), 0, 0 };
+
+	A.index_of_hit = -1;
+	this->index_of_hit = -1;
+
+	int internal_count = 0;
 	for(it = rects.begin(); it != rects.end(); ++it){
 		r.x =  _x + it->x;
 		r.y =  _y + it->y;
 		r.w = it->w;
 		r.h = it->h;
+
 		// test all the rectangles in A.
+		int external_count = 0;
 		for(it2 = A.rects.begin(); it2 != A.rects.end(); ++it2){
 			ra.x = A.getx() + it2->x;
 			ra.y = A.gety() + it2->y;
 			ra.w = it2->w;
 			ra.h = it2->h;			
-			if(Collision::intersect_rect_rect(&r,&ra)){ return true; }
+			if(Collision::intersect_rect_rect(&r,&ra)){ 
+				A.index_of_hit = external_count;
+				index_of_hit = internal_count;
+				return true;
+			}
+			external_count++;
 		}
+		internal_count++;
 	}
+
 	return false;
 }
 

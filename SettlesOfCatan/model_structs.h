@@ -33,8 +33,10 @@ private:
 };
 
 class resource_t{
-public:
-	enum resource { BRICK, ORE, SHEEP, WHEAT, WOOD, NUM_OF_RESOURCES };
+public:	
+	enum resource { BRICK, ORE, SHEEP, WHEAT, WOOD, NUM_OF_RESOURCES };	
+	static std::string resource_names[resource::NUM_OF_RESOURCES];
+
 	int res[NUM_OF_RESOURCES];
 	void zero_out();
 };

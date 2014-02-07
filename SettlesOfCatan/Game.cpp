@@ -105,7 +105,7 @@ void Game::run(){
 	View_Play play_view(*win, *ren);
 
 	current_view = &game_view;
-	//current_view = &play_view;
+//	current_view = &play_view;
 	Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,nullptr,nullptr);
 	
 	// WEIRD

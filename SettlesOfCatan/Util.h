@@ -30,6 +30,7 @@ public:
 	static SDL_Color colour_blue();
 	static SDL_Color colour_white();
 	static SDL_Color colour_black();
+	static SDL_Color colour_orange();
 	static std::string data_resource(const char* res);
 	static void push_texture_mods(SDL_Texture* texture, int r, int g, int b, int a);
 	static void pop_texture_mods(SDL_Texture* texture);

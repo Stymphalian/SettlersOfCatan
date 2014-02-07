@@ -240,6 +240,12 @@ SDL_Color Util::colour_black(){
 	static SDL_Color instance = { 0, 0, 0, 255 };
 	return instance;
 }
+SDL_Color Util::colour_orange(){
+	static SDL_Color orange = { 213, 118, 0, 255 };
+	return orange;
+}
+
+
 std::string Util::data_resource(const char* res){
 	std::string data_resource;
 	data_resource = Configuration::data_directory;

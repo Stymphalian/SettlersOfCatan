@@ -12,14 +12,17 @@ public:
 	//variables		
 	bool active;
 	std::vector<SDL_Rect> rects;
+	int index_of_hit;
 	// constructor and destructor
 	Collision();
 	virtual ~Collision();
 	// methods
+	void clear();
 	bool collides(Collision& A);
 	void add_rect(int x, int y, int z, int w, int h ); // these rects are relative to the origin point
 	bool remove_rect(int x, int y,int z, int w, int h);
 	int getx(); int gety(); int getz();
+	int get_index_of_hit();
 	void hook(int* x, int* y, int* z=nullptr);
 	void unhook();
 	// static methods

@@ -21,6 +21,9 @@ std::string dev_cards_t::victory_point_titles[10] = {
 std::string dev_cards_t::default_titles[dev_cards_t::NUM_OF_DEV_CARDS] = {
 	"Soldier", "Victory", "Monopoly", "Year of Plenty", "Road Building"
 };
+std::string resource_names[resource_t::NUM_OF_RESOURCES] = {
+	"Brick", "Ore", "Sheep", "Wheat", "Wood"
+};
 
 // constructor and destructors
 dev_cards_t::dev_cards_t(){
@@ -54,6 +57,7 @@ std::string dev_cards_t::title(){
 std::string dev_cards_t::message(){
 	return dev_cards_t::default_messages[_message];
 }
+
 
 void resource_t::zero_out(){
 	memset(res, 0, sizeof(int)*NUM_OF_RESOURCES);
