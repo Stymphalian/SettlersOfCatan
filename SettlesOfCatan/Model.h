@@ -89,6 +89,7 @@ public:
 	Player* get_player(int player);
 	int num_victory_points_for_player(int player);
 	bool bank_exchange(int player, resource_t* give, resource_t* take);
+	bool trade_with_player(int A, resource_t* A_give, int B, resource_t* B_give);
 	void give_resources_from_roll(int roll);
 	bool buy_dev_card(int player);
 	bool pay_for_item(int player, resource_t* price);

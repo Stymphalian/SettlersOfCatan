@@ -5,6 +5,9 @@
 
 std::string Configuration::log_name;
 std::string Configuration::data_directory;
+int Configuration::num_players;
+unsigned Configuration::rin_data;
+
 std::string Configuration::title;
 int Configuration::DISP_X;
 int Configuration::DISP_Y;
@@ -74,6 +77,8 @@ bool Configuration::defaults(){
 	// global configurations
 	Configuration::log_name = "jordan.log";
 	Configuration::data_directory = "data";
+	Configuration::num_players = 0;
+	Configuration::rin_data = 0;
 
 	// Game configurations
 	Configuration::title = "Settlers of Catan";
@@ -154,6 +159,8 @@ bool Configuration::load(){
 	// global configurations
 	Configuration::log_name = config->get_property("log_name").value;
 	Configuration::data_directory = config->get_property("data_directory").value;
+	Configuration::num_players = atoi(config->get_property("num_players").value.c_str());
+	Configuration::rin_data = atoi(config->get_property("rin_data").value.c_str());	
 
 	// Game configurations
 	Configuration::title = config->get_property("title", "Game").value;
@@ -269,6 +276,9 @@ void Configuration::print(){
 	int count = 0;
 	printf("%d=%s\n",count++,Configuration::log_name.c_str());
 	printf("%d=%s\n", count++, Configuration::data_directory.c_str());
+	printf("%d=%d\n", count++, Configuration::num_players);
+	printf("%d=%d\n", count++, Configuration::rin_data);
+
 	printf("%d=%s\n", count++, Configuration::title.c_str());
 	printf("%d=%d\n", count++, Configuration::DISP_X);
 	printf("%d=%d\n",count++,Configuration::DISP_Y);

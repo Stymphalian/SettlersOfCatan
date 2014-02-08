@@ -6,6 +6,10 @@ class Configuration{
 public:
 	static std::string log_name;
 	static std::string data_directory;
+	static int num_players;
+	static unsigned rin_data;
+	
+	// game properties
 	static std::string title;
 	static int DISP_X;
 	static int DISP_Y;

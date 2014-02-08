@@ -34,7 +34,7 @@ void DropDown::init(int x, int y, int z, int cols, int rows, int char_w, int cha
 	this->char_w = char_w;
 	this->char_h = char_h;
 	this->box_w = this->w;
-	this->box_h = this->h;
+	this->box_h = this->h;	
 
 	this->items.clear();
 	this->selected_item = -1;
@@ -46,6 +46,8 @@ void DropDown::init(int x, int y, int z, int cols, int rows, int char_w, int cha
 	_button_w = this->w/6;
 	_button_h = this->h;
 	_convenience_padding = 30;
+	_background_colour = { 0, 0, 0, 0 };
+	_foreground_colour = { 0, 0, 0, 0 };
 
 	// hitboxes
 	open_hitbox.clear();
@@ -137,13 +139,12 @@ void DropDown::handle_keyboard_events(SDL_Event& ev){
 	}
 }
 
-void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, SDL_Rect& clip){	
-	SDL_Rect bound = { 
+void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, SDL_Rect& clip){
+	SDL_Rect bound = {
 		this->x + clip.x,
 		this->y + clip.y,
 		this->w, this->h };
 	SDL_Rect temp_rect = { 0, 0, 0, 0 };
-
 
 	// Draw the normal hitbox
 	temp_rect = {
@@ -153,6 +154,7 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 		closed_hitbox.rects[0].h
 	};
 	// Draw how it looks like if it is closed
+	Util::render_fill_rectangle(&ren, &temp_rect,_background_colour);
 	Util::render_rectangle(&ren, &temp_rect, Util::colour_red());
 
 	// draw the little arrow button box thing.
@@ -168,6 +170,16 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 
 	} else{
 		// O P E N
+		// draw the background colour for all the open boxes..
+		temp_rect = {
+			open_hitbox.rects[0].x + bound.x,
+			open_hitbox.rects[0].y + bound.y,			
+			open_hitbox.rects[0].w,
+			open_hitbox.rects[items.size() -1].y
+		};
+		//printf("%d,%d,%d,%d\n", temp_rect.x, temp_rect.y,temp_rect.w, temp_rect.h);
+		Util::render_fill_rectangle(&ren, &temp_rect, _background_colour);
+
 		// draw the hovered item.
 		if(hover_item != -1){
 			int padding = 3;
@@ -188,8 +200,8 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 				open_hitbox.rects[i].w,
 				open_hitbox.rects[i].h
 			};
+			
 			Util::render_rectangle(&ren, &temp_rect, Util::colour_green());
-
 			// draw the inner text.
 			Util::render_text(&ren, &font, temp_rect.x + 5, temp_rect.y, font_colour, "%s", items[i].c_str());
 		}
@@ -225,6 +237,7 @@ bool DropDown::add_item(std::string item, int pos){
 	if(pos <0 || pos > (int)items.size()){ return false; }
 	items.insert(items.begin() + pos, item);
 
+	this->selected_item = -1;
 	// reorder all the hitboxes...
 	fill_open_hitbox();
 	// modify the the height;
@@ -238,7 +251,8 @@ bool DropDown::remove_item(int pos){
 	if(pos < 0 || pos >= (int)items.size()){ return false; }
 	items.erase(items.begin() + pos);
 
-	// reorder all the hitboxes...
+	this->selected_item = -1;
+	// reorder all the hitboxes...	
 	fill_open_hitbox();
 	// modify the height;
 	this->rows = items.size() + 1;
@@ -251,6 +265,10 @@ int DropDown::num_items(){
 
 std::string DropDown::get_selected_value(){
 	return (selected_item == -1) ? "" : items[selected_item];
+}
+
+int DropDown::get_selected_index(){
+	return this->selected_item;
 }
 void DropDown::set_selected_index(int index){
 	if(index == -1){
@@ -267,6 +285,14 @@ std::string DropDown::get_value_at_index(int index){
 void DropDown::set_value_at_index(int index, std::string newvalue){
 	if(index < 0 || index >= (int)items.size()){ return; }
 	items[index] = newvalue;
+}
+
+void DropDown::set_background_colour(SDL_Color colour){
+	_background_colour = colour;
+}
+
+void DropDown::set_foreground_colour(SDL_Color colour){
+	_foreground_colour = colour;
 }
 
 // ----------------------------------------------------------
@@ -293,7 +319,7 @@ void DropDown::fill_open_hitbox(){
 		open_hitbox.add_rect(x_offset, y_offset, 0, this->box_w, this->box_h);
 
 		x_offset += 0;
-		y_offset += this->box_h;
+		y_offset += this->box_h;		
 	}
 
 	// We add a small bouding box around the dropdown

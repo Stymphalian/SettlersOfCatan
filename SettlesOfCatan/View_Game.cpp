@@ -1618,7 +1618,9 @@ void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
 						//model.m_current_player = model.m_current_player;
 					} else{
 						set_state(View_Game::PLACE_SETTLEMENT_1);
-						model.set_current_player((model.get_current_player() + 1) % model.get_num_players());
+						if(model.get_num_players() != 0){
+							model.set_current_player((model.get_current_player() + 1) % model.get_num_players());
+						}
 						//model.m_current_player = (model.m_current_player + 1) % model.m_num_players;
 					}				
 				} // end if(rs)				

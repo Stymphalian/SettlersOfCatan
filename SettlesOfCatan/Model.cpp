@@ -2092,8 +2092,10 @@ increment and modulos the _current_player
 increment the _turn_count variable.
 */
 void Model::end_turn(){
-	_current_player = (_current_player + 1) % _num_players;
 	++_turn_count;
+	if(_num_players == 0){ return; }
+	_current_player = (_current_player + 1) % _num_players;
+	
 }
 
 
@@ -2311,6 +2313,58 @@ bool Model::bank_exchange(int player, resource_t* give, resource_t* take){
 		_bank.res[4]);*/
 	return true;
 }
+
+/*
+@Parameter int A - one of players who is exchange
+@Parameter resource_t* A_give - the amount of resources that player A is trading
+@Parameter int B - one of the players in this exchange
+@Parameter resource_t B_give - the amout of resources that player B is trading
+@Return true for a successful transaction, false otherwise. The appropriate model error
+code will be set if there is an error.
+*/
+bool Model::trade_with_player(int A, resource_t* A_give, int B, resource_t* B_give){
+	if(get_player(A) == nullptr || get_player(B) == nullptr){ return false; }
+	if(!A_give || !B_give){ return false; }
+	Player* player_a = get_player(A);
+	Player* player_b = get_player(B);
+	// logging
+	resource_t A_original = player_a->resources;
+	resource_t B_original = player_b->resources;;
+
+	// make sure that both players have enough resources to do the exchange.
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		if(player_a->resources.res[i] < A_give->res[i]){ return false; }
+		if(player_b->resources.res[i] < B_give->res[i]){ return false; }
+
+	}
+
+	// make sure that after the exchange that the player isn't
+	// left in an invalide state 
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		if(player_a->resources.res[i] + B_give->res[i] - A_give->res[i] < 0){ return false; }
+		if(player_b->resources.res[i] + A_give->res[i] - B_give->res[i] < 0){ return false; }
+	}
+
+	// do the exchange	
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		player_a->resources.res[i] += B_give->res[i] - A_give->res[i];
+		player_b->resources.res[i] += A_give->res[i] - B_give->res[i];
+	}
+
+
+	// print out some logging messages
+	Logger::getLog().log(Logger::DEBUG, "Model::trade_with_player(playerA=%d,A_give,playerB=%d,B_give",A,B);
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		Logger::getLog().log(Logger::DEBUG, "[player=%d] resource %d = %d --> %d",
+			A, i, A_original.res[i],player_a->resources.res[i]);
+	}
+	for(int i = 0; i < resource_t::NUM_OF_RESOURCES; ++i){
+		Logger::getLog().log(Logger::DEBUG, "[player=%d] resource %d = %d --> %d",
+			B, i, B_original.res[i], player_b->resources.res[i]);
+	}
+	return true;
+}
+
 
 void Model::give_resources_from_roll(int roll){
 	Tiles* hex = nullptr;

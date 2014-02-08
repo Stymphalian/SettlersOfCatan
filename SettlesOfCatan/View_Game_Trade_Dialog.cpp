@@ -89,6 +89,51 @@ void View_Game_Trade_Dialog_Button::submit_button_action(View_Game_Trade_Dialog*
 	// transaction
 	// 2) We pass back an envelope of the changes that we want done
 	// to the model.
+	if(dialog->right_dropdown.get_selected_index() != -1){
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog_Button::submit_button() Selected index = %d,%s",
+			dialog->right_dropdown.get_selected_index(),
+			dialog->right_dropdown.get_selected_value().c_str());
+									
+
+		int selected_index = dialog->right_dropdown.get_selected_index();
+				
+		// TODO : hack for checking which player we want.
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog_Button::submit_button() Trading to player/bank %d",selected_index );		
+		resource_t left_amount;
+		resource_t right_amount;
+		left_amount.zero_out();
+		right_amount.zero_out();				
+
+		for(int i = 0; i < 5; ++i){
+			left_amount.res[i] = atoi(dialog->left_textfields[i]->text.c_str());
+			right_amount.res[i] = atoi(dialog->right_textfields[i]->text.c_str());
+			Logger::getLog().log(Logger::DEBUG,"View_Game_Trade_Dialog_Button::submit_button() resources: left[%d]=%d  right[%d]=%d\n", i, left_amount.res[i], i, right_amount.res[i]);
+		}
+			
+		if(selected_index == 0)// we are trading to the bank
+		{
+			model->bank_exchange(model->get_current_player(),&left_amount,&right_amount);
+		} 
+		else // we are trading to another player
+		{
+			//NOTE: the -1 is to compenstate for the bank choice at the beginning of the list.
+			int chosen_player = selected_index-1;
+			if(chosen_player >= model->get_current_player()){
+				// This is to compensate for the fact that we don't hvae the current player
+				// listed in the dropdown.
+				chosen_player++;
+			}
+
+			model->trade_with_player(
+				model->get_current_player(),
+				&left_amount,
+				chosen_player,
+				&right_amount);
+		}
+
+	}
+
+	// send the close dialog event.
 	Util::get().push_userev(
 		Util::get().get_userev("close_dialog_event"),
 		0, dialog, 0);
@@ -114,6 +159,7 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 	_mouse_buttons = 0;
 	mouse_hitbox.hook(&_mouse_x, &_mouse_y);
 	mouse_hitbox.add_rect(0, 0, 0, 1, 1);
+	_model = nullptr;
 
 	// initialize the buttons
 	selected_button = nullptr;
@@ -126,11 +172,11 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 
 	// initialize the combos boxes.
 	selected_dropdown = nullptr;
-	right_dropdown.init(this->w/2 + 5,5,0,25,1,9,10 );	
+	right_dropdown.init(this->w / 2 + 5, 5, 0, 25, 1, 9, 10);
 	right_dropdown_list.push_back(&right_dropdown);
 
-
 	// initialize the textfields
+	// NOTE: Order in which we add the textfields is important!
 	selected_textfield = nullptr;	
 	left_textfields.push_back(&left_brick_textfield);
 	left_textfields.push_back(&left_ore_textfield);
@@ -184,7 +230,19 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 View_Game_Trade_Dialog::~View_Game_Trade_Dialog()
 {
 	Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog destructor");
+	mouse_hitbox.clear();
+	_model = nullptr;
+
 	TTF_CloseFont(font_carbon_12);
+	font_carbon_12 = nullptr;
+	
+	selected_button = nullptr;
+	selected_textfield = nullptr;
+	selected_dropdown = nullptr;
+	right_dropdown_list.clear();
+	right_textfields.clear();
+	left_textfields.clear();
+	button_list.clear();
 }
 
 bool View_Game_Trade_Dialog::open(void* data){ 
@@ -199,8 +257,14 @@ bool View_Game_Trade_Dialog::open(void* data){
 	right_dropdown.items.clear();
 	right_dropdown.append_item("Bank");
 	for(int i = 0; i < _model->get_num_players(); ++i){
-		//if(i == _model->get_current_player()){ continue; }
+		if(i == _model->get_current_player()){ continue; }
 		right_dropdown.append_item(_model->get_player(i)->name);
+	}
+
+	// clear all the fields to zero.
+	for(int i = 0; i < 5; ++i){
+		left_textfields[i]->clear_text();
+		right_textfields[i]->clear_text();
 	}
 
 	// not much that we have to do here.
@@ -209,7 +273,10 @@ bool View_Game_Trade_Dialog::open(void* data){
 void* View_Game_Trade_Dialog::close(){ 
 	IDialog::close();
 	Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog::close() Closing the dialog. Passing back data %x",_model);
-	return nullptr;
+
+	Model* rs = _model;
+	_model = nullptr;
+	return (void*) rs;
 }
 void View_Game_Trade_Dialog::handle_keyboard_events(SDL_Event& ev){
 	// handle the text fields
@@ -319,8 +386,10 @@ void View_Game_Trade_Dialog::render(){
 	// render the player's name
 	int player_num = _model->get_current_player();
 	Player* p = _model->get_player(player_num);
-	Util::render_text(&view.ren, font_carbon_12, 5 +this->x, 5 + this->y, font_carbon_12_colour,
-		"%d : %s", player_num, p->name.c_str());
+	if(p != nullptr){
+		Util::render_text(&view.ren, font_carbon_12, 5 + this->x, 5 + this->y, font_carbon_12_colour,
+			"%d : %s", player_num, p->name.c_str());
+	}
 
 
 	// render the text fields and labels
@@ -340,11 +409,6 @@ void View_Game_Trade_Dialog::render(){
 
 
 	// -- - - - -- - R I G H T -- - - - -- - -
-	// render the combo-box
-	for(int i = 0; i < (int)right_dropdown_list.size(); ++i){
-		right_dropdown_list[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour,pane_rect);
-	}
-
 	// render the text fields and labels
 	rect = { this->x + this->w / 2 + 1, this->y+1, this->w / 2-1, this->h -1};
 	Util::render_rectangle(&view.ren, &rect, Util::colour_blue());
@@ -359,6 +423,10 @@ void View_Game_Trade_Dialog::render(){
 		right_textfields[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
 	}
 
+	// render the combo-box
+	for(int i = 0; i < (int)right_dropdown_list.size(); ++i){
+		right_dropdown_list[i]->render(view.ren, *font_carbon_12, font_carbon_12_colour, pane_rect);
+	}
 
 	// render the buttons
 	std::vector<View_Game_Trade_Dialog_Button*>::iterator it;

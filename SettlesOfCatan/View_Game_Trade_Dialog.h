@@ -64,6 +64,8 @@ public:
 	virtual void update(SDL_Event& ev);
 	virtual void render();
 private:
+	friend class View_Game_Trade_Dialog_Button;
+
 	int _mouse_x, _mouse_y;
 	Uint32 _mouse_buttons;
 	Collision mouse_hitbox;

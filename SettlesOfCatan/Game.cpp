@@ -98,14 +98,18 @@ void Game::run(){
 	logger.log(Logger::DEBUG, "Game::run()");
 	
 	// HACK !^0^!
-	Model model(1);
+	Model model(Configuration::num_players);
 	View_Game game_view(model,*win,*ren);
 	if(game_view.active == false){ return; }
-
 	View_Play play_view(*win, *ren);
 
-	current_view = &game_view;
-//	current_view = &play_view;
+	if((Configuration::rin_data & 1) != 0){
+		current_view = &play_view;
+	} else{
+		current_view = &game_view;
+	}
+	
+	
 	Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,nullptr,nullptr);
 	
 	// WEIRD

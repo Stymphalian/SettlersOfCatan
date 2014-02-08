@@ -29,10 +29,14 @@ public:
 	bool add_item(std::string item, int pos);
 	bool remove_item(int pos);
 	int num_items();
+	int get_selected_index();
 	std::string get_selected_value();
 	void set_selected_index(int index);
 	std::string get_value_at_index(int index);	
 	void set_value_at_index(int index, std::string value);	
+
+	void set_background_colour(SDL_Color colour);
+	void set_foreground_colour(SDL_Color colour); // We don't really use this right now...
 private:
 	Collision open_hitbox; // only contains the hitboxes of the 'dropdown' so not the initial bar.
 	Collision open_convenience_hitbox;
@@ -42,6 +46,8 @@ private:
 	int _button_w;
 	int _button_h;
 	int _convenience_padding;
+	SDL_Color _background_colour;
+	SDL_Color _foreground_colour;
 	
 	// methods
 	void off_focus();

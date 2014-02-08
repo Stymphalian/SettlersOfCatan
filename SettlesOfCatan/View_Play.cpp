@@ -65,7 +65,6 @@ View_Play::View_Play(SDL_Window& win, SDL_Renderer& ren): IView(win,ren){
 	dropdown_list.push_back(&dropdown4);
 	
 
-
 	// MY STUFF END
 	font_carbon_12 = TTF_OpenFont(Util::data_resource("carbon.ttf").c_str(), 12);
 	font_carbon_12_colour = { 177, 177, 98, 255 };
@@ -75,6 +74,7 @@ View_Play::View_Play(SDL_Window& win, SDL_Renderer& ren): IView(win,ren){
 }
 
 View_Play::~View_Play(){
+	Logger::getLog().log(Logger::DEBUG, "View_Play destructor()");
 	delete fps_timer;
 	SDL_FreeSurface(surface);
 	SDL_DestroyTexture(texture);
@@ -154,8 +154,11 @@ void View_Play::update(SDL_Event& ev){
 	// do something for every user event
 }
 
-void View_Play::render(){
+void View_Play::render(){	
 	SDL_RenderClear(&ren);
+	SDL_Rect pane = { 0, 0, disp_w, disp_h };
+	SDL_Color cc = { 80, 80, 80, 80 };
+	Util::render_fill_rectangle(&ren,&pane, cc);
 
 	SDL_Rect clip = { 0, 0, disp_w, disp_h };
 	for(int i = 0; i < (int)dropdown_list.size(); ++i){

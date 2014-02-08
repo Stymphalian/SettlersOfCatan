@@ -24,7 +24,7 @@ void Collision::hook(int* x, int* y,int* z){
 }
 void Collision::unhook(){
 	this->x = nullptr;
-	this->y = nullptr;
+	this->y = nullptr; 
 	this->z = nullptr;
 }
 int Collision::getx(){
