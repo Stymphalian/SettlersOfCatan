@@ -8,12 +8,14 @@
 #include "Button.h"
 #include "Model.h"
 #include "model_structs.h"
+#include "View_Game_Model_State.h"
 #include "IView.h"
 class Timer;
 class Tiles;
 class IDialog;
 class View_Game_Debug_Dialog;
 class View_Game_Trade_Dialog;
+
 
 
 class View_Game_Button : public Button{
@@ -178,22 +180,6 @@ public:
 class View_Game : public IView{
 public:
 	static std::string view_game_model_error_strings[Model::NUM_model_error_codes_e];
-	enum state_e {
-		NONE,
-		START,
-		PLACE_SETTLEMENT_1,
-		PLACE_ROAD_1,
-		PLACE_SETTLEMENT_2,
-		PLACE_ROAD_2,
-		START_RESOURCES,
-		NORMAL,
-		TRADING,
-		BUILD_SETTLEMENT,
-		BUILD_CITY,
-		BUILD_ROAD,
-		PLAY_DEV_CARD,
-		NUM_state_e
-	};
 	// variables
 	Model& model;
 	pane_t* selected_pane;
@@ -204,7 +190,7 @@ public:
 	int desired_fps;
 	bool exit_flag;
 	bool active;
-	state_e state;
+	View_Game_Model_State_Context model_state_context;
 	bool change_state_flag;
 
 	// debug flags
@@ -238,8 +224,7 @@ public:
 	View_Game(Model& model, SDL_Window& win, SDL_Renderer& ren);
 	virtual ~View_Game();
 
-	//methods
-	void set_state(state_e state);
+	//methods	
 	void on_start(SDL_Event& e);
 	void on_switch(SDL_Event& e);
 	void on_close(SDL_Event& e);
@@ -320,11 +305,7 @@ private:
 	int getTilehexDir(int px, int py);
 	int getHexFaceDir(int px, int py); // returns -1 for no selection.
 	bool getTilePosFromDirection(int dir, int tilex, int tiley, int* new_tile_x, int* new_tile_y);	
-	void get_mid_point_from_face(int face, int* x, int* y);
-
-	// handling mouse input for the different states
-	void handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s);
-	void View_Game::handle_keyboard_given_state(SDL_Event& ev, View_Game::state_e s);
+	void get_mid_point_from_face(int face, int* x, int* y);	
 };
 
 

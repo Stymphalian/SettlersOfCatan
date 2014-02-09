@@ -162,6 +162,8 @@
     <ClCompile Include="IView.cpp" />
     <ClCompile Include="View_Game.cpp" />
     <ClCompile Include="View_Game_Debug_Dialog.cpp" />
+    <ClCompile Include="View_Game_DevCard_Dialog.cpp" />
+    <ClCompile Include="View_Game_Model_State.cpp" />
     <ClCompile Include="View_Game_Trade_Dialog.cpp" />
     <ClCompile Include="View_Play.cpp" />
   </ItemGroup>
@@ -192,6 +194,8 @@
     <ClInclude Include="IView.h" />
     <ClInclude Include="View_Game.h" />
     <ClInclude Include="View_Game_Debug_Dialog.h" />
+    <ClInclude Include="View_Game_DevCard_Dialog.h" />
+    <ClInclude Include="View_Game_Model_State.h" />
     <ClInclude Include="View_Game_Trade_Dialog.h" />
     <ClInclude Include="View_Play.h" />
   </ItemGroup>

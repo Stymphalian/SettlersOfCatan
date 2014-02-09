@@ -16,6 +16,7 @@
 #include "Button.h"
 #include "lizz_lua.h"
 #include "IView.h"
+#include "View_Game_Model_State.h"
 #include "View_Game.h"
 
 std::string View_Game::view_game_model_error_strings[Model::NUM_model_error_codes_e] = {
@@ -50,7 +51,7 @@ view_debug_t::view_debug_t(){
 }
 
 View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
-: model(_model),IView(win,ren)
+: model(_model),model_state_context(*this),IView(win, ren)
 {
 	Logger::getLog().log(Logger::DEBUG,"View_Game::View_Game() constructor");
 	this->disp_w = Configuration::DISP_W;
@@ -67,11 +68,11 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	face_size[1] = Configuration::SPRITE_FACE_H;// 20;//10; // height
 	this->exit_flag = false;
 	this->desired_fps = Configuration::FPS;
-	this->total_frame_count = 0;
-	this->state = state_e::NONE;
-	this->change_state_flag = false;
+	this->total_frame_count = 0;	
 	this->selected_pane = nullptr;
 	this->debug = true;
+	// we start as a NONE state
+	model_state_context.push_state(model_state_context.obtain_state(View_Game_Model_State_Context::NONE));
 
 	mouse.buttons = 0;
 	mouse.x = 0;
@@ -568,11 +569,6 @@ bool View_Game::setup_buttons(pane_t& pane){
 	return true;
 }
 
-void View_Game::set_state(state_e new_state){
-	if(new_state < 0 || new_state >= state_e::NUM_state_e){ return; }
-	state = new_state;
-}
-
 void View_Game::on_start(SDL_Event& e){	
 	if(e.type >= SDL_USEREVENT){
 		Logger::getLog().log(Logger::DEBUG, "View_Game::on_start()");
@@ -598,12 +594,15 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 		dialog_in_focus->handle_keyboard_events(e);
 		if(dialog_in_focus->modal){ return; }
 	}
-
-	// handle the key board given the state.
-	handle_keyboard_given_state(e,state);
-
+	
 	//generic handling of the keyboard
 	if(e.type == SDL_KEYDOWN){
+		model_state_context.current_state()->handle_keydown(e);
+		if(model.get_error() != Model::MODEL_ERROR_NONE){
+			message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
+			message_pane.reset();
+		}
+
 		if(e.key.keysym.scancode == SDL_SCANCODE_ESCAPE){
 			SDL_Event ev;
 			SDL_zero(ev);
@@ -649,12 +648,13 @@ void View_Game::handle_keyboard_events(SDL_Event& e){
 		if(keyboard[SDL_SCANCODE_3]){
 			enable_debug_button.action(*this, model);
 		}
-		if(keyboard[SDL_SCANCODE_4]){
-			set_state(View_Game::START);
-		}
-
+		
 	} else if(e.type == SDL_KEYUP){
-
+		if(e.key.keysym.scancode == SDL_SCANCODE_4){
+			model_state_context.state_stack.clear();
+			model_state_context.push_state(model_state_context.obtain_state(View_Game_Model_State_Context::START));
+		}
+		model_state_context.current_state()->handle_keyup(e);
 	}
 }
 
@@ -679,16 +679,21 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 		draw_tile = true;
 		draw_vertex = true;
 		draw_face = true;
+
+		model_state_context.current_state()->handle_mouse_button_down(e);
 	} else if(e.type == SDL_MOUSEBUTTONUP){
 		draw_tile = false;
 		draw_vertex = false;
 		draw_face = false;
+		//model_state_context.current_state()->handle_mouse_button_up(e);
 	} else if(e.type == SDL_MOUSEMOTION){
-
+		//model_state_context.current_state()->handle_mouse_motion(e);
 	}
 
-	// handle mouse input depengin on the specific state
-	handle_mouse_given_state(e,state);
+	if(model.get_error() != Model::MODEL_ERROR_NONE){
+		message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
+		message_pane.reset();
+	}
 }
 
 void View_Game::handle_user_events(SDL_Event& e){
@@ -1421,7 +1426,11 @@ void View_Game::render_top_pane(pane_t& pane){
 		Uint32 buttons;
 		buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y, font_carbon_12_colour,
-			"Mouse(%d,%d,%d)  Debug Page=%d State=%d", mouse_x, mouse_y, buttons, _debug.panel_page,(int)state);
+			"Mouse(%d,%d,%d)  Debug Page=%d State=%d, %d remaining",
+			mouse_x, mouse_y, buttons, _debug.panel_page,
+			model_state_context.current_state()->type,
+			model_state_context.state_stack.size()
+			);
 		// draw the fps 
 		Util::render_text(&ren, font_carbon_12, top_pane.x, top_pane.y + 18, font_carbon_12_colour,
 			"FPS:%d.%d %d,%d,%d,%d,%d", fps.fps, total_frame_count,
@@ -1562,253 +1571,6 @@ void View_Game::render(){
 	SDL_RenderPresent(&ren);
 }
 
-void  View_Game::handle_mouse_given_state(SDL_Event& ev,View_Game::state_e s){
-	Logger& logger = Logger::getLog();
-
-	if(ev.type == SDL_MOUSEBUTTONDOWN){
-		if(s == View_Game::NONE)
-		{
-			//do nothing
-			//logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) None State", (int)s);
-		}
-		else if(s == View_Game::START)
-		{
-			static bool once = false;
-			if(once == false){
-				//once = true;
-				once = false;
-				logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start", (int)s);
-				// do roll assignment. for now we just assume we start
-				// from player one and then keep going.
-				set_state(View_Game::PLACE_SETTLEMENT_1);
-			} else{
-				set_state(View_Game::NORMAL);
-			}
-		}
-		else if(s == View_Game::PLACE_SETTLEMENT_1)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 1 for player %d", (int)s,model.get_current_player());
-			if(selected_vertex != nullptr){
-				bool rs = model.build_building(
-											building_t::SETTLEMENT,											
-											selected_vertex->num,
-											model.get_current_player() );
-				if(rs){
-					set_state(View_Game::PLACE_ROAD_1);
-				}
-			}
-		}
-		else if(s == View_Game::PLACE_ROAD_1)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Roads 1 for player %d", (int)s,model.get_current_player());
-			static int counter = 0;
-			if(selected_face != nullptr){
-				bool rs = model.build_building(
-											building_t::ROAD,											
-											selected_face->num,
-											model.get_current_player() );
-				if(rs){
-					counter++;
-				
-					// switch either to the next placing of settlements, or 
-					// to the next player of placing settlements.
-					if(counter >= model.get_num_players()){
-						set_state(View_Game::PLACE_SETTLEMENT_2);
-						model.set_current_player(model.get_current_player());
-						//model.m_current_player = model.m_current_player;
-					} else{
-						set_state(View_Game::PLACE_SETTLEMENT_1);
-						if(model.get_num_players() != 0){
-							model.set_current_player((model.get_current_player() + 1) % model.get_num_players());
-						}
-						//model.m_current_player = (model.m_current_player + 1) % model.m_num_players;
-					}				
-				} // end if(rs)				
-			}	
-		}
-		else if(s == View_Game::PLACE_SETTLEMENT_2)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Settlement 2 for player %d", (int)s, model.get_current_player());
-			if(selected_vertex != nullptr){
-				bool rs = model.build_building(
-											building_t::SETTLEMENT,							
-											selected_vertex->num,
-											model.get_current_player() );
-				if(rs) { set_state(View_Game::PLACE_ROAD_2); }
-			}
-		}
-		else if(s == View_Game::PLACE_ROAD_2)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Place Road 2 for player %d", (int)s, model.get_current_player());
-			static int counter = 0;
-			if(selected_face != nullptr){
-				bool rs = model.build_building(
-											building_t::ROAD,											
-											selected_face->num,
-											model.get_current_player() );
-				if(rs) { 
-					counter++;
-					// switch either to the next placing of settlements, or 
-					// to the next player of placing settlements.
-					if(counter >= model.get_num_players()){
-						set_state(View_Game::START_RESOURCES);
-						//model.m_current_player = 0;
-						model.set_current_player(0);
-					} else{
-						set_state(View_Game::PLACE_SETTLEMENT_2);
-						model.set_current_player(model.get_current_player() - 1);
-						//model.m_current_player--;
-						if(model.get_current_player() < 0){
-							model.set_current_player(model.get_num_players());
-							//model.m_current_player = model.m_num_players + model.m_current_player;
-						}
-					}
-				}// end if rs()
-
-			}
-		}
-		else if(s == View_Game::START_RESOURCES)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Start Resources and Placing the Thief",(int)s);			
-			// give resources.
-			for(int i = model.get_num_dice(); i < model.get_num_dice()*model.get_num_dice_sides(); ++i){
-				model.give_resources_from_roll(i);
-			}
-
-			// place the thief on a desert tile.
-			bool placed_thief = false;
-			for(int row = 0; row < model.get_board_width(); ++row){
-				for(int col = 0; col < model.get_board_height(); ++col){
-					if(model.get_tile(col, row)->active == 0){ continue; }
-					if(model.get_tile(col, row)->type == Tiles::DESERT_TILE){
-						model.place_thief(col, row);
-						set_state(View_Game::NORMAL);
-						placed_thief = true;
-						break;
-					}
-				}
-				if(placed_thief == true){ break; }
-			}		
-
-		}
-		else if(s == View_Game::NORMAL)
-		{
-			// do nothing.
-		}
-		else if(s == View_Game::TRADING)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Trading", (int)s);
-			set_state(View_Game::NORMAL);
-		}
-		else if(s == View_Game::BUILD_SETTLEMENT)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building settlement", (int)s);
-			if(selected_vertex != nullptr){
-				bool rs = model.build_building(
-					building_t::SETTLEMENT,
-					selected_vertex->num,
-					model.get_current_player());
-				if(rs) {
-					set_state(View_Game::NORMAL);
-				}
-			}
-		}
-		else if(s == View_Game::BUILD_CITY)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building City", (int)s);
-
-			if(selected_vertex != nullptr){
-				bool rs = model.build_building(
-					building_t::CITY,
-					selected_vertex->num,
-					model.get_current_player());
-				if(rs) {
-					set_state(View_Game::NORMAL);
-				}
-			}
-		}
-		else if(s == View_Game::BUILD_ROAD)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Building Road", (int)s);
-			if(selected_face != nullptr){
-				bool rs = model.build_building(
-					building_t::ROAD,
-					selected_face->num,
-					model.get_current_player());
-				if(rs) {
-					set_state(View_Game::NORMAL);
-				}
-			}
-			
-		}
-		else if(s == View_Game::PLAY_DEV_CARD)
-		{
-			logger.log(Logger::DEBUG, "View_Game::handle_mouse_given_state(%d) Playing Dev Card", (int)s);
-			set_state(View_Game::NORMAL);
-		}
-	}else  if(ev.type == SDL_MOUSEBUTTONUP){
-		if(s == View_Game::NONE){}
-		else if(s == View_Game::START){}
-		else if(s == View_Game::PLACE_SETTLEMENT_1){}
-		else if(s == View_Game::PLACE_ROAD_1){}
-		else if(s == View_Game::PLACE_SETTLEMENT_2){}
-		else if(s == View_Game::PLACE_ROAD_2){}
-		else if(s == View_Game::START_RESOURCES){}
-		else if(s == View_Game::NORMAL){}
-		else if(s == View_Game::TRADING){}
-		else if(s == View_Game::BUILD_SETTLEMENT){}
-		else if(s == View_Game::BUILD_CITY){}
-		else if(s == View_Game::BUILD_ROAD){}
-		else if(s == View_Game::PLAY_DEV_CARD){}
-	} else if(ev.type == SDL_MOUSEMOTION){
-		if(s == View_Game::NONE){}
-		else if(s == View_Game::START){}
-		else if(s == View_Game::PLACE_SETTLEMENT_1){}
-		else if(s == View_Game::PLACE_ROAD_1){}
-		else if(s == View_Game::PLACE_SETTLEMENT_2){}
-		else if(s == View_Game::PLACE_ROAD_2){}
-		else if(s == View_Game::START_RESOURCES){}
-		else if(s == View_Game::NORMAL){}
-		else if(s == View_Game::TRADING){}
-		else if(s == View_Game::BUILD_SETTLEMENT){}
-		else if(s == View_Game::BUILD_CITY){}
-		else if(s == View_Game::BUILD_ROAD){}
-		else if(s == View_Game::PLAY_DEV_CARD){}	
-	}
-
-	if(model.get_error() != Model::MODEL_ERROR_NONE){
-		message_pane.setMessage(View_Game::view_game_model_error_strings[model.get_error()].c_str());
-		message_pane.reset();
-	}
-}
-
-void View_Game::handle_keyboard_given_state(SDL_Event& ev,View_Game::state_e s){
-	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
-
-	// handle keyboard base on the given state.
-	if(s == View_Game::NONE){}
-	else if(s == View_Game::START){}
-	else if(s == View_Game::PLACE_SETTLEMENT_1){}
-	else if(s == View_Game::PLACE_ROAD_1){}
-	else if(s == View_Game::PLACE_SETTLEMENT_2){}
-	else if(s == View_Game::PLACE_ROAD_2){}
-	else if(s == View_Game::START_RESOURCES){}
-	else if(s == View_Game::NORMAL){}
-	switch(s){
-		case(View_Game::TRADING) :
-		case(View_Game::BUILD_SETTLEMENT) :
-		case(View_Game::BUILD_CITY) :
-		case(View_Game::BUILD_ROAD) :
-		case(View_Game::PLAY_DEV_CARD) :{
-			if(keyboard[SDL_SCANCODE_Q]){
-				set_state(View_Game::NORMAL);
-			}
-		}break;
-		default:{}
-	}	
-}
-
-
 void View_Game::open_debug_dialog(){
 	// dialog already exists, so just make it visible and open it up again
 	if(debug_dialog == nullptr){ 
@@ -1885,13 +1647,20 @@ void View_Game_Button::exit_button_action(View_Game& view, Model& model){
 }
 void View_Game_Button::end_turn_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "end_turn_action");
+	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
 	model.end_turn();
-	view.set_state(View_Game::state_e::NORMAL);
+
+	//View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::NORMAL);
+	//view.model_state_context.push_state(state);
+	//view.set_state(View_Game::state_e::NORMAL);
 	//Util::get().push_userev(Util::get().get_userev("view_switch_event"),0,0,0);
 }
 void View_Game_Button::add_road_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "add_road_action");
-	view.set_state(View_Game::BUILD_ROAD);
+
+	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::BUILD_ROAD);
+	view.model_state_context.push_state(state);	
 }
 void View_Game_Button::roll_action(View_Game& view, Model& model){
 	// TODO: Fuck this hack. I need a static stirng to set the message text.
@@ -1913,11 +1682,16 @@ void View_Game_Button::enable_debug_action(View_Game& view, Model& model){
 }
 void View_Game_Button::add_settlement_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "add_settlement_action");
-	view.set_state(View_Game::BUILD_SETTLEMENT);
+
+	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::BUILD_SETTLEMENT);
+	view.model_state_context.push_state(state);	
 }
 void View_Game_Button::add_city_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "add_city_action");
-	view.set_state(View_Game::BUILD_CITY);
+	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::BUILD_CITY);
+	view.model_state_context.push_state(state);	
 }
 void View_Game_Button::buy_dev_card_action(View_Game& view, Model& model){
 	static std::string message = "";
@@ -1931,15 +1705,27 @@ void View_Game_Button::buy_dev_card_action(View_Game& view, Model& model){
 }
 void View_Game_Button::play_dev_card_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "play_dev_card_action");
-	view.set_state(View_Game::PLAY_DEV_CARD);
+
+	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::PLAY_DEV_CARD);
+	view.model_state_context.push_state(state);
+	// open up the play_dev card dialog
+	//view.set_state(View_Game::PLAY_DEV_CARD);
 }
 void View_Game_Button::trade_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "trade_action");
-	view.set_state(View_Game::state_e::TRADING);
+
+	//if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::TRADING);
+	view.model_state_context.push_state(state);
 	view.open_trade_dialog();
 }
 void View_Game_Button::empty_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "empty_action");
 	view._debug.panel_page = (view._debug.panel_page + 1) % 3;
+
 	model.reset();
+	view.model_state_context.state_stack.clear();
+	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::START);
+	view.model_state_context.push_state(state);
 }

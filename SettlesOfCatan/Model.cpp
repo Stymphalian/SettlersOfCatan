@@ -2365,6 +2365,41 @@ bool Model::trade_with_player(int A, resource_t* A_give, int B, resource_t* B_gi
 	return true;
 }
 
+/*
+@Parameter int target_player - the player we are stealing from
+@Parameter int taking_player - the player that is stealing from the target
+@Parameter int number - the number of cards to steal from the target player
+@Return -- return false if we failed to steal a resource.
+			  reutrn true if we have stolen all the we possibly can from the target layer.
+*/
+bool Model::steal_random_resource_from_player(int target_player,int taking_player, int number){
+	Player* get = get_player(target_player);
+	Player* take = get_player(taking_player);
+	if(get == nullptr){ return false; }
+	if(take == nullptr){ return false; }
+
+	while(number > 0){
+		// no cards to steal from, that is acceptable
+		if(get->get_hand_size() <= 0){ return true; }
+
+		// make sure that that is a resource we can take from		
+		int count = 0;
+		int card = rand() % resource_t::NUM_OF_RESOURCES;
+		while(get->resources.res[card] == 0 && count < resource_t::NUM_OF_RESOURCES){
+			card = (card+1)%resource_t::NUM_OF_RESOURCES;
+			count++;
+		}
+		// this should never happen?
+		if(count >= resource_t::NUM_OF_RESOURCES){ return false; }
+
+		// do the exchange
+		take->add_resource(card, 1);
+		get->add_resource(card, -1);				
+		number--;
+	}
+	return true;
+}
+
 
 void Model::give_resources_from_roll(int roll){
 	Tiles* hex = nullptr;
