@@ -49,6 +49,11 @@ public:
 
 class dev_cards_t{
 public:
+	/*
+	monopoly - announce a resource, all other players must give you 
+				all of that type of resource
+	year of plenty - pick two resource cards from the bank
+	*/
 	enum dev_cards_e{
 		SOLDIER = 0, VICTORY, MONOPOLY, YEAR_PLENTY, ROAD_BUILDING,
 		NUM_OF_DEV_CARDS, NUM_VICTORY_TITLES = 10
@@ -63,12 +68,14 @@ public:
 	int _message;
 	bool visible;
 	int player;
+	bool has_been_played;
 	
 	// constructor and destructor
 	dev_cards_t();
 	virtual ~dev_cards_t();
 
 	// methods
+	void reset();
 	void init(dev_cards_e type);
 	std::string title();
 	std::string message();

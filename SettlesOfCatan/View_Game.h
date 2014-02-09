@@ -15,6 +15,7 @@ class Tiles;
 class IDialog;
 class View_Game_Debug_Dialog;
 class View_Game_Trade_Dialog;
+class View_Game_DevCard_Dialog;
 
 
 
@@ -219,6 +220,7 @@ public:
 	IDialog* dialog_in_focus;
 	View_Game_Debug_Dialog* debug_dialog;
 	View_Game_Trade_Dialog* trade_dialog;
+	View_Game_DevCard_Dialog* devcard_dialog;
 	
 	//constructor and destructor
 	View_Game(Model& model, SDL_Window& win, SDL_Renderer& ren);
@@ -237,6 +239,8 @@ public:
 	void close_debug_dialog();
 	void open_trade_dialog();
 	void close_trade_dialog();
+	void open_devcard_dialog();
+	void close_devcard_dialog();
 	void set_message_pane_text(const char* message);
 private:
 	// Variables  and resources

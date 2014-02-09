@@ -32,6 +32,10 @@ public:
 protected:
 	SDL_Rect old_clip;
 	SDL_Rect new_clip;
+
+	int _mouse_x, _mouse_y;
+	Uint32 _mouse_buttons;
+	Collision _mouse_hitbox;
 private:	
 	bool _visible;
 };

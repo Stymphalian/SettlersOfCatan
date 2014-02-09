@@ -154,11 +154,6 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 : IDialog(view, x, y, z, w, h), view_game(view)
 {
 	Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog(view=%x,x=%d,y=%d,z=%d,w=%d,h=%d) constructor",&view, x, y, z, w, h);
-	_mouse_x = 0;
-	_mouse_y = 0;
-	_mouse_buttons = 0;
-	mouse_hitbox.hook(&_mouse_x, &_mouse_y);
-	mouse_hitbox.add_rect(0, 0, 0, 1, 1);
 	_model = nullptr;
 
 	// initialize the buttons
@@ -229,8 +224,7 @@ View_Game_Trade_Dialog::View_Game_Trade_Dialog(View_Game& view, int x, int y, in
 
 View_Game_Trade_Dialog::~View_Game_Trade_Dialog()
 {
-	Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog destructor");
-	mouse_hitbox.clear();
+	Logger::getLog().log(Logger::DEBUG, "View_Game_Trade_Dialog destructor");	
 	_model = nullptr;
 
 	TTF_CloseFont(font_carbon_12);
@@ -319,13 +313,13 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 	// intersectsion with the text fields
 	selected_textfield = nullptr;
 	for(int i = 0; i < (int)left_textfields.size(); ++i){
-		left_textfields[i]->handle_mouse_events(ev, mouse_hitbox);
+		left_textfields[i]->handle_mouse_events(ev, _mouse_hitbox);
 		if(left_textfields[i]->has_focus){
 			selected_textfield = left_textfields[i];
 		}
 	}
 	for(int i = 0; i < (int)right_textfields.size(); ++i){
-		right_textfields[i]->handle_mouse_events(ev, mouse_hitbox);
+		right_textfields[i]->handle_mouse_events(ev, _mouse_hitbox);
 		if(right_textfields[i]->has_focus){
 			selected_textfield = right_textfields[i];
 		}
@@ -333,7 +327,7 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 
 	//intersections with the combo boxes.
 	for(int i = 0; i < (int)right_dropdown_list.size(); ++i){
-		right_dropdown_list[i]->handle_mouse_events(ev, mouse_hitbox);
+		right_dropdown_list[i]->handle_mouse_events(ev, _mouse_hitbox);
 		if(right_dropdown_list[i]->has_focus){
 			selected_dropdown = right_dropdown_list[i];
 		}
@@ -343,7 +337,7 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 	selected_button = nullptr;
 	if(ev.type == SDL_MOUSEBUTTONDOWN){
 		for(int i = 0; i < (int)button_list.size(); ++i){
-			if(mouse_hitbox.collides(button_list[i]->hitbox)){
+			if(_mouse_hitbox.collides(button_list[i]->hitbox)){
 				button_list[i]->hit_flag = true;
 				selected_button = button_list[i];
 			} else{
@@ -352,7 +346,7 @@ void View_Game_Trade_Dialog::handle_mouse_events(SDL_Event& ev){
 		}
 	}else if(ev.type == SDL_MOUSEBUTTONUP){
 		for(int i = 0; i < (int)button_list.size(); ++i){
-			if(mouse_hitbox.collides(button_list[i]->hitbox) &&
+			if(_mouse_hitbox.collides(button_list[i]->hitbox) &&
 				button_list[i]->hit_flag == true)
 			{
 				button_list[i]->action(this, _model);
@@ -433,7 +427,7 @@ void View_Game_Trade_Dialog::render(){
 	for(it = button_list.begin(); it != button_list.end(); ++it){
 		rect = { 
 			(*it)->x + this->x,
-			(*it)->y + this->y,
+			(*it)->y + this->y - 5,
 			(*it)->w, (*it)->h };
 
 		if((*it)->hit_flag){

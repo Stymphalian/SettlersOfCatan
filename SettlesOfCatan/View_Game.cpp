@@ -12,6 +12,7 @@
 #include "IDialog.h"
 #include "View_Game_Debug_Dialog.h"	
 #include "View_Game_Trade_Dialog.h"
+#include "View_Game_DevCard_Dialog.h"
 #include "CheckBox.h"
 #include "Button.h"
 #include "lizz_lua.h"
@@ -97,9 +98,9 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	// no debug dialog to beign with.
 	this->debug_dialog = nullptr;
 	this->trade_dialog = nullptr;
+	this->devcard_dialog = nullptr;
 	this->dialog_in_focus = nullptr;
 	
-
 	// setup the static panes to be used for this view
 	// top pane
 	int offset_x = 0;
@@ -161,6 +162,7 @@ View_Game::~View_Game(){
 	delete[] face_covered;
 	delete debug_dialog;
 	delete trade_dialog;
+	delete devcard_dialog;
 	tiles.clear();
 	vertices.clear();
 	faces.clear();
@@ -723,8 +725,10 @@ void View_Game::handle_user_events(SDL_Event& e){
 		if(d != nullptr){
 			if(d == debug_dialog){
 				close_debug_dialog();
-			}else if(d == trade_dialog){
+			} else if(d == trade_dialog){
 				close_trade_dialog();
+			} else if(d == devcard_dialog){
+				close_devcard_dialog();
 			}
 		}
 	}
@@ -1614,6 +1618,28 @@ void View_Game::close_trade_dialog(){
 	return;
 }
 
+void View_Game::open_devcard_dialog(){
+	if(devcard_dialog == nullptr){	
+		devcard_dialog = new View_Game_DevCard_Dialog(
+			*this,
+			misc_pane.x,
+			misc_pane.y,
+			misc_pane.z,
+			misc_pane.w,
+			misc_pane.h
+			);
+	}
+	devcard_dialog->open(&model);	
+	dialog_in_focus = devcard_dialog;
+	return;
+}
+void View_Game::close_devcard_dialog(){
+	if(devcard_dialog == nullptr){ return; }
+	devcard_dialog->close();
+	dialog_in_focus = nullptr;
+	return;
+}
+
 void View_Game::set_message_pane_text(const char* text){
 	if(text == nullptr) { return; }
 	message_pane.setMessage(text);
@@ -1709,8 +1735,7 @@ void View_Game_Button::play_dev_card_action(View_Game& view, Model& model){
 	if(view.model_state_context.current_state()->type != View_Game_Model_State_Context::NORMAL){ return; }
 	View_Game_Model_State& state = view.model_state_context.obtain_state(View_Game_Model_State_Context::PLAY_DEV_CARD);
 	view.model_state_context.push_state(state);
-	// open up the play_dev card dialog
-	//view.set_state(View_Game::PLAY_DEV_CARD);
+	view.open_devcard_dialog();	
 }
 void View_Game_Button::trade_action(View_Game& view, Model& model){
 	Logger::getLog().log(Logger::DEBUG, "trade_action");

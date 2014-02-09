@@ -202,6 +202,7 @@ private:
 	int _path_to_vertex(int player, int v1, int v2);
 	std::vector<int> determine_longest_road_of_players(); // expensive!
 	int _get_player_with_longest_road();
+	int _get_player_with_largest_army();
 	
 	bool face_in_range(int key);
 	bool vertex_in_range(int key);

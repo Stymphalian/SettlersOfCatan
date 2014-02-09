@@ -324,15 +324,46 @@ void View_Game_Model_State_Context::mouse_buttondown_action_BUILD_ROAD(View_Game
 }
 void View_Game_Model_State_Context::mouse_buttondown_action_PLACE_THIEF(View_Game_Model_State& self,SDL_Event& ev){
 	Tile_intersect* selected_tile = self.context->view.selected_tile;
+	vertex_face_t_intersect* selected_vertex = self.context->view.selected_vertex;
+	vertex_face_t_intersect* selected_face = self.context->view.selected_vertex;
 	Model& model = self.context->view.model;
 	View_Game_Model_State_Context* context = self.context;
 
 	//Logger::getLog().log(Logger::DEBUG, "View_Game_Model_State_Context::mouse_buttodown_action_PLACE_THIEF()");
-	if(selected_tile != nullptr){
+	if(selected_tile != nullptr  &&
+		selected_vertex == nullptr  && 
+		selected_face == nullptr)
+	{
+		// condition, that we can't place the thief on the same spot
+		if(selected_tile->col == model.get_thief_x() && selected_tile->row == model.get_thief_y()){
+			return;
+		}
+
 		bool rs = model.place_thief(selected_tile->col, selected_tile->row);
 		if(rs){
 			context->pop_state();			
-			context->push_state(context->obtain_state(model_state_e::STEAL_RESOURCE));
+
+			// check for the case in which there are no valid choices for stealing/
+			// if none exists then we don't want to transition 
+			// into the stealing resources state
+			bool exists_valid_choices = false;
+			Tiles* thief_tile = model.get_tile(model.get_thief_x(), model.get_thief_y());
+			for(int i = 0; i < 6; ++i){
+				vertex_face_t* model_vertex = model.get_vertex(thief_tile->vertices[i]);
+				if(model_vertex == nullptr){ continue; }
+				if(model_vertex->type != vertex_face_t::NONE &&
+					model_vertex->player != -1 &&
+					model_vertex->player != model.get_current_player())
+				{
+					exists_valid_choices = true;
+					break;
+				}
+			}
+			if(exists_valid_choices == false){
+				Logger::getLog().log(Logger::DEBUG, "View_Game_Model_State_Context::mouse_buttondown_action_PLACE_THIEF There does not exist a valid stealing choice. This is acceptable");				
+			} else{
+				context->push_state(context->obtain_state(model_state_e::STEAL_RESOURCE));
+			}
 		}
 	}
 }
@@ -351,7 +382,7 @@ void View_Game_Model_State_Context::mouse_buttondown_action_STEAL_RESOURCE(View_
 		// vertices surrounding the theif tile.
 		Tiles* thief_tile = model.get_tile(model.get_thief_x(), model.get_thief_y());
 		if(thief_tile == nullptr){ return; }
-		bool good = false;
+		bool good = false;		
 		for(int i = 0; i < 6; ++i){
 			if(thief_tile->vertices[i] == selected_vertex->num){
 				good = true;
@@ -359,7 +390,9 @@ void View_Game_Model_State_Context::mouse_buttondown_action_STEAL_RESOURCE(View_
 			}
 		}
 		if(good == false){ return; }
-
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Model_State_Context tile col=%d,row=%d with vertex %d",
+			model.get_thief_x(), model.get_thief_y(), selected_vertex->num);					
+		
 
 		// get the target and receiving players.
 		int target_player = model.get_current_player();
@@ -373,6 +406,8 @@ void View_Game_Model_State_Context::mouse_buttondown_action_STEAL_RESOURCE(View_
 			// get out because it is an invalid vertex choice.
 			return;
 		}
+		Logger::getLog().log(Logger::DEBUG, "View_Game_Model_State_Context target player=%d receiving player=%d",
+			target_player, receiving_player);
 	
 		// steal the resources from the target player and give it to the current player		
 		bool rs = model.steal_random_resource_from_player(target_player, receiving_player);

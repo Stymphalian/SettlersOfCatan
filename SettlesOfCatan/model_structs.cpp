@@ -32,18 +32,25 @@ dev_cards_t::dev_cards_t(){
 	_message = 0;
 	visible = false;
 	player = -1;
+	this->has_been_played = false;
 }
 dev_cards_t::~dev_cards_t(){
 	//Logger::getLog().log(Logger::DEBUG, "dev_cards_t destructor");
 }
 
 // methods
+void dev_cards_t::reset(){
+	this->visible = false;
+	this->player = -1;
+	this->has_been_played = false;
+}
 void dev_cards_t::init(dev_cards_t::dev_cards_e type){
 	this->type = type;
 	_title = type;
 	_message = type;
 	this->visible = false;
 	this->player = -1;
+	this->has_been_played = false;
 }
 
 std::string dev_cards_t::title(){

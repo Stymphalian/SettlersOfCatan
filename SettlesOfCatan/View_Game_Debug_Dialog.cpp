@@ -50,12 +50,6 @@ View_Game_Debug_Dialog::View_Game_Debug_Dialog(
 
 	Logger::getLog().log(Logger::DEBUG, "VieW_Game_Debug_Dialog Constructor(view=%x,x=%d,y=%d,z=%d,w=%d,h=%d)",
 		&this->view,this->x,this->y,this->z,this->w,this->h);
-	// mouse handling
-	_mouse_x = 0;
-	_mouse_y = 0;
-	_mouse_buttons = 0;
-	mouse_hitbox.hook(&_mouse_x, &_mouse_y);
-	mouse_hitbox.add_rect(0, 0, 0, 1, 1);
 
 	// default nullptr data.
 	_data = nullptr;
@@ -215,7 +209,7 @@ void View_Game_Debug_Dialog::update(SDL_Event& ev) {
 	// check for collisions with the mouse.
 	_selected_checkbox = nullptr;
 	for(int i = 0; i < (int)_checkboxes.size(); ++i){
-		if(_checkboxes[i]->hitbox.collides(mouse_hitbox)){
+		if(_checkboxes[i]->hitbox.collides(_mouse_hitbox)){
 			_selected_checkbox = _checkboxes[i];
 			break;
 		}

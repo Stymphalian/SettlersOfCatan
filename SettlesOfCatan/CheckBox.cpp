@@ -36,6 +36,7 @@ void CheckBox::init(int x, int y, int z, int w, int h, bool ticked){
 	_ticked = ticked;
 	_group = nullptr;
 
+	this->hitbox.clear();
 	this->hitbox.hook(&this->x, &this->y,&this->z);
 	this->hitbox.add_rect(0, 0, 0, this->w, this->h);
 }
@@ -83,8 +84,7 @@ CheckBox_Group::~CheckBox_Group(){
 	Logger::getLog().log(Logger::DEBUG, "CheckBox_Group destructor");
 }
 
-void CheckBox_Group::init(int x, int y, int z){
-	this->hitbox.rects.clear();
+void CheckBox_Group::init(int x, int y, int z){	
 	this->x = x;
 	this->y = y;
 	this->z = z;
@@ -94,6 +94,7 @@ void CheckBox_Group::init(int x, int y, int z){
 	this->_group.clear();
 	//this->_direction = CheckBox_Group::HORIZONTAL;
 
+	this->hitbox.clear();
 	this->hitbox.hook(&this->x, &this->y, &this->z);
 	this->hitbox.add_rect(0, 0, 0, 0, 0);
 }

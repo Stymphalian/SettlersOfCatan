@@ -40,10 +40,6 @@ public:
 	virtual void update(SDL_Event& ev);
 	virtual void render();
 private:
-	int _mouse_x, _mouse_y;
-	Uint32 _mouse_buttons;
-	Collision mouse_hitbox;
-
 	TTF_Font* font_carbon_12;
 	SDL_Color font_carbon_12_colour;
 

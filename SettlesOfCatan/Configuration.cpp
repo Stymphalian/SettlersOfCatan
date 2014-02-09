@@ -72,6 +72,9 @@ int Configuration::extensions_bank_dev_year_plenty;
 int Configuration::extensions_bank_dev_soldier;
 int Configuration::extensions_bank_dev_victory;
 
+int Configuration::minimum_largest_army;
+int Configuration::minimum_longest_road;
+
 
 bool Configuration::defaults(){
 	// global configurations
@@ -146,6 +149,9 @@ bool Configuration::defaults(){
 	Configuration::extensions_bank_dev_year_plenty = 0;
 	Configuration::extensions_bank_dev_soldier = 0;
 	Configuration::extensions_bank_dev_victory = 0;
+
+	Configuration::minimum_largest_army = 0;
+	Configuration::minimum_longest_road = 0;
 
 	return true;
 }
@@ -266,7 +272,10 @@ bool Configuration::load(){
 	Configuration::extensions_bank_dev_year_plenty = atoi(config->get_property("extensions_bank_dev_year_plenty","Model").value.c_str());
 	Configuration::extensions_bank_dev_soldier = atoi(config->get_property("extensions_bank_dev_soldier","Model").value.c_str());
 	Configuration::extensions_bank_dev_victory = atoi(config->get_property("extensions_bank_dev_victory","Model").value.c_str());
-	
+
+
+	Configuration::minimum_largest_army = atoi(config->get_property("minimum_largest_army", "Model").value.c_str());
+	Configuration::minimum_longest_road = atoi(config->get_property("minimum_longest_road", "Model").value.c_str());
 	//Configuration::print();
 	delete config;	
 	return true;
@@ -357,4 +366,7 @@ void Configuration::print(){
 	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_year_plenty);
 	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_soldier);
 	printf("%d=%d\n",count++,Configuration::extensions_bank_dev_victory);
+
+	printf("%d=%d\n", count++, Configuration::minimum_largest_army);
+	printf("%d=%d\n", count++, Configuration::minimum_longest_road);
 }

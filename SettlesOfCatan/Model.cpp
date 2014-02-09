@@ -1744,38 +1744,64 @@ Preconditions:
 	the player object already hold the value of their longest road.
 */
 int Model::_get_player_with_longest_road(){
-	int length = 0;
-	int player = 0;
-	int candidate = 0;
+	Player* p = nullptr;
+	int player = -1;
+	int road = Configuration::minimum_longest_road;
 
-	if(_player_holding_longest_road_card == -1){
-		// TODO : This 4 should be a configurable value.
-		player = -1;
-		length = 4;
-	} else {
-		player = _player_holding_longest_road_card;
-		length = _players[player].longest_road;
-	}
-
-	// check all the other player to see if anyone has a longer road.
-	for(int i = 0; i < (int)_players.size(); ++i){
-		// assigne the longest road to the player object.
-		_players[i].longest_road = _players[i].longest_road;
-
-		if(_player_holding_longest_road_card == i){
-			continue;
-		}
-		candidate = _players[i].longest_road;
-		if(candidate > length){
-			length = candidate;
+	// check to seee who has the longest road
+	for(int i = 0; i < _num_players; ++i){
+		if(_players[i].longest_road >= road){
 			player = i;
+			road = _players[i].longest_road;
 		}
 	}
 
-	_player_holding_longest_road_card = player;
-	return player;
+	// check for people with duplicate longest road sizes
+	int count = 0;
+	for(int i = 0; i < _num_players; ++i){
+		if(_players[i].longest_road == road){
+			++count;
+		}
+	}
+	if(count >= 2 || player == -1){
+		_player_holding_longest_road_card = -1;
+	} else{
+		_player_holding_longest_road_card = player;
+	}
+	return _player_holding_longest_road_card;
 }
 
+
+/*
+*/
+int Model::_get_player_with_largest_army(){
+	Player* p = nullptr;
+	int player = -1;
+	int army = Configuration::minimum_largest_army;
+
+	// check to see who has the largset army
+	for(int i = 0; i < _num_players; ++i){
+		if(_players[i].num_soldiers >= army){
+			player = i;
+			army = _players[i].num_soldiers;
+		}
+	}
+	
+	// check to see if two people have the same largest army
+	int count = 0;
+	for(int i = 0; i < _num_players; ++i){
+		if(_players[i].num_soldiers == army){
+			++count;
+		}
+	}
+
+	if(player == -1 || count >= 2){
+		_player_holding_largest_army_card = -1;
+	} else{
+		_player_holding_largest_army_card = player;
+	}
+	return _player_holding_largest_army_card;
+}
 
 /*
 Make sure that the key is within range of _face_array.size();
@@ -1958,7 +1984,7 @@ std::vector<vertex_face_t>::iterator Model::get_faces_end(){
 
 
 /*
-@Return: A point to a dev_cards_t object.
+@Return: A pointer to a dev_cards_t object.
 */
 const dev_cards_t* Model::get_dev_card(){	
 	return draw_dev_card();
@@ -1984,7 +2010,7 @@ int Model::get_num_vertices(){ return (int)_vertex_array.size(); }
 int Model::get_num_faces(){ return (int)_face_array.size(); }
 int Model::get_thief_x(){ return _thief_pos_x; }
 int Model::get_thief_y(){ return _thief_pos_y; }
-int Model::get_player_with_largest_army(){ return _player_holding_largest_army_card; }
+int Model::get_player_with_largest_army(){ return _get_player_with_largest_army(); }
 int Model::get_player_with_longest_road(){ return _get_player_with_longest_road(); }
 int Model::get_turn_count(){ return _turn_count; }
 int Model::get_roll_value(){ return _roll_value;}
@@ -2058,8 +2084,9 @@ bool Model::reset(){
 	// reset the dev_deck to be a full deck
 	_deck_pos = 0;
 	for(int i = 0; i < (int)_dev_deck.size(); ++i){
-		_dev_deck[i].player = -1;
-		_dev_deck[i].visible = false;
+		_dev_deck[i].reset();
+		//_dev_deck[i].player = -1;
+		//_dev_deck[i].visible = false;
 	}
 
 	// Reset Player DATA
@@ -2161,7 +2188,8 @@ bool Model::build_building(building_t::buildings building, int pos, int player){
 			// the player doesn't have enough resources to pay for the item.
 			if(get_player(player)->resources.res[i] < price.res[i]){
 				set_error(Model::MODEL_ERROR_RESOURCES);
-				return false;
+				// TODO: DEBUGGING NO RESOURCE REQUIRED!
+				//return false;
 			}
 		}
 	}
@@ -2465,12 +2493,15 @@ bool Model::buy_dev_card(int player){
 	if(player < 0 || player >= _num_players){ return false; }
 	if(_dev_deck.empty()){ return false; }
 	// pay for the card
+	/*
 	resource_t price = get_building_cost(building_t::DEV_CARD);
 	if(pay_for_item(player, &price) == false){
 		return false;
 	}
+	*/
 
 	const dev_cards_t* card = draw_dev_card();
+	if(card == nullptr){ return false; }
 	_players[player].dev_cards.push_back(card);
 	return true;
 }

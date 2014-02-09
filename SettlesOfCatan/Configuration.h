@@ -74,6 +74,9 @@ public:
 	static int extensions_bank_dev_year_plenty;
 	static int extensions_bank_dev_soldier;
 	static int extensions_bank_dev_victory;
+	// minimum longest road and army size
+	static int minimum_largest_army;
+	static int minimum_longest_road;
 
 	static bool defaults();
 	static bool load();
