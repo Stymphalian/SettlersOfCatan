@@ -29,12 +29,14 @@ public:
 	int mouse_x, mouse_y;
 
 	// M Y  S T U F F   S T A R T
-	DropDown dropdown;
-	DropDown dropdown2;
-	DropDown dropdown3;
-	DropDown dropdown4;
-	DropDown* selected_dropdown;
-	std::vector<DropDown*> dropdown_list;
+	int board_size;
+	int* _board;
+	int graph_size;
+	int* graph;
+	int target;
+	int target_x;
+	int target_y;
+	int offsets[8][2];
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor
@@ -50,7 +52,9 @@ public:
 	void update(SDL_Event& ev);
 	void render();
 
-
-	void render_textfield(TextField& field);
+	void solve();
+	int bvalue(int* board, int n, int col, int row);
+	bool _solve(int* board, int n, int col, int row,int* count);
+	void graph_that_shit();
 };
 

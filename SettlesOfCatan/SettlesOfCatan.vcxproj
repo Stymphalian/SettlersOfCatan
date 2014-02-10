@@ -73,6 +73,9 @@
       <AdditionalLibraryDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua522.lib;sqlite3.lib;SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_mixer.lib;SDL2_net.lib;SDL2_ttf.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <Profile>
+      </Profile>
+      <AdditionalOptions>/verbose:lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /d /y /e "$(ProjectDir)bin\*" "$(OutDir)"</Command>
@@ -99,6 +102,7 @@
       <AdditionalLibraryDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua522.lib;sqlite3.lib;SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_mixer.lib;SDL2_net.lib;SDL2_ttf.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions>/verbose:lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /d /y /e "$(ProjectDir)bin\*" "$(OutDir)"</Command>
@@ -125,6 +129,7 @@
       <AdditionalLibraryDirectories>C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2-devel-2.0.1-VC\SDL2-2.0.1\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_image-devel-2.0.0-VC\SDL2_image-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_mixer-devel-2.0.0-VC\SDL2_mixer-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_net-devel-2.0.0-VC\SDL2_net-2.0.0\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\SDL_source\SDL2_ttf-devel-2.0.12-VC\SDL2_ttf-2.0.12\lib\x86;C:\Users\Jordan\Desktop\CP\C++\SDL\lua\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\sqlite3\lib;C:\Users\Jordan\Desktop\CP\C++\SDL\visual_leak_detector\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>lua522.lib;sqlite3.lib;SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_mixer.lib;SDL2_net.lib;SDL2_ttf.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <AdditionalOptions>/verbose:lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /d /y /e "$(ProjectDir)bin\*" "$(OutDir)"</Command>

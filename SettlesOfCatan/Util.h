@@ -35,7 +35,6 @@ public:
 	static void push_texture_mods(SDL_Texture* texture, int r, int g, int b, int a);
 	static void pop_texture_mods(SDL_Texture* texture);
 	
-
 	//member methods
 	static Util& get();
 	Uint32 get_userev(const char* ev);

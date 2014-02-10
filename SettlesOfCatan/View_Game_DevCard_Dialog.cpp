@@ -52,11 +52,11 @@ void View_Game_DevCard_Dialog_Button::play_card_button_action(View_Game_DevCard_
 		context.push_state(context.obtain_state(View_Game_Model_State_Context::PLACE_THIEF));
 		dialog._player->num_soldiers++;
 	} else if(card->type == dev_cards_t::VICTORY){
-	
+		// don't really need to do anything.		
 	} else if(card->type == dev_cards_t::MONOPOLY){
-
+		// transition... to other dialog?
 	} else if(card->type == dev_cards_t::YEAR_PLENTY){
-
+		// 
 	} else if(card->type == dev_cards_t::ROAD_BUILDING){
 		View_Game_Model_State_Context& context = dialog._view_game.model_state_context;
 		context.push_state(context.obtain_state(View_Game_Model_State_Context::BUILD_ROAD));
@@ -82,7 +82,7 @@ void View_Game_DevCard_Dialog_Button::cancel_button_action(View_Game_DevCard_Dia
 View_Game_DevCard_Card::View_Game_DevCard_Card(){
 	Logger::getLog().log(Logger::DEBUG, "View_Game_DevCard_Card constructor");
 	x = 0;y = 0;z = 0;
-	w = 0;	h = 0;
+	w = 0; h = 0;
 	card = nullptr;
 }
 View_Game_DevCard_Card::~View_Game_DevCard_Card(){

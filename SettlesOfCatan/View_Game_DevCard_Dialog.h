@@ -23,6 +23,7 @@ public:
 	void action(View_Game_DevCard_Dialog& dialog, Model& model);
 
 	static void play_card_button_action(View_Game_DevCard_Dialog& dialog, Model& model);
+	static void play_card_button_action2(View_Game_DevCard_Dialog& dialog, Model& model);
 	static void cancel_button_action(View_Game_DevCard_Dialog& dialog, Model& model);
 private:
 	button_action baction;	
@@ -61,6 +62,20 @@ public:
 	void render(SDL_Renderer& ren, TTF_Font* font, SDL_Color font_colour, SDL_Rect pane);
 };
 
+
+// -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
+// V I E W _ G A M E _ D E V C A R D _ D I A L O G _ S U B 
+// -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
+class View_Game_DevCard_Dialog_Panel {
+public:
+	View_Game_DevCard_Dialog& dialog;
+	View_Game_DevCard_Dialog_Panel(View_Game_DevCard_Dialog& dialog);
+
+private:
+
+};
+
+
 // -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
 // V I E W _ G A M E _ D E V C A R D _ D I A L O G
 // -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
@@ -86,6 +101,7 @@ public:
 	// methods
 	dev_cards_t* get_chosen_card();
 private:		
+	friend class View_Game_DevCard_Dialog_Panel;
 	// resources
 	TTF_Font* font_carbon_12;
 	SDL_Color font_carbon_12_colour;
