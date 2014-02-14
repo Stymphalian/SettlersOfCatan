@@ -148,17 +148,17 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 
 	// Draw the normal hitbox
 	temp_rect = {
-		closed_hitbox.rects[0].x + bound.x,
-		closed_hitbox.rects[0].y + bound.y,
-		closed_hitbox.rects[0].w,
-		closed_hitbox.rects[0].h
+		closed_hitbox.rects[0].x() + bound.x,
+		closed_hitbox.rects[0].y() + bound.y,
+		closed_hitbox.rects[0].w(),
+		closed_hitbox.rects[0].h()
 	};
 	// Draw how it looks like if it is closed
 	Util::render_fill_rectangle(&ren, &temp_rect,_background_colour);
 	Util::render_rectangle(&ren, &temp_rect, Util::colour_red());
 
 	// draw the little arrow button box thing.
-	temp_rect.x += closed_hitbox.rects[0].w - _button_w;
+	temp_rect.x += closed_hitbox.rects[0].w() - _button_w;
 	temp_rect.w = _button_w;
 	Util::render_rectangle(&ren, &temp_rect, Util::colour_blue());
 
@@ -172,10 +172,10 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 		// O P E N
 		// draw the background colour for all the open boxes..
 		temp_rect = {
-			open_hitbox.rects[0].x + bound.x,
-			open_hitbox.rects[0].y + bound.y,			
-			open_hitbox.rects[0].w,
-			open_hitbox.rects[items.size() -1].y
+			open_hitbox.rects[0].x() + bound.x,
+			open_hitbox.rects[0].y() + bound.y,			
+			open_hitbox.rects[0].w(),
+			open_hitbox.rects[items.size() - 1].y()
 		};
 		//printf("%d,%d,%d,%d\n", temp_rect.x, temp_rect.y,temp_rect.w, temp_rect.h);
 		Util::render_fill_rectangle(&ren, &temp_rect, _background_colour);
@@ -184,10 +184,10 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 		if(hover_item != -1){
 			int padding = 3;
 			temp_rect = {
-				open_hitbox.rects[hover_item].x + bound.x + padding,
-				open_hitbox.rects[hover_item].y + bound.y + padding,
-				open_hitbox.rects[hover_item].w - 2*padding,
-				open_hitbox.rects[hover_item].h - 2*padding
+				open_hitbox.rects[hover_item].x() + bound.x + padding,
+				open_hitbox.rects[hover_item].y() + bound.y + padding,
+				open_hitbox.rects[hover_item].w() - 2*padding,
+				open_hitbox.rects[hover_item].h() - 2*padding
 			};
 			Util::render_fill_rectangle(&ren, &temp_rect, Util::colour_orange());
 		}
@@ -195,10 +195,10 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 		for(int i = 0; i < (int) items.size(); ++i){
 			// draw the bounding box
 			temp_rect = {
-				open_hitbox.rects[i].x + bound.x,
-				open_hitbox.rects[i].y + bound.y,
-				open_hitbox.rects[i].w,
-				open_hitbox.rects[i].h
+				open_hitbox.rects[i].x() + bound.x,
+				open_hitbox.rects[i].y() + bound.y,
+				open_hitbox.rects[i].w(),
+				open_hitbox.rects[i].h()
 			};
 			
 			Util::render_rectangle(&ren, &temp_rect, Util::colour_green());
@@ -209,10 +209,10 @@ void DropDown::render(SDL_Renderer& ren, TTF_Font& font, SDL_Color font_colour, 
 
 		if(items.size() != 0 && false){
 			temp_rect = {
-				open_convenience_hitbox.rects[0].x + bound.x,
-				open_convenience_hitbox.rects[0].y + bound.y,
-				open_convenience_hitbox.rects[0].w,
-				open_convenience_hitbox.rects[0].h
+				open_convenience_hitbox.rects[0].x() + bound.x,
+				open_convenience_hitbox.rects[0].y() + bound.y,
+				open_convenience_hitbox.rects[0].w(),
+				open_convenience_hitbox.rects[0].h()
 			};
 			Util::render_rectangle(&ren, &temp_rect, Util::colour_orange());
 		}
@@ -327,11 +327,11 @@ void DropDown::fill_open_hitbox(){
 	open_convenience_hitbox.clear();
 	if(items.size() != 0){	
 		open_convenience_hitbox.add_rect(
-			open_hitbox.rects[0].x - _convenience_padding,
-			open_hitbox.rects[0].y,
+			open_hitbox.rects[0].x() - _convenience_padding,
+			open_hitbox.rects[0].y(),
 			0,
-			open_hitbox.rects[items.size() - 1].w + 2*_convenience_padding,
-			open_hitbox.rects[items.size() - 1].y + open_hitbox.rects[items.size() - 1].h + _convenience_padding/2
+			open_hitbox.rects[items.size() - 1].w() + 2*_convenience_padding,
+			open_hitbox.rects[items.size() - 1].y() + open_hitbox.rects[items.size() - 1].h() + _convenience_padding/2
 			);
 	}
 }	

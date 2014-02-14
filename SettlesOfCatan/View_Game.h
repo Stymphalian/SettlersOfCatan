@@ -10,13 +10,13 @@
 #include "model_structs.h"
 #include "View_Game_Model_State.h"
 #include "IView.h"
+#include "mouse.h"
 class Timer;
 class Tiles;
 class IDialog;
 class View_Game_Debug_Dialog;
 class View_Game_Trade_Dialog;
 class View_Game_DevCard_Dialog;
-
 
 
 class View_Game_Button : public Button{
@@ -58,14 +58,7 @@ public:
 		}; ++frame_count;
 	}
 };
-class Mouse{
-public:
-	int x, y;
-	Uint8 buttons;
-	Collision hitbox;
-	Mouse(){hitbox.hook(&x, &y);hitbox.add_rect(0, 0,0, 1, 1);}
-	void update(){buttons = SDL_GetMouseState(&x, &y);}
-};
+
 class pane_t{
 public:
 	Collision hitbox;

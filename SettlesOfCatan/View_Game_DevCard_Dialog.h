@@ -4,6 +4,7 @@
 #include "Collision.h"
 #include "Button.h"
 #include "CheckBox.h"
+#include "Coords.h"
 class devs_card_t;
 class View_Game;
 class Player;
@@ -64,15 +65,19 @@ public:
 
 
 // -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
-// V I E W _ G A M E _ D E V C A R D _ D I A L O G _ S U B 
+// V I E W _ G A M E _ D E V C A R D _ D I A L O G _ P A G E
 // -- -- -- -- -- -- -- -- - -- -- -- -- --- -- -- - -- - -- - - 
-class View_Game_DevCard_Dialog_Panel {
+class View_Game_DevCard_Dialog_Page {
 public:
 	View_Game_DevCard_Dialog& dialog;
-	View_Game_DevCard_Dialog_Panel(View_Game_DevCard_Dialog& dialog);
+	View_Game_DevCard_Dialog_Page(View_Game_DevCard_Dialog& dialog);
+
+	void handle_keyboard_events(SDL_Event& ev);
+	void handle_mouse_events(SDL_Event& ev);
+	void update(SDL_Event& ev);
+	void render(SDL_Event& ev);
 
 private:
-
 };
 
 

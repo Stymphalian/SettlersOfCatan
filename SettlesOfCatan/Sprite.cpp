@@ -1,17 +1,20 @@
 #include "Logger.h"
 #include "Util.h"
 #include <SDL.h>
+#include "Coords.h"
+#include "Collision.h"
 #include "Sprite.h"
 
-Sprite::Sprite(int x, int y,SDL_Texture& tex, SDL_Rect* clips,int num_frames)
-: spritesheet(tex)
+Sprite::Sprite(): ISprite()
 {
-	this->x = x;
-	this->y = y;
-	this->num_frames = num_frames;
-	this->clips = clips;
+	//Logger::getLog().log(Logger::DEBUG, "Sprite constructor");
+	coord.init(0, 0, 0, 0, 0);
+	hitbox.hook(&coord);	
+	hitbox.add_mutable_rect(&coord);
 }
 
 Sprite::~Sprite(){
-	Logger::getLog().log(Logger::DEBUG, "Sprite destructor");
+	//Logger::getLog().log(Logger::DEBUG, "Sprite destructor");
+	hitbox.clear();
+	// clear coordinates?
 }

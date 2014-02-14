@@ -2,6 +2,8 @@
  * @Author: Jordan Yu (shit face #1)
  * @StartDate: December 28th, 2013
  **************************************************/
+#define NDEBUG
+#include <cassert>
 #include <cstdio>
 #include <SDL.h>
 #include <SDL_image.h>
@@ -18,6 +20,7 @@ void shutdown();
 using namespace CONFIG_INI;
 int main(int argc, char** argv){
 	if(init() == false){ return EXIT_FAILURE; }	
+	assert(false);
 	Game game(
 		Configuration::title.c_str(),
 		Configuration::DISP_X,

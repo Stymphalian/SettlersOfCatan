@@ -59,10 +59,12 @@ void Game::construct(const char* title,int x, int y,int w, int h){
 	default_window_h = h;		
 
 	// Create a window
+	Uint32 window_flags = SDL_WINDOW_SHOWN;
+	window_flags |= SDL_WINDOW_RESIZABLE;
 	win = SDL_CreateWindow(window_title.c_str(),
-									default_window_x, default_window_y,
-									default_window_w, default_window_h,
-									SDL_WINDOW_SHOWN);
+		default_window_x, default_window_y,
+		default_window_w, default_window_h,
+		window_flags);		
 	if(win == nullptr){
 		logger.SDL_log(Logger::ERROR, "SDL_CreateWindow");
 		active = false;
@@ -119,7 +121,7 @@ void Game::run(){
 
 	// main event loop
 	SDL_Event e;
-	bool exit_flag = false;	
+	bool exit_flag = false;		
 	for(;;){
 		// wait for an event
 		while(SDL_PollEvent(&e) && exit_flag == false){
@@ -128,7 +130,7 @@ void Game::run(){
 			} else if(is_keyboard_event(e)){
 				current_view->handle_keyboard_events(e);
 			} else if(is_mouse_event(e)){
-				current_view->handle_mouse_events(e);
+				current_view->handle_mouse_events(e);			
 			} else if(e.type >= SDL_USEREVENT){
 				
 				if(e.user.type == Util::get().get_userev("view_switch_event"))
@@ -155,8 +157,18 @@ void Game::run(){
 				{ // Have the current view handle all the other user events
 					current_view->handle_user_events(e);
 					current_view->update(e); // check for collisions, and update model state
-				}
-			} else {		
+				}			
+			} else if(e.type == SDL_WINDOWEVENT){
+				if(e.window.event == SDL_WINDOWEVENT_RESIZED){					
+					int w, h;
+					SDL_GetWindowSize(win, &w, &h);
+					printf("resized  %d,%d\n", w, h);
+				} 
+			} else if(e.type == SDL_DROPFILE) {
+				char* filename = e.drop.file;
+				printf("Dropped file = %s\n", filename);
+				SDL_free(filename);
+			} else {
 				// any uncaught events
 				//logger.log(Logger::DEBUG, "Uncaught event %u", e.type);
 			}

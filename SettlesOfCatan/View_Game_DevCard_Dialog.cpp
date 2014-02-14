@@ -164,6 +164,13 @@ void View_Game_DevCard_Card_Preview::render(
 	Util::render_rectangle(&ren, &rect, foreground_colour);
 }
 
+
+
+// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
+// I P A N E
+// -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
+
+
 // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
 // V I E W _ G A M E _ D E V C A R D _ D I A L O G
 // -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -
@@ -321,7 +328,6 @@ void View_Game_DevCard_Dialog::update(SDL_Event& ev){
 			}
 		}
 	} while(false);
-
 }
 
 void View_Game_DevCard_Dialog::render(){
@@ -375,6 +381,15 @@ void View_Game_DevCard_Dialog::render(){
 	if(_selected_card != nullptr){
 		_card_preview.set_card(_selected_card->card);
 		_card_preview.render(view.ren, font_carbon_12, font_carbon_12_colour, pane);
+
+		rect = {
+			_selected_card->x + 5 + pane.x,
+			_selected_card->y + 5 + pane.y,
+			_selected_card->w - 10,
+			_selected_card->h - 10,
+		};
+		SDL_Color pale_green = { 120, 60, 120, 120 };
+		Util::render_fill_rectangle(&view.ren, &rect, pale_green);
 	}
 
 	SDL_RenderSetClipRect(&view.ren, &old_clip);

@@ -1,9 +1,11 @@
 #pragma once
+#include <algorithm>
 #include <SDL.h>
 #include <SDL_ttf.h>
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 
+#include "Util.h"
 #include "Timer.h"
 #include "IView.h"
 #include "IDialog.h"
@@ -11,6 +13,45 @@
 #include "View_Game.h"
 #include "TextField.h"
 #include "DropDown.h"
+
+#include "mouse.h"
+#include "ObserverPattern.h"
+
+#include "Coords.h"
+#include "Collision.h"
+#include "Sprite.h"
+#include "Pane.h"
+
+
+
+class Page : public Pane{
+public:
+	Page();
+	virtual ~Page();
+	bool selected;
+	
+	virtual bool handle_keyboard_events(SDL_Event& ev);
+	virtual bool handle_mouse_events(SDL_Event& ev);
+	virtual void update(SDL_Event& ev);
+	virtual void render(SDL_Renderer& ren);
+};
+
+class Book : public Pane {
+public:
+	Book();
+	virtual ~Book();
+	bool selected;
+
+	virtual bool handle_keyboard_events(SDL_Event& ev);
+	virtual bool handle_mouse_events(SDL_Event& ev);
+	virtual void update(SDL_Event& ev);
+	virtual void render(SDL_Renderer& ren);
+
+	int num_panes;
+	Page pages[5];
+	Page* selected_page;
+};
+
 
 class View_Play : public IView
 {
@@ -37,6 +78,10 @@ public:
 	int target_x;
 	int target_y;
 	int offsets[8][2];
+
+	Mouse mouse;
+	Book book;
+
 	// M Y   S T U F F  E N D 
 
 	// constructor and destructor
@@ -56,5 +101,7 @@ public:
 	int bvalue(int* board, int n, int col, int row);
 	bool _solve(int* board, int n, int col, int row,int* count);
 	void graph_that_shit();
+	void render_graph();
+	void render_panes();
 };
 

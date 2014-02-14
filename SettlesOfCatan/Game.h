@@ -25,7 +25,7 @@ private:
 	int default_window_w;
 	int default_window_h;
 	std::string window_title;
-	std::vector<IView*>  view_stack;
+	std::vector<IView*> view_stack;
 	IView* current_view;
 
 	// methods

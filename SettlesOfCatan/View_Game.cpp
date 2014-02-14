@@ -75,9 +75,7 @@ View_Game::View_Game(Model& _model, SDL_Window& win, SDL_Renderer& ren)
 	// we start as a NONE state
 	model_state_context.push_state(model_state_context.obtain_state(View_Game_Model_State_Context::NONE));
 
-	mouse.buttons = 0;
-	mouse.x = 0;
-	mouse.y = 0;
+	//mouse
 
 	// selected tile initialization
 	selected_tile = nullptr;
@@ -670,7 +668,7 @@ void View_Game::handle_mouse_events(SDL_Event& e){
 	// we must determine what hex tiles/vertex/face we may have intersected with.
 	// TODO: This can be simplified if we place objects into pane objects
 	// which each have their own mouse,keyboard, and update methods
-	mouse.buttons = SDL_GetMouseState(&mouse.x, &mouse.y);
+	mouse.update();
 	if(e.type == SDL_MOUSEBUTTONDOWN){
 		std::vector<View_Game_Button*>::iterator it;
 		for(it = button_list.begin(); it != button_list.end(); ++it){
@@ -838,8 +836,8 @@ void View_Game::update_check_for_collisions(){
 		rel_mouse_hitbox.hook(&x, &y);
 		rel_mouse_hitbox.add_rect(0, 0, 0, 1, 1);
 	}
-	x = mouse.x;
-	y = mouse.y;
+	x = mouse.x();
+	y = mouse.y();
 
 	//	Logger::getLog().log(Logger::DEBUG, "mouse.hitbox(%d,%d)", mouse.hitbox.getx(), mouse.hitbox.gety());
 	// TODO: Need a better way to tell which button is being hit
@@ -852,19 +850,19 @@ void View_Game::update_check_for_collisions(){
 	selected_face = nullptr;
 
 	// check for collisions
-	if(top_pane.hitbox.collides(mouse.hitbox)){
+	if(top_pane.hitbox.collides(mouse.hitbox())){
 		// Handle top-pane instructions
 		selected_pane = &top_pane;
 		x -= selected_pane->x;
 		y -= selected_pane->y;
 		update_top_pane(top_pane, rel_mouse_hitbox);
-	} else if(mid_pane.hitbox.collides(mouse.hitbox)){
+	} else if(mid_pane.hitbox.collides(mouse.hitbox())){
 		// Handle mid-pane intersections
 		selected_pane = &mid_pane;
 		x -= selected_pane->x;
 		y -= selected_pane->y;
 		update_mid_pane(mid_pane, rel_mouse_hitbox);
-	} else if(bot_pane.hitbox.collides(mouse.hitbox)){
+	} else if(bot_pane.hitbox.collides(mouse.hitbox())){
 		// Handle bot-pane intersections
 		// update the model state
 		selected_pane = &bot_pane;

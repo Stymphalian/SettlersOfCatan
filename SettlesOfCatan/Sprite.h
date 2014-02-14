@@ -2,24 +2,35 @@
 #include <string>
 #include <SDL.h>
 #include <SDL_image.h>
+#include "Coords.h"
+#include "Collision.h"
 
-class Sprite
+class ISprite{
+public:
+	Coords coord;
+	Collision hitbox;
+
+	virtual ~ISprite(){}
+	virtual void tick() = 0;
+	virtual void update(SDL_Event& ev) = 0;
+	virtual void render(SDL_Renderer& ren) = 0;
+};
+
+class Sprite : public ISprite
 {
 public:
-	//variables
-	int x,y;	
-	int num_frames;
-	int current_frame;
-	SDL_Rect* clips;
-	SDL_Texture& spritesheet;
-	
+	//variables	
+	//int num_frames;
+	//int current_frame;
+	//SDL_Rect* clips;
+		
 	// constructor and destructor
-	Sprite(int x, int y, SDL_Texture& spritesheet, SDL_Rect* clip, int num_frames = 1);
+	Sprite();
 	virtual ~Sprite();
 
 	// methods
-	virtual void tick()=0;
-	virtual void update(SDL_Event* ev) = 0;
-	virtual void draw(SDL_Renderer* ren) = 0;
+	virtual void tick(){}
+	virtual void update(SDL_Event* ev){}
+	virtual void render(SDL_Renderer* ren){}
 private:
 };
