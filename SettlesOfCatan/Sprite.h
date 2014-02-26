@@ -7,23 +7,18 @@
 
 class ISprite{
 public:
-	Coords coord;
-	Collision hitbox;
-
 	virtual ~ISprite(){}
 	virtual void tick() = 0;
 	virtual void update(SDL_Event& ev) = 0;
 	virtual void render(SDL_Renderer& ren) = 0;
+	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent) = 0;
+	virtual Coords& coord()=0;
+	virtual Collision& hitbox()=0;
 };
 
 class Sprite : public ISprite
 {
 public:
-	//variables	
-	//int num_frames;
-	//int current_frame;
-	//SDL_Rect* clips;
-		
 	// constructor and destructor
 	Sprite();
 	virtual ~Sprite();
@@ -31,6 +26,12 @@ public:
 	// methods
 	virtual void tick(){}
 	virtual void update(SDL_Event* ev){}
-	virtual void render(SDL_Renderer* ren){}
+	virtual void render(SDL_Renderer* ren, Coords* position = nullptr){}
+	virtual void render(SDL_Renderer& ren, Coords* position, Coords* extent){}
+	virtual Coords& coord(){ return _coord; }
+	virtual Collision& hitbox() { return _hitbox; }
+protected:
+	Coords _coord;
+	Collision _hitbox;
 private:
 };

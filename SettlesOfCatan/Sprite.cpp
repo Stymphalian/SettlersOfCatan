@@ -8,13 +8,13 @@
 Sprite::Sprite(): ISprite()
 {
 	//Logger::getLog().log(Logger::DEBUG, "Sprite constructor");
-	coord.init(0, 0, 0, 0, 0);
-	hitbox.hook(&coord);	
-	hitbox.add_mutable_rect(&coord);
+	_coord.init(0, 0, 0, 0, 0);
+	_hitbox.hook(&_coord);	
+	_hitbox.add_mutable_rect(&_coord);
 }
 
 Sprite::~Sprite(){
 	//Logger::getLog().log(Logger::DEBUG, "Sprite destructor");
-	hitbox.clear();
+	_hitbox.clear();
 	// clear coordinates?
 }

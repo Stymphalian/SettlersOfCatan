@@ -85,7 +85,14 @@ int Coords::disp_y(){
 int Coords::disp_z(){
 	return this->z() + ((this->parent != nullptr) ? this->parent->disp_z() : 0);
 }
-
+void Coords::make_within_bounds(ICoords* p){
+	if(y() < 0){ y(0); }
+	if(x() < 0){ x(0); }
+	if(p != nullptr){
+		if(x() >= p->w() - w()){ x(p->w() - w()); }		
+		if(y() >= p->h() - h()){y(p->h() - h());}
+	}
+}
 
 void Coords::disable_relative_data(){
 	delete this->rel_data;

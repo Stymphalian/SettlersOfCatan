@@ -2,7 +2,9 @@
 #include <SDL.h>
 
 IView::IView(SDL_Window& win, SDL_Renderer& ren) :
-win(win), ren(ren){}
+win(win), ren(ren){
+	draw_flag = drag_flag = false;
+}
 
 View_StartScreen::View_StartScreen(SDL_Window& win, SDL_Renderer& ren) : IView(win,ren){}
 View_StartScreen::~View_StartScreen(){}

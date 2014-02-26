@@ -5,7 +5,9 @@
 #include "Coords.h"
 #include "mouse.h"
 
-// IWrapMouse
+//-------------------------------------------------------
+// I W R A P M O U S E
+//-------------------------------------------------------
 IWrapMouse::IWrapMouse(IMouse* w)
 :IMouse(), wrapee(w)
 {}
@@ -36,8 +38,34 @@ Collision& IWrapMouse::hitbox(){
 	return (wrapee != nullptr) ? wrapee->hitbox() : h;
 }
 
+//-------------------------------------------------------
+// G M O U S E
+//-------------------------------------------------------
+IMouse& GMouse::get(){
+	static Mouse instance;
+	return instance;
+}
+IMouse& GMouse::get(ICoords* offset){
+	static Mouse mouse_instance;
+	static relativeMouse instance(&mouse_instance);
+	if(offset == nullptr){
+		return GMouse::get();
+	}
+	instance.set_offset(offset);
+	instance.update();
+	return instance;
+}
+IMouse& GMouse::get(int xoff, int yoff){
+	static Mouse mouse_instance;
+	static relativeMouse instance(&mouse_instance);
+	instance.set_offset(xoff, yoff);
+	instance.update();
+	return instance;
+}
 
-// concrete IMouse
+//-------------------------------------------------------
+// M O U S E
+//-------------------------------------------------------
 Mouse::Mouse()
 : IMouse()
 {
@@ -63,7 +91,48 @@ int Mouse::y(int value){ return mouse_y=value; }
 Collision& Mouse::hitbox(){ return this->_hitbox; }
 
 
-// concrete IWrapMouse
+
+
+// -----------------------------------------------
+// R E L A T I V E M O U S E
+// -----------------------------------------------
+relativeMouse::relativeMouse(IMouse* wrappee)
+: IWrapMouse(wrappee)
+{
+	type = relativeMouse::NONE;
+	coord = nullptr;
+}
+relativeMouse::~relativeMouse(){
+	type = relativeMouse::NONE;
+	coord = nullptr;
+}
+void relativeMouse::update(){
+	if(wrapee == nullptr){ return; }
+	wrapee->update();
+	if(type == relativeMouse::COORD){
+		if(coord != nullptr){
+			wrapee->x(abs(wrapee->x() - coord->disp_x()));
+			wrapee->y(abs(wrapee->y() - coord->disp_y()));
+		}
+	} else if( type == relativeMouse::X_OFF) {
+		wrapee->x(wrapee->x() - xoff);
+		wrapee->y(wrapee->y() - yoff);
+	}
+}
+void relativeMouse::set_offset(ICoords* coord){
+	type = relativeMouse::COORD;
+	this->coord = coord;
+}
+void relativeMouse::set_offset(int xoff, int yoff){
+	type = relativeMouse::X_OFF;
+	this->xoff = xoff;
+	this->yoff = yoff;
+}
+
+
+//-------------------------------------------------------
+// R E L M O U S E
+//-------------------------------------------------------
 relMouse::relMouse(IMouse* m, Coords* offset)
 : IWrapMouse(m)
 {		
@@ -87,8 +156,8 @@ void relMouse::update(){
 	wrapee->update();
 	if(type == relMouse::COORD){				
 		if(coord != nullptr){
-			wrapee->x(wrapee->x() - coord->disp_x());
-			wrapee->y(wrapee->y() - coord->disp_y());
+			wrapee->x(abs(wrapee->x() - coord->disp_x()));
+			wrapee->y(abs(wrapee->y() - coord->disp_y()));			
 		}
 	} else{
 		wrapee->x(wrapee->x() - xoff);

@@ -43,6 +43,24 @@ public:
 
 
 //-------------------------------------------------------
+// G M O U S E
+//-------------------------------------------------------
+// A singleton object used to access mouse information.
+// It is possible to obtatin relativeMouse objects
+// by using the appropriate get methods.
+class GMouse{
+public:
+	static IMouse& get();
+	static IMouse& get(ICoords* offset);
+	static IMouse& get(int xoffset,int yoffset);
+private:
+	GMouse(){}
+	GMouse(const GMouse&);
+	virtual ~GMouse();	
+	void operator= (const GMouse&);
+};
+
+//-------------------------------------------------------
 // M O U S E
 //-------------------------------------------------------
 class Mouse : public IMouse{
@@ -64,6 +82,24 @@ protected:
 	Collision _hitbox;
 };
 
+// -----------------------------------------------
+// R E L A T I V E M O U S E
+// -----------------------------------------------
+class relativeMouse : public IWrapMouse{
+public:
+	relativeMouse(IMouse* wrappee);
+	virtual ~relativeMouse();	
+	void update();
+
+	void set_offset(ICoords* coord);
+	void set_offset(int xoff, int yoff);
+protected:
+	enum rel_mouse_e{NONE, COORD, X_OFF };
+	rel_mouse_e type;
+	ICoords* coord; // offset coords
+	int xoff;
+	int yoff;
+};
 
 //-------------------------------------------------------
 // R E L M O U S E

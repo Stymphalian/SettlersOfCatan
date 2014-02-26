@@ -5,6 +5,7 @@
 #include <SDL_ttf.h>
 #include <vector>
 #include "ini_reader.h"
+class ICoords;
 
 class Util{
 public:
@@ -33,9 +34,10 @@ public:
 	static SDL_Color colour_orange();
 	static std::string data_resource(const char* res);
 	static void push_texture_mods(SDL_Texture* texture, int r, int g, int b, int a);
-	static void pop_texture_mods(SDL_Texture* texture);
+	static void pop_texture_mods(SDL_Texture* texture);	
+
 	
-	//member methods
+	//member methodsd
 	static Util& get();
 	Uint32 get_userev(const char* ev);
 	void push_userev(Uint32 user_type, Sint32 code, void* data1, void* data2);

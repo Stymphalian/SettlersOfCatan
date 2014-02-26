@@ -56,7 +56,7 @@ void Game::construct(const char* title,int x, int y,int w, int h){
 	default_window_x = x;
 	default_window_y = y;
 	default_window_w = w;
-	default_window_h = h;		
+	default_window_h = h;			
 
 	// Create a window
 	Uint32 window_flags = SDL_WINDOW_SHOWN;

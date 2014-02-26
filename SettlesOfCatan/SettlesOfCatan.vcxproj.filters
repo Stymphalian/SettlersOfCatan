@@ -120,6 +120,24 @@
     <ClCompile Include="Pane.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ViewPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pngtester.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scrollbar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MouseListener.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Selectable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardListener.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.h">
@@ -222,6 +240,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Pane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ViewPort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pngtester.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scrollbar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MouseHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MouseListener.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Selectable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardListener.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

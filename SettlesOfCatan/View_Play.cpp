@@ -1,5 +1,16 @@
 
 #include <algorithm>
+#include <cassert>
+
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <vector>
+#include <string>
+#include <list>
+#include <iostream>
+#include <random>
+
 #include <SDL.h>
 #include "View_Play.h"
 #include "IDialog.h"
@@ -14,183 +25,417 @@
 #include "mouse.h"
 #include "Pane.h"
 
+#include "ViewPort.h"
+#include "Selectable.h"
+#include "MouseListener.h"
 
-Book::Book(){
-	selected = false;
-	num_panes = 5;
-	selected_page = nullptr;
-	
-	pages[0].coord.init(0, 0, 0, 50, 50);
-	pages[1].coord.init(30, 0, 1, 150, 150);
-	pages[2].coord.init(0, 300, 2, 50, 50);
-	pages[3].coord.init(75, 75, 3, 20, 200);
-	pages[4].coord.init(80, 100, 4,146, 98);
+SelectableViewport::SelectableViewport(Viewport* port)
+: SelectablePane()
+{
+	this->port = port;
+	_selected = false;
+}
+SelectableViewport::~SelectableViewport(){}
 
-	//pages[0].coord.set_relative_x(0.02f);
-	//pages[0].coord.set_relative_y(0.03f);
-	//pages[0].coord.set_relative_w(0.5f);
-	//pages[0].coord.set_relative_h(0.75f);
-	//pages[0].coord.set_relative_x((int)350);
-	//pages[0].coord.set_relative_y((int)270);
-	//pages[0].coord.set_relative_w((int)200);
-	//pages[0].coord.set_relative_h((int)175);
-	//pages[0].coord.set_relative_x((int)50);
-	//pages[1].coord.set_relative_y((int)5);
-	//pages[2].coord.set_relative_w((int)10);
-	//pages[3].coord.set_relative_h((int)15);
+
+Book::Book(int flag)
+: SelectablePane(), Mouseable(), IMouseListener(),
+viewport(&_viewport)
+{
+	focused_colour = { 20, 20, 20, 120 };
+	selected_colour = { 80, 20, 10, 140 };
+	selected_shit = nullptr;
+	sub_book = nullptr;
+	if(flag == 0){
+		num_panes = 5;
+		pages[0].coord().init(0, 0, 0, 50, 50);
+		pages[1].coord().init(65, 0, 1, 30, 30);
+		pages[2].coord().init(51, 123, 2, 98, 82);
+		pages[3].coord().init(72, 70, 3, 50, 89);
+		pages[4].coord().init(120, 128, 4, 80, 76);
+
+		pages[0].coord().set_relative_x(pages[0].coord().w());
+		pages[1].coord().set_relative_y(pages[1].coord().h());
+
+		pages[0].setvisible(true);
+		pages[1].setvisible(true);
+		pages[2].setvisible(true);
+		pages[3].setvisible(true);
+		pages[4].setvisible(true);
+
+		add_pane(&pages[0]);
+		add_pane(&pages[1]);
+		add_pane(&pages[2]);
+		add_pane(&pages[3]);
+		add_pane(&pages[4]);
+				
+		pages[0].subscribe(this);
+		pages[1].subscribe(this);
+		pages[2].subscribe(this);
+		pages[3].subscribe(this);
+		pages[4].subscribe(this);
+
+		sub_book = new Book(1);
+		sub_book->coord().init(150,150, 0, 0, 0);		
+		sub_book->coord().set_relative_w(0.5f);
+		sub_book->coord().set_relative_h(0.5f);
+		sub_book->setvisible(true);
+		add_pane(sub_book);
+		sub_book->subscribe(this);
 		
-	add_pane(&pages[0]);
-	add_pane(&pages[1]);
-	add_pane(&pages[2]);
-	add_pane(&pages[3]);
-	add_pane(&pages[4]);
-	printf("%x\n",&pages[0]);
-	printf("%x\n",&pages[1]);
-	printf("%x\n",&pages[2]);
-	printf("%x\n",&pages[3]);
-	printf("%x\n",&pages[4]);	
+		_viewport.set_target(sub_book, 1, 1);
+		_viewport.set_camera_coords(0, 0, 50, 50);
+		_viewport.set_viewport_coords(25, 25, 50, 50);		
+		_viewport.setvisible(true);
+		_viewport.coord().set_parent(&this->coord());
 
-	printf("----\n");
-	std::list<IPane*>::iterator it;
-	for(it = children.begin(); it != children.end(); ++it){
-		printf("%x == ", (*it));
-		printf(" %d %d %d %d\n",
-			(*it)->hitbox.getx(),
-			(*it)->hitbox.gety(),
-			(*it)->hitbox.rects[0].w(),
-			(*it)->hitbox.rects[0].h()
-			);
+		viewport.coord().init(25,25,0, 50, 50);
+		viewport.setvisible(true);
+		add_pane(&viewport);
+		viewport.subscribe(this);
+	} else if (flag == 1){		
+		num_panes = 1;		
+		pages[0].coord().init(0, 0, 0, 50, 50);
+		pages[0].coord().set_relative_w(0.1f);
+		pages[0].coord().set_relative_h(0.1f);		
+		pages[0].setvisible(true);
+
+		add_pane(&pages[0]);
+		pages[0].subscribe(this);		
+		
+		sub_book = new Book(2);
+		sub_book->coord().init(30, 30,0,0,0);
+		sub_book->coord().set_relative_w(0.25f);
+		sub_book->coord().set_relative_h(0.255f);
+		sub_book->setvisible(true);
+		add_pane(sub_book);
+		sub_book->subscribe(this);		
+
+		
+		_viewport.set_target(sub_book, 1, 1);
+		_viewport.set_camera_coords(0, 0, 30, 30);
+		_viewport.set_viewport_coords(5, 55, 30, 30);
+		_viewport.setvisible(true);
+		_viewport.coord().set_parent(&this->coord());
+
+		viewport.coord().init(5,55,0,30,30);
+		viewport.setvisible(true);
+		viewport.subscribe(this);
+		add_pane(&viewport);
+		
+	} else{
+		num_panes = 0;
+		pages[0].coord().init(0, 0, 0, 5, 5);
+		pages[0].coord().set_relative_w(0.25f);
+		pages[0].coord().set_relative_h(0.25f);
+		pages[0].setvisible(true);
+
+		add_pane(&pages[0]);
+		pages[0].subscribe(this);		
 	}
 }
 Book::~Book(){
+	delete sub_book;
 }
-bool Book::handle_keyboard_events(SDL_Event& ev){
+
+bool Book::keyboard_keydown(SDL_Event& ev){
 	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
-	if(ev.type == SDL_KEYDOWN){
-		if(keyboard[SDL_SCANCODE_1]){
-			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
-			coord.w(coord.w() + dir);
-			set_dim(coord.w(), coord.h());
-		}
-		if(keyboard[SDL_SCANCODE_2]){
-			int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
-			coord.h(coord.h() + dir);
-			set_dim(coord.w(), coord.h());
-		}
-	}	
-	return false;
+	int dir = (keyboard[SDL_SCANCODE_LSHIFT]) ? -1 : 1;
+	if(keyboard[SDL_SCANCODE_1]){
+		coord().w(coord().w() + dir);
+	}
+	if(keyboard[SDL_SCANCODE_2]){
+		coord().h(coord().h() + dir);
+	}
+
+	IPane* focused = get_focused_child_pane();
+	focused->keyboard_keydown(ev);
+	return true;
 }
-bool Book::handle_mouse_events(SDL_Event& ev){
-	mouse->update();
+bool Book::keyboard_keyup(SDL_Event& ev){ return false; }
 
-	// does the selected page get unselected
-	if(selected_page != nullptr){
-		selected_page->handle_mouse_events(ev);
-		if(selected_page->selected == false){
-			selected_page = nullptr;
-		}
+bool Book::mouse_buttondown(SDL_Event& ev, Coords* ref){
+	if(has_focus()){
+		if(is_selected() == false){
+			set_selected(true);
+		}				
+		// pass the mouse button down to the focused pane.
+		IPane* focused = get_focused_child_pane();
+		focused->mouse_buttondown(ev,ref);
+		
+		// handle our own widgets and stuff...
+	}		
+	notify_mouse_buttondown(1,this);
+	return true;
+}
+bool Book::mouse_buttonup(SDL_Event& ev, Coords* ref){
+	// deselect the book?
+	if(is_selected()){
+		set_selected(false);
 	}
-	if(selected_page != nullptr){ return false; }
+	if(has_focus()){
+		get_focused_child_pane()->mouse_buttonup(ev, ref);		
 
-
-	// assert, we know that none of the children pane have been selected.
-	bool only_me = true;
-	std::list<IPane*>::iterator it;
-	for(it = children.begin(); it != children.end(); ++it){
-		if(mouse->hitbox().collides((*it)->hitbox)){
-			only_me = false;
-		}
-	}
-
-	if(only_me){
-		if(ev.type == SDL_MOUSEBUTTONDOWN){
-			selected = true;
-		} else if(ev.type == SDL_MOUSEBUTTONUP){
-			selected = false;
-		} else if(ev.type == SDL_MOUSEMOTION){
-			if(selected){
-				coord.x(coord.x() + ev.motion.xrel);
-				coord.y(coord.y() + ev.motion.yrel);
+		if(get_focused_child_pane() != selected_shit){
+			if(selected_shit != nullptr){
+				selected_shit->mouse_buttonup(ev,ref);
 			}
 		}
+	}	
+	notify_mouse_buttonup(1,this);
+	return true;
+}
+
+bool Book::mouse_motion(SDL_Event& ev, Coords* reference)
+{	
+	IMouse& rel_mouse = GMouse::get(&coord());
+	rel_mouse.update();
+	if(reference != nullptr){
+		rel_mouse.x(reference->x());
+		rel_mouse.y(reference->y());
+	}
+	if(has_focus()){
+		determine_focused_child_pane(&rel_mouse);
+	}
+
+	// should we pass the event to the child, or should I consume it.
+	IPane* focused = get_focused_child_pane();
+	if(!isDummy(focused)){
+		if(reference != nullptr){
+			Coords next_reference;
+			next_reference.x(reference->x() - focused->coord().x());
+			next_reference.y(reference->y() - focused->coord().y());
+			focused->mouse_motion(ev, &next_reference);
+		} else{
+			focused->mouse_motion(ev);
+		}
+		
 	} else{
-		// pass event over to the receiving child.
-		Pane::pass_mouse_child(ev);
-		for(int i = 0; i < num_panes; ++i){
-			if(pages[i].selected == true){
-				selected_page = &pages[i];
-			}
+		// do nothing
+	}
+	return true;	
+}
+bool Book::mouse_drag(SDL_Event& ev, Coords* reference){
+	IMouse& rel_mouse = GMouse::get(&coord());
+	rel_mouse.update();
+	if(reference != nullptr){
+		rel_mouse.x(reference->x());
+		rel_mouse.y(reference->y());
+	}
+	
+	if(has_focus()){
+		determine_focused_child_pane(&rel_mouse);		
+	}
+
+	if(selected_shit != nullptr)
+	{	
+		assert(selected_shit->is_selected());
+		if(reference != nullptr){
+			Coords next_reference;
+			next_reference.x(reference->x() - selected_shit->coord().x());
+			next_reference.y(reference->y() - selected_shit->coord().y());
+			selected_shit->mouse_drag(ev, &next_reference);
+		} else{
+			selected_shit->mouse_drag(ev);
+		}
+		
+		selected_shit->coord().make_within_bounds(&this->coord());
+	}else{
+		if(is_selected()){
+			// handle the event ourselves
+			coord().x(coord().x() + ev.motion.xrel);
+			coord().y(coord().y() + ev.motion.yrel);			
+			coord().make_within_bounds(coord().get_parent());
 		}
 	}	
-	return false;
+	return true;
 }
+
+void Book::tick(){}
 void Book::update(SDL_Event& ev){}
 void Book::render(SDL_Renderer& ren){
-	SDL_Rect rect = { 0, 0, 0, 0 };
-	SDL_Color green = { 120, 120, 20, 70 };
-	SDL_Color blue = { 70, 20, 120, 90 };
-
-	rect = {
-		coord.disp_x(),
-		coord.disp_y(),
-		coord.w(), coord.h()
+	SDL_Rect rect = {
+		0,0,
+		coord().w(),
+		coord().h()
 	};
+	render(ren, coord().disp_x(),coord().disp_y(), &rect);
+}
+void Book::render(SDL_Renderer& ren,int x, int y, SDL_Rect* extent){
+	if(isvisible() == false){ return; }	
+	
+	SDL_Rect old_clip;
+	SDL_Rect new_clip = { 
+		x,y,extent->w,extent->h
+	};
+	SDL_RenderGetClipRect(&ren, &old_clip);
+	SDL_RenderSetClipRect(&ren, &new_clip);	
 
-	if(selected){
-		Util::render_rectangle(&ren, &rect, green);
+	// render the rect.
+	SDL_Rect rect = *extent;
+	rect.x = x;
+	rect.y = y;
+	if(num_panes != 5){		
+		SDL_Color cc = focused_colour;
+		cc.r += 40;
+		Util::render_fill_rectangle(&ren, &rect, cc);
 	} else{
-		Util::render_rectangle(&ren, &rect, blue);
-	}
-
-	render_children(ren);
-}
-
-
-Page::Page(){
-	selected = false;
-}
-Page::~Page(){
-}
-
-bool Page::handle_keyboard_events(SDL_Event& ev){ 
-	return false;
-}
-bool Page::handle_mouse_events(SDL_Event& ev){
-	if(ev.type == SDL_MOUSEBUTTONDOWN){
-		selected = true;
-	} else if( ev.type == SDL_MOUSEBUTTONUP){
-		selected = false;
-	} else if(ev.type == SDL_MOUSEMOTION){
-		if(selected){
-			coord.x(coord.x() + ev.motion.xrel);
-			coord.y(coord.y() + ev.motion.yrel);
-		}
+		Util::render_fill_rectangle(&ren, &rect, focused_colour);
 	}	
-	return false;
-}
-void Page::update(SDL_Event& ev){}
-void Page::render(SDL_Renderer& ren){
-	SDL_Rect rect = { 0, 0, 0, 0 };
-	SDL_Color green = { 20, 60, 80, 90 };
-	SDL_Color blue = { 70, 20, 120, 90 };
 
-	rect = {
-		coord.disp_x(),
-		coord.disp_y(),
-		coord.w(), coord.h()
+	// render the children...	
+	render_children(ren, x, y, extent);	
+	
+	// render a border around it	
+	rect = { 
+		x-extent->x,
+		y-extent->y,
+		coord().w(),
+		coord().h()
 	};
-
-	if(selected){
-		Util::render_rectangle(&ren, &rect, green);
-	} else{
-		Util::render_rectangle(&ren, &rect,blue);
+	Util::render_rectangle(&ren, &rect, selected_colour);
+	SDL_RenderSetClipRect(&ren, &old_clip);
+}
+//IPaBook::ne interface
+void Book::on_focus(){	
+	focused_colour = { 20, 20, 80, 120 };	
+	Pane::on_focus();
+}
+void Book::off_focus(){		
+	focused_colour = { 20, 20, 20, 120 };
+	Pane::off_focus();
+	Pane::defocus_all_children();
+	if(selected_shit != nullptr){
+		selected_shit->set_selected(false);
+		selected_shit = nullptr;		
 	}
+//	selectaBall.disown();
+}
+void Book::on_selected(){
+	selected_colour = { 255, 20, 10, 140 };
+	// do nothing on selection.
+}
+void Book::off_selected(){
+	selected_colour = {0,0 ,255, 140 };
+	// deselect any and all children.	
+}
 
+void Book::update_on_mouse_motion(Mouseable* origin,int code, void* data){
+	// do nothing	
+}
+void Book::update_on_mouse_drag(Mouseable* origin,int code, void* data){	
+	// do nothing
+}
+void Book::update_on_mouse_buttondown(Mouseable* origin,int code, void* data){	
+	SelectablePane* s = (SelectablePane*)data;
+	if(s != selected_shit){
+		if(selected_shit != nullptr){
+			selected_shit->set_selected(false);
+		}
+		selected_shit = s;		
+		selected_shit->set_selected(true);
+	}	
+}
+void Book::update_on_mouse_buttonup(Mouseable* origin,int code, void* data){
+	//SelectablePane* s = (SelectablePane*)data;
+	if(selected_shit != nullptr){
+		selected_shit->set_selected(false);
+	}
+	selected_shit = nullptr;				
 }
 
 
 
+Page::Page()
+: SelectablePane(), Mouseable()
+{ 
+	focused_colour = { 20, 60, 40, 90 };
+	selected_colour = { 0, 0, 255, 140 };
+}
 
+Page::~Page(){ }
+
+bool Page::keyboard_keydown(SDL_Event& ev){ return false; }
+bool Page::keyboard_keyup(SDL_Event& ev){ return false; }
+
+bool Page::mouse_buttondown(SDL_Event& ev, Coords* ref ){
+	if(has_focus()){
+		set_selected(true);
+	}
+	notify_mouse_buttondown(0,(void*)this);
+	return true;
+}
+bool Page::mouse_buttonup(SDL_Event& ev, Coords* ref ){	
+	set_selected(false);	
+	notify_mouse_buttonup(0,(void*)this);
+	return true;
+}
+bool Page::mouse_motion(SDL_Event& ev, Coords* ref){
+	return true;
+}
+bool Page::mouse_drag(SDL_Event& ev, Coords* ref){
+	if(is_selected()){
+		coord().x(coord().x() + ev.motion.xrel);
+		coord().y(coord().y() + ev.motion.yrel);
+		coord().make_within_bounds(coord().get_parent());
+	}
+	return true;
+}
+
+void Page::tick(){}
+void Page::update(SDL_Event& ev){}
+void Page::render(SDL_Renderer& ren){	
+	SDL_Rect rect = {
+		0, 0,
+		coord().w(),
+		coord().h()
+	};
+	render(ren, coord().disp_x(), coord().disp_y(), &rect);
+}
+void Page::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){	
+	SDL_Rect old_clip;
+	SDL_Rect new_clip = {
+		x ,y,extent->w,extent->h
+	};
+	SDL_RenderGetClipRect(&ren, &old_clip);
+	SDL_RenderSetClipRect(&ren, &new_clip);
+
+	if(has_focus()){
+		// stuff??
+	}
+	SDL_Rect rect = *extent;
+	rect.x = x;
+	rect.y = y;
+	Util::render_fill_rectangle(&ren,&rect, focused_colour);
+
+	rect = { 
+		x - extent->x,
+		y - extent->y,
+		coord().w(),
+		coord().h()		
+	};
+	Util::render_rectangle(&ren, &rect, selected_colour);
+
+	SDL_RenderSetClipRect(&ren, &old_clip);
+}
+
+void Page::on_focus(){
+	focused_colour= { 20, 60, 120, 90 };
+	Pane::on_focus();
+}
+void Page::off_focus(){
+	focused_colour = { 20, 60, 40, 90 };
+	Pane::off_focus();
+	Pane::defocus_all_children();	
+}
+void Page::on_selected(){
+	selected_colour = { 255, 0, 0, 255 };
+	// do nothing ...
+}
+void Page::off_selected(){
+	selected_colour = {0, 0, 255, 255 };
+	// do nothing ...
+}
 
 
 
@@ -209,30 +454,9 @@ View_Play::View_Play(SDL_Window& win, SDL_Renderer& ren)
 	mouse_intersect.hook(&mouse_x, &mouse_y);
 	mouse_intersect.add_rect(0, 0, 0, 1, 1);
 	// MY STUFF START
-	int offsets2[8][2] = {
-		{ 1, -2 }, { 2, -1 }, { 2, 1 }, { 1, 2 },
-		{ -1, 2 }, { -2, 1 }, { -2, -1 }, { -1, -2 }
-	};
-	for(int i = 0; i < 8; ++i){
-		offsets[i][0] = offsets2[i][0];
-		offsets[i][1] = offsets2[i][1];
-	}
-
-	target = 0;
-	target_x = 0;
-	target_y = 0;
-	board_size = 8;
-	_board = new int[board_size*board_size];		
-
-	graph_size = board_size*board_size;
-	graph = new int[graph_size*graph_size];
-	std::memset(_board, 0,board_size*board_size*sizeof(int));
-	std::memset(graph, 0, graph_size*graph_size*sizeof(int));
-	graph_that_shit();
-//	solve();
-
 	// Book
-	book.coord.init(20, 20, 0, 400, 400);
+	book.coord().init(20, 20, 0, 400, 400);
+	book.setvisible(true);
 
 	// MY STUFF END
 	font_carbon_12 = TTF_OpenFont(Util::data_resource("carbon.ttf").c_str(), 12);
@@ -248,9 +472,6 @@ View_Play::~View_Play(){
 	SDL_FreeSurface(surface);
 	SDL_DestroyTexture(texture);
 	TTF_CloseFont(font_carbon_12);
-	delete[] _board;
-	delete[] graph;
-
 }
 
 void View_Play::on_start(SDL_Event& ev){
@@ -278,35 +499,39 @@ void View_Play::handle_keyboard_events(SDL_Event& ev){
 			return;
 		}
 
-		book.handle_keyboard_events(ev);	
-
-		if( keyboard[SDL_SCANCODE_W] ){ target_y--;}
-		if( keyboard[SDL_SCANCODE_D] ){ target_x++;}
-		if( keyboard[SDL_SCANCODE_S] ){ target_y++;}
-		if( keyboard[SDL_SCANCODE_A] ){ target_x--;}
-		if(target_x < 0){ target_x = 0; }
-		if(target_x >= board_size){ target_x = board_size-1; }
-		if(target_y < 0){ target_y = 0; }
-		if(target_y >= board_size){ target_y = board_size - 1; }
+		book.keyboard_keydown(ev);
 		// MY STUFF END
 
 	} else if(ev.type == SDL_KEYUP){
+		book.keyboard_keyup(ev);
 
 	}
 }
 void View_Play::handle_mouse_events(SDL_Event& ev){
 	mouse.update();
-	if(mouse.hitbox().collides(book.hitbox)){
-		book.handle_mouse_events(ev);
+	button = SDL_GetMouseState(&mouse_x, &mouse_y);
+	if(mouse.hitbox().collides(book.hitbox())){
+		book.set_focus(true);		
+	} else{
+		if(book.has_focus()){
+			book.set_focus(false);
+		}		
 	}
 
-	button = SDL_GetMouseState(&mouse_x,&mouse_y);
+	static int count = 0;
 	if(ev.type == SDL_MOUSEBUTTONDOWN){
-
+		drag_flag = true;
+		book.mouse_buttondown(ev);
 	} else if(ev.type == SDL_MOUSEBUTTONUP){
-
+		drag_flag = false;
+		book.mouse_buttonup(ev);
 	} else if(ev.type == SDL_MOUSEMOTION){
-
+		++count;
+		if(drag_flag){
+			book.mouse_drag(ev);
+		} else{			
+			book.mouse_motion(ev);
+		}		
 	}
 }
 
@@ -326,166 +551,14 @@ void View_Play::update(SDL_Event& ev){
 }
 
 
-int View_Play::bvalue(int* board, int n, int col, int row){
-	if(col < 0 || col >= n || row < 0 || row >= n){ return -1; }
-	return board[col + row*n];
-}
-bool View_Play::_solve(int* board, int n, int col, int row, int* count){
-	static unsigned long long counter = 0;	
-	printf("%llu             \r", counter++);
-
-	if(*count >= n*n){ return true; }
-	board[col + row*n] = *count +1;
-	*count = *count +1;
-
-	int c = 0;
-	int r = 0;
-	int adjacent = 0;
-	for(int i = 0; i < 8; ++i){
-		c = col + offsets[i][0];
-		r = col + offsets[i][1];
-		if(bvalue(board, n, c, r) != 0) { continue; }
-		if(_solve(board, n,c,r, count)){
-			// we done, we have found a valid solution
-			return true;
-		}		
-	}
-	
-	// no valid transition was found from this position
-	board[col + row*n] = 0;
-	*count = *count - 1;
-	return false;
-}
-void View_Play::solve(){
-	Uint32 start = SDL_GetTicks();
-	int count = 0;
-	for(int row = 0; row < board_size; ++row){
-		for(int col = 0; col < board_size; ++col){
-			std::memset(_board, 0, sizeof(int)*board_size*board_size);
-			count = 0;
-
-			// if returns true then we have a valid solution
-			if(_solve(_board, board_size, col, row, &count)){
-				goto out_of_loop;
-			}
-		}
-	}	
-
-out_of_loop:	
-	printf("solve time taken = %0.5f", ((float)(SDL_GetTicks()) / start) /1000);
-	return;
-}
-void View_Play::graph_that_shit(){	
-	int c = 0;
-	int r = 0;
-	int graph_c = 0;
-	int graph_r = 0;
-	for(int row = 0; row < board_size; ++row){
-		for(int col = 0; col < board_size; ++col){
-			graph_c = col + row*board_size;
-			
-			for(int i = 0; i < 8; ++i){
-				c = col + offsets[i][0];
-				r = row + offsets[i][1];
-				if(c < 0 || c >= board_size || r < 0 || r >= board_size){ continue; }	
-
-				graph_r = c + r*board_size;
-				graph[graph_c + graph_r*graph_size] = 1;
-				graph[graph_r + graph_c*graph_size] = 1;
-			}
-		}
-	}
-
-}
-
-
-void View_Play::render_graph(){
-
-	Util::render_text(&ren, font_carbon_12, 5, 5, font_carbon_12_colour,
-		"board size = %dx%d    target=%d", board_size, board_size, target);
-
-	SDL_Rect rect = { 0, 0, 0, 0 };
-	SDL_Color color = { 90, 120, 30, 180 };
-	SDL_Color color2 = { 20, 120, 140, 180 };
-	int start_y = 40;
-	int padding = 0;
-	int x_offset = padding;
-	int y_offset = start_y;
-	int tile_w = 40;
-	int tile_h = 40;
-
-	// render special rectangles around connected tiles
-	int c = 0;
-	int r = 0;
-	int graph_c = target_x + target_y*board_size;
-	int graph_r = 0;
-
-	/*
-	for(int i = 0; i < 8; ++i){
-	c = target_x + offsets[i][0];
-	r = target_y + offsets[i][1];
-
-	if(c < 0 || c >= board_size || r < 0 || r >= board_size){ continue; }
-	graph_r = c + r*board_size;
-	if(graph[graph_c + graph_r*graph_size] != 1){ continue; }
-	if(graph[graph_r + graph_c*graph_size] != 1){ continue; }
-
-	rect = {
-	c*(tile_w + 2),
-	r*(tile_h + 2) + start_y,
-	tile_w,
-	tile_h
-	};
-	Util::render_fill_rectangle(&ren, &rect, color);
-	}
-	*/
-
-	for(int row = 0; row < board_size; ++row){
-		for(int col = 0; col < board_size; ++col){
-			rect = { x_offset, y_offset, tile_w, tile_h };
-			Util::render_rectangle(&ren, &rect, color);
-
-			/*
-			if(target_x == col &&  target_y == row){
-			Util::render_fill_rectangle(&ren, &rect, color2);
-			}
-			*/
-			graph_c = col + row*board_size;
-			for(int i = 0; i < 8; ++i){
-				c = col + offsets[i][0];
-				r = row + offsets[i][1];
-				if(c < 0 || c >= board_size || r < 0 || r >= board_size){ continue; }
-				graph_r = c + r*board_size;
-
-				int end_x = c*(tile_w + padding) + tile_w / 2;
-				int end_y = r*(tile_h + padding) + tile_h / 2 + start_y;
-				Util::render_line(&ren, color2,
-					rect.x + rect.w / 2,
-					rect.y + rect.h / 2,
-					end_x,
-					end_y);
-			}
-
-
-			x_offset += tile_w + padding;
-		}
-		x_offset = padding;
-		y_offset += tile_h + padding;
-	}
-}
-
-void View_Play::render_panes(){
-	
-}
 void View_Play::render(){		
 	SDL_RenderClear(&ren);
-
 	//render_graph();
 	book.render(ren);
-
-	Util::render_text(&ren, font_carbon_12, 5, 5, font_carbon_12_colour,
-		"%d, %d    %d %d", mouse.x(), mouse.y(), book.mouse->x(), book.mouse->y());
 	
+	IMouse& m = GMouse::get(&book.coord());
+	Util::render_text(&ren, font_carbon_12, 5, 5, font_carbon_12_colour, "%d, %d", m.x(), m.y());
+		
 	SDL_RenderPresent(&ren);
 }
 

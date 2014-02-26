@@ -13,7 +13,7 @@
 #include "Player.h"
 
 // -----------------------------------------------------------------
-// - V I E W _ G A M E _ T R A D E _ D I A L O G _ D R O P D O W N
+//  V I E W _ G A M E _ T R A D E _ D I A L O G _ D R O P D O W N
 // -----------------------------------------------------------------
 View_Game_Trade_Dialog_DropDown::View_Game_Trade_Dialog_DropDown()
 : DropDown()
@@ -28,7 +28,7 @@ View_Game_Trade_Dialog_DropDown::~View_Game_Trade_Dialog_DropDown()
 
 
 // -----------------------------------------------------------------
-// - V I E W _ G A M E _ T R A D E _ D I A L O G _ C O M B O B O X 
+//  V I E W _ G A M E _ T R A D E _ D I A L O G _ C O M B O B O X 
 // -----------------------------------------------------------------
 View_Game_Trade_Dialog_ComboBox::View_Game_Trade_Dialog_ComboBox()
 : ComboBox()
@@ -42,7 +42,7 @@ View_Game_Trade_Dialog_ComboBox::~View_Game_Trade_Dialog_ComboBox()
 
 
 // -----------------------------------------------------------------
-// - V I E W _ G A M E _ T R A D E _ D I A L O G _ T E X T F I E L D
+//  V I E W _ G A M E _ T R A D E _ D I A L O G _ T E X T F I E L D
 // -----------------------------------------------------------------
 
 View_Game_Trade_Dialog_TextField::View_Game_Trade_Dialog_TextField()

@@ -1,6 +1,5 @@
 #pragma once
 #include <SDL.h>
-
 /*
 	Abstract interface for a View.
 */
@@ -10,6 +9,7 @@ public:
 	SDL_Window& win;
 	SDL_Renderer& ren;
 	bool draw_flag;
+	bool drag_flag;
 
 	IView(SDL_Window& win, SDL_Renderer& ren);
 	virtual ~IView(){};

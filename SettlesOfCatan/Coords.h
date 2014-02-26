@@ -17,13 +17,14 @@ public:
 	virtual int disp_x()=0;
 	virtual int disp_y()=0;
 	virtual int disp_z()=0;
+	virtual void make_within_bounds(ICoords* parent)=0;
 };
 
 class Coords : public ICoords{
-
 public:
 	Coords(ICoords* parent=nullptr);
 	virtual ~Coords();
+	// ICoords Interface
 	int x();
 	int y();
 	int z();
@@ -34,20 +35,20 @@ public:
 	void z(int value);
 	void w(int value);
 	void h(int value);
-
-	void init(int x, int y, int z, int w, int h);
-	void set_parent(ICoords* parent);
-	ICoords* get_parent();
 	int disp_x(); // this seems reasonable
 	int disp_y();
 	int disp_z();
+	void make_within_bounds(ICoords* parent);
 
+	// Coords
+	void init(int x, int y, int z, int w, int h);
+	void set_parent(ICoords* parent);
+	ICoords* get_parent();
 	void disable_relative_data();
 	void set_relative_x(float percent);
 	void set_relative_y(float percent);
 	void set_relative_w(float percent);
 	void set_relative_h(float percent);
-
 	void set_relative_x(int px_offset);
 	void set_relative_y(int px_offset);
 	void set_relative_w(int px_offset);
@@ -73,5 +74,5 @@ private:
 	void set_relative(int pos, unsigned smask, unsigned umask,float value);
 
 	ICoords* parent;
-	int _x, _y, _z, _w, _h;	
+	int _x, _y, _z, _w, _h;		
 };
