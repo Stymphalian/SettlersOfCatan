@@ -130,8 +130,8 @@ protected:
 	int target_px_len();
 	int cam_px_len();
 	int cam_px_pos();
-	
-	
+		
+
 	//IPane* wrappee;
 	// IPane Interface	
 	//virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);
