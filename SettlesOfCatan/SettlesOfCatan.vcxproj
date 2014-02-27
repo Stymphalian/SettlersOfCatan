@@ -103,6 +103,7 @@
     <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="Coords.cpp" />
     <ClCompile Include="DropDown.cpp" />
+    <ClCompile Include="Focusable.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="IDialog.cpp" />
     <ClCompile Include="ini_reader.cpp" />
@@ -146,6 +147,7 @@
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="Coords.h" />
     <ClInclude Include="DropDown.h" />
+    <ClInclude Include="Focusable.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="Graph.h" />
     <ClInclude Include="IDialog.h" />

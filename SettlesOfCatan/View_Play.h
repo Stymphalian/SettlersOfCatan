@@ -28,8 +28,20 @@
 #include "Viewport.h"
 
 
-class SelectablePane : public Pane, public Selectable{
+class SelectablePane : public Pane{
 public:
+	// Sprite Interface
+	virtual void tick() = 0;
+	virtual void update(SDL_Event& ev) = 0;
+	virtual void render(SDL_Renderer& ren) = 0;
+	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent) = 0;
+	//Focusable interface
+	virtual void on_focus() = 0;
+	virtual void off_focus() = 0;
+	//Selectable interface	
+	virtual void on_selected() = 0;
+	virtual void off_selected() = 0;
+	// KeyboardHandler interface
 	virtual bool keyboard_keydown(SDL_Event& ev)=0;
 	virtual bool keyboard_keyup(SDL_Event& ev)=0;
 	// MouseHandler interface
@@ -37,17 +49,7 @@ public:
 	virtual bool mouse_buttonup(SDL_Event& ev, Coords* ref = nullptr)=0;
 	virtual bool mouse_motion(SDL_Event& ev, Coords* ref = nullptr)=0;
 	virtual bool mouse_drag(SDL_Event& ev, Coords* ref = nullptr)=0;
-	// Sprite Interface
-	virtual void tick()=0;
-	virtual void update(SDL_Event& ev)=0;
-	virtual void render(SDL_Renderer& ren)=0;
-	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent)=0;
-	//IPane interface
-	virtual void on_focus()=0;
-	virtual void off_focus()=0;
-	//Selectable interface	
-	virtual void on_selected()=0;
-	virtual void off_selected()=0;	
+	
 };
 class SelectableViewport : public SelectablePane, public Mouseable{
 public:	
@@ -88,7 +90,6 @@ public:
 	virtual void set_focus(bool value){ port->set_focus(value); }
 	virtual void defocus_all_children(){ port->defocus_all_children(); }	
 	//Selectable interface	
-
 	virtual void on_selected(){}
 	virtual void off_selected(){}
 private:
@@ -118,8 +119,7 @@ public:
 	virtual void off_focus();
 	//Selectable interface	
 	virtual void on_selected();
-	virtual void off_selected();
-	
+	virtual void off_selected();	
 protected:
 	SDL_Color selected_colour;
 	SDL_Color focused_colour;
@@ -152,9 +152,7 @@ public:
 	virtual void update_on_mouse_motion(Mouseable* origin,int code, void* data);
 	virtual void update_on_mouse_drag(Mouseable* origin,int code, void* data);
 	virtual void update_on_mouse_buttondown(Mouseable* origin,int code, void* data);
-	virtual void update_on_mouse_buttonup(Mouseable* origin,int code, void* data);
-	
-
+	virtual void update_on_mouse_buttonup(Mouseable* origin,int code, void* data);	
 	//variables
 	int num_panes;
 	Page pages[5];	

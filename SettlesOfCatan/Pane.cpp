@@ -11,10 +11,8 @@
 // ------------------------------------------------------------------
 // I P A N E
 // ------------------------------------------------------------------
-IPane::IPane() : Sprite(){}
-IPane::IPane(int x, int y, int z, int w, int h) : Sprite(){	
-	_coord.init(x, y, z, w, h);
-}
+IPane::IPane() 
+: Sprite(),Focusable(),IMouseHandler(),IKeyboardHandler(){}
 IPane::~IPane(){}
 
 
@@ -47,12 +45,17 @@ void IWrapPane::on_focus() { this->wrappee->on_focus(); }
 void IWrapPane::off_focus(){this->wrappee->off_focus();}
 bool IWrapPane::has_focus() { return this->wrappee->has_focus(); }
 void IWrapPane::set_focus(bool value) { this->wrappee->set_focus(value); }
+bool IWrapPane::is_selected() {return this->wrappee->is_selected();}
+void IWrapPane::set_selected(bool value){this->wrappee->set_selected(value);}
+void IWrapPane::on_selected() {this->wrappee->on_selected();}
+void IWrapPane::off_selected(){this->wrappee->off_selected();}
+bool IWrapPane::isactive(){ return this->wrappee->isactive(); }
+void IWrapPane::setactive(bool value){ this->wrappee->setactive(value); }
 void IWrapPane::set_background(SDL_Color colour){ this->wrappee->set_background(colour); }
 SDL_Color IWrapPane::get_background(){ return this->wrappee->get_background(); }
 void IWrapPane::render_children(SDL_Renderer& ren,int x,int y, SDL_Rect* extent) { this->wrappee->render_children(ren,x,y, extent); }
 void IWrapPane::determine_focused_child_pane(IMouse* mouse) { this->wrappee->determine_focused_child_pane(mouse); }
 IPane* IWrapPane::get_focused_child_pane(){ return this->wrappee->get_focused_child_pane(); }
-bool IWrapPane::isDummy(IPane* pane){ return this->wrappee->isDummy(pane); }
 void IWrapPane::defocus_all_children(){ this->wrappee->defocus_all_children(); }
 
 
@@ -62,24 +65,27 @@ void IWrapPane::defocus_all_children(){ this->wrappee->defocus_all_children(); }
 Pane::Pane() : IPane()
 {
 	this->children.clear();
-	this->_background = { 140, 140, 140, 80 };
-	this->_visible = false;
-	this->_focus = false;
-	this->_focused_child_pane = &nullPane;
+	this->_background = { 140, 140, 140, 80 };	
+	this->_focused_child_pane = &NULL_Pane::get();
+	this->_visible_flag = false;
+	this->_focus_flag = false;
+	this->_active_flag = true;
 }
 Pane::~Pane()
 {
 	this->children.clear();
-	this->_background = { 0, 0, 0, 0 };
-	this->_visible = false;
-	this->_focus = false;	
+	this->_background = { 0, 0, 0, 0 };	
 	this->_focused_child_pane = nullptr;
 }
 
+
+// Sprite Interface 
+// Focusable Interface
 // KeyboardHandler Interface	
 // Mousehandler Interface
-// Sprite Interface 
 // IPane Interface
+bool Pane::isactive(){return _active_flag;}
+void Pane::setactive(bool value){ _active_flag = value; }
 bool Pane::add_pane(IPane* pane){
 	if(pane == nullptr){ return false; }
 	std::list<IPane*>::iterator it = children.begin();
@@ -106,19 +112,6 @@ bool Pane::remove_pane(IPane* pane){
 	return false;
 }
 
-bool Pane::isvisible(){return _visible;}
-void Pane::setvisible(bool value){_visible = value;}
-void Pane::on_focus(){ _focus = true; }
-void Pane::off_focus(){ _focus = false; }
-bool Pane::has_focus(){ return _focus; }
-void Pane::set_focus(bool value){
-	if(value == true){
-		if(_focus == false){ on_focus(); }		
-	} else{
-		if(_focus == true){ off_focus(); }
-	}
-	_focus = value;
-}
 void Pane::set_background(SDL_Color colour){ _background = colour; }
 SDL_Color Pane::get_background(){ return _background; }
 
@@ -169,6 +162,9 @@ void Pane::determine_focused_child_pane(IMouse* rel_mouse){
 	std::list<IPane*>::iterator it;
 	bool done = false;
 	for(it = children.begin(); it != children.end(); ++it){
+		// make sure that the pane is 'active'
+		if((*it)->isactive() == false){ continue; }
+
 		if((*it)->hitbox().collides(rel_mouse->hitbox())){
 			//the pane is the currently in focus pane
 			if(*it == _focused_child_pane){ 
@@ -188,20 +184,18 @@ void Pane::determine_focused_child_pane(IMouse* rel_mouse){
 	// no panes were selected.
 	if(done == false){
 		_focused_child_pane->set_focus(false);
-		_focused_child_pane = &nullPane;		
+		_focused_child_pane = &NULL_Pane::get();
 	}
 }
 
 IPane* Pane::get_focused_child_pane(){		
 	return _focused_child_pane;
 }
-bool Pane::isDummy(IPane* pane){
-	return (pane == &nullPane);
-}
+
 void Pane::defocus_all_children() {
 	_focused_child_pane->defocus_all_children();
 	_focused_child_pane->set_focus(false);
-	_focused_child_pane = &nullPane;
+	_focused_child_pane = &NULL_Pane::get();
 }
 
 // Pane methods

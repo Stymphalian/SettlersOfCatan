@@ -56,7 +56,7 @@ Viewport::Viewport() : IWrapPane(nullptr),IViewport(){
 	this->_yunits_per_pixel = 0;	
 	this->_horiz_wrap = false;
 	this->_vert_wrap = false;
-	this->_visible = false;
+	this->_visible = true;
 	this->_focus = false;	
 }
 Viewport::~Viewport(){
@@ -81,18 +81,33 @@ bool Viewport::keyboard_keydown(SDL_Event& ev){
 //bool Viewport::keyboard_keyup(SDL_Event& ev);
 	  
 Coords& Viewport::determine_passing_reference_coords(Coords* reference){	
-	IMouse& rel_mouse = GMouse::get(&coord());		
+
+	int relx, rely;
+	if(reference != nullptr){
+		relx = reference->x();
+		rely = reference->y();
+	} else{
+		IMouse& rel_mouse = GMouse::get(&coord());
+		rel_mouse.update();
+		relx = rel_mouse.x();
+		rely = rel_mouse.y();		
+	}
+		
+	/*IMouse& rel_mouse = GMouse::get(&coord());		
 	rel_mouse.update();
 	int relx = rel_mouse.x();
 	int rely = rel_mouse.y();
 	relx += (reference != nullptr) ? reference->x() : 0;
 	rely += (reference != nullptr) ? reference->y() : 0;	
+	*/
 
+	/*
 	IMouse& target_mouse = GMouse::get(target);
 	target_mouse.update();
 
 	int ref_x = camera_coords.x() + relx - target_mouse.x();
 	int ref_y = camera_coords.y() + rely - target_mouse.y();
+	*/
 
 	//_passing_ref_coords.x(ref_x);
 	//_passing_ref_coords.y(ref_y);
@@ -164,25 +179,26 @@ void Viewport::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	  
 //bool Viewport::add_pane(IPane* pane);
 //bool Viewport::remove_pane(IPane* pane);
-bool Viewport::isvisible(){return _visible && wrappee->isvisible();}
-void Viewport::setvisible(bool value){
-	_visible = value;
-	wrappee->setvisible(value);
-}
+//bool Viewport::isvisible(){return _visible && wrappee->isvisible();}
+//void Viewport::setvisible(bool value){
+//	_visible = value;
+//	wrappee->setvisible(value);
+//}
 //void Viewport::on_focus(){}
 //void Viewport::off_focus(){}
-bool Viewport::has_focus(){
-	return _focus && wrappee->has_focus();
-}
-void Viewport::set_focus(bool value){	
-	if(value == true){
-		if(_focus == false){ on_focus(); }
-	} else{
-		if(_focus == true){ off_focus(); }
-	}
-	_focus = value;
-	wrappee->set_focus(value);
-}
+//bool Viewport::has_focus(){
+//	return _focus && wrappee->has_focus();
+//}
+//void Viewport::set_focus(bool value){	
+//	if(value == true){
+//		if(_focus == false){ on_focus(); }
+//	} else{
+//		if(_focus == true){ off_focus(); }
+//	}
+//	_focus = value;
+//	wrappee->set_focus(value);
+//}
+
 void Viewport::defocus_all_children(){
 	wrappee->defocus_all_children();
 	wrappee->set_focus(false);

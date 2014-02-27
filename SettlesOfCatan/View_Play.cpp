@@ -76,7 +76,8 @@ viewport(&_viewport)
 		pages[4].subscribe(this);
 
 		sub_book = new Book(1);
-		sub_book->coord().init(150,150, 0, 0, 0);		
+		//sub_book->coord().init(0,0, 0, 400, 400);		
+		sub_book->coord().init(150,150, 0, 150, 150);		
 		sub_book->coord().set_relative_w(0.5f);
 		sub_book->coord().set_relative_h(0.5f);
 		sub_book->setvisible(true);
@@ -84,15 +85,16 @@ viewport(&_viewport)
 		sub_book->subscribe(this);
 		
 		_viewport.set_target(sub_book, 1, 1);
-		_viewport.set_camera_coords(0, 0, 50, 50);
-		_viewport.set_viewport_coords(25, 25, 50, 50);		
+		_viewport.set_camera_coords(0, 0, 90, 90);
+		_viewport.set_viewport_coords(25, 25, 150, 150);		
 		_viewport.setvisible(true);
 		_viewport.coord().set_parent(&this->coord());
 
-		viewport.coord().init(25,25,0, 50, 50);
+		viewport.coord().init(25,25,0, 90, 90);
 		viewport.setvisible(true);
-		add_pane(&viewport);
 		viewport.subscribe(this);
+		add_pane(&viewport);
+
 	} else if (flag == 1){		
 		num_panes = 1;		
 		pages[0].coord().init(0, 0, 0, 50, 50);
@@ -110,7 +112,6 @@ viewport(&_viewport)
 		sub_book->setvisible(true);
 		add_pane(sub_book);
 		sub_book->subscribe(this);		
-
 		
 		_viewport.set_target(sub_book, 1, 1);
 		_viewport.set_camera_coords(0, 0, 30, 30);
@@ -161,7 +162,14 @@ bool Book::mouse_buttondown(SDL_Event& ev, Coords* ref){
 		}				
 		// pass the mouse button down to the focused pane.
 		IPane* focused = get_focused_child_pane();
-		focused->mouse_buttondown(ev,ref);
+		if(ref != nullptr){
+			Coords new_reference;
+			new_reference.x(ref->x() - focused->coord().x());
+			new_reference.y(ref->y() - focused->coord().y());
+			focused->mouse_buttondown(ev,&new_reference);
+		} else{
+			focused->mouse_buttondown(ev);
+		}		
 		
 		// handle our own widgets and stuff...
 	}		
@@ -178,7 +186,15 @@ bool Book::mouse_buttonup(SDL_Event& ev, Coords* ref){
 
 		if(get_focused_child_pane() != selected_shit){
 			if(selected_shit != nullptr){
-				selected_shit->mouse_buttonup(ev,ref);
+				if(ref != nullptr){
+					Coords new_ref;
+					new_ref.x(ref->x() - selected_shit->coord().x());
+					new_ref.y(ref->y() - selected_shit->coord().y());
+					selected_shit->mouse_buttonup(ev,&new_ref);
+				} else{
+					selected_shit->mouse_buttonup(ev);
+				}
+				
 			}
 		}
 	}	
@@ -200,7 +216,7 @@ bool Book::mouse_motion(SDL_Event& ev, Coords* reference)
 
 	// should we pass the event to the child, or should I consume it.
 	IPane* focused = get_focused_child_pane();
-	if(!isDummy(focused)){
+	if(!NULL_Pane::isDummy(focused)){
 		if(reference != nullptr){
 			Coords next_reference;
 			next_reference.x(reference->x() - focused->coord().x());
@@ -298,12 +314,10 @@ void Book::render(SDL_Renderer& ren,int x, int y, SDL_Rect* extent){
 }
 //IPaBook::ne interface
 void Book::on_focus(){	
-	focused_colour = { 20, 20, 80, 120 };	
-	Pane::on_focus();
+	focused_colour = { 20, 20, 80, 120 };		
 }
 void Book::off_focus(){		
-	focused_colour = { 20, 20, 20, 120 };
-	Pane::off_focus();
+	focused_colour = { 20, 20, 20, 120 };	
 	Pane::defocus_all_children();
 	if(selected_shit != nullptr){
 		selected_shit->set_selected(false);
@@ -420,12 +434,10 @@ void Page::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 }
 
 void Page::on_focus(){
-	focused_colour= { 20, 60, 120, 90 };
-	Pane::on_focus();
+	focused_colour= { 20, 60, 120, 90 };	
 }
 void Page::off_focus(){
-	focused_colour = { 20, 60, 40, 90 };
-	Pane::off_focus();
+	focused_colour = { 20, 60, 40, 90 };	
 	Pane::defocus_all_children();	
 }
 void Page::on_selected(){
