@@ -81,7 +81,6 @@ bool Viewport::keyboard_keydown(SDL_Event& ev){
 //bool Viewport::keyboard_keyup(SDL_Event& ev);
 	  
 Coords& Viewport::determine_passing_reference_coords(Coords* reference){	
-
 	int relx, rely;
 	if(reference != nullptr){
 		relx = reference->x();
@@ -92,25 +91,7 @@ Coords& Viewport::determine_passing_reference_coords(Coords* reference){
 		relx = rel_mouse.x();
 		rely = rel_mouse.y();		
 	}
-		
-	/*IMouse& rel_mouse = GMouse::get(&coord());		
-	rel_mouse.update();
-	int relx = rel_mouse.x();
-	int rely = rel_mouse.y();
-	relx += (reference != nullptr) ? reference->x() : 0;
-	rely += (reference != nullptr) ? reference->y() : 0;	
-	*/
-
-	/*
-	IMouse& target_mouse = GMouse::get(target);
-	target_mouse.update();
-
-	int ref_x = camera_coords.x() + relx - target_mouse.x();
-	int ref_y = camera_coords.y() + rely - target_mouse.y();
-	*/
-
-	//_passing_ref_coords.x(ref_x);
-	//_passing_ref_coords.y(ref_y);
+			
 	_passing_ref_coords.x(camera_coords.x() + relx);
 	_passing_ref_coords.y(camera_coords.y() + rely);
 	return _passing_ref_coords;
@@ -162,6 +143,7 @@ void Viewport::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 		extent->h
 	};
 	this->wrappee->render(ren, x, y, &target_extent);
+	this->render_viewport_children(ren, x, y, extent);
 
 	SDL_Rect rect = {
 		x - extent->x,
@@ -422,4 +404,65 @@ void Viewport::make_cam_y_within_bounds(){
 			camera_coords.y((int)(target->h()*_pixels_per_yunit) - camera_coords.h());			
 		}
 	}
+}
+
+void Viewport::render_viewport_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
+	if(extent == nullptr){ return; }
+
+	SDL_Rect intersection;
+	SDL_Rect B;
+	std::list<IPane*>::iterator it;
+	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+		// B is the full extent of the child
+		// coordinates are relative to 'this'.
+		B = {
+			(*it)->coord().x(),
+			(*it)->coord().y(),
+			(*it)->coord().w(),
+			(*it)->coord().h()
+		};
+
+		// if B collides with extent, we know that 
+		// atleast a part of B is visible in extent.
+		if(Collision::intersect_rect_rect(&B, extent, &intersection)){
+
+			// the draw coordinates for the child object 
+			// given that possibly only a partial amount 
+			// of the object will be drawn.
+			int draw_x = intersection.x + x - extent->x;
+			int draw_y = intersection.y + y - extent->y;
+			intersection.x -= (*it)->coord().x(),
+				intersection.y -= (*it)->coord().y(),
+				(*it)->render(
+				ren,
+				draw_x,
+				draw_y,
+				&intersection);
+		}
+	}
+}
+bool Viewport::add_viewport_pane(IPane* pane){
+	if(pane == nullptr){ return false; }
+	std::list<IPane*>::iterator it = _viewport_children.begin();
+	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+		if((*it) == pane){ return false; }
+	}
+	_viewport_children.push_back(pane);
+	//pack();
+	pane->coord().set_parent(&Sprite::coord());	
+	return true;
+}
+
+bool Viewport::remove_viewport_pane(IPane* pane){
+	if(pane == nullptr){ return false; }
+	std::list<IPane*>::iterator it;
+	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+		if((*it) == pane) {
+			(*it)->coord().set_parent(nullptr);
+			_viewport_children.erase(it);
+			//pack();
+			return true;
+		}
+	}
+	return false;
 }

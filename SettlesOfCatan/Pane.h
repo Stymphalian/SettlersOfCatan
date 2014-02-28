@@ -58,6 +58,18 @@ protected:
 	virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent=nullptr) = 0;
 	virtual void determine_focused_child_pane(IMouse* mouse) = 0;		
 	virtual IPane* get_focused_child_pane() = 0;	
+
+	//convenience method
+	Coords _new_reference_coords;
+	Coords* new_coords_from_ref(Coords* ref,Coords* target){
+		if(ref != nullptr){
+			_new_reference_coords.x(ref->x() - target->x());
+			_new_reference_coords.y(ref->y() - target->y());			
+			return &_new_reference_coords;
+		}else{
+			return nullptr;
+		}				
+	}
 };
 
 // -----------------------------------------
@@ -75,6 +87,8 @@ public:
 	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent);
 	virtual bool isvisible();
 	virtual void setvisible(bool value);
+	//virtual Coords& coord();
+	//virtual Collision& hitbox();
 	// Focusable Interface	
 	virtual bool has_focus();
 	virtual void set_focus(bool value);	
@@ -103,7 +117,7 @@ public:
 	virtual void defocus_all_children();
 protected:	
 	IPane* wrappee;	
-	// IPane Interface	
+	// IPane Interface
 	virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);
 	virtual void determine_focused_child_pane(IMouse* mouse);
 	virtual IPane* get_focused_child_pane();

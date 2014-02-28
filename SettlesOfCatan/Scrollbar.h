@@ -2,7 +2,7 @@
 #include "Pane.h"
 #include "MouseListener.h"
 #include "ViewPort.h"
-class Scrollbar_bar : public Pane{
+class Scrollbar_bar : public Pane, public Mouseable{
 public:
 	Scrollbar_bar();
 	virtual ~Scrollbar_bar();
@@ -30,8 +30,39 @@ protected:
 	SDL_Color focused_colour;
 };
 
+class Scrollbar_bar_area : public Pane, public Mouseable{
+public:
+	Scrollbar_bar_area();
+	virtual ~Scrollbar_bar_area();
 
-class VerticalScrollbar : public Viewport{
+	virtual bool keyboard_keydown(SDL_Event& ev);
+	virtual bool keyboard_keyup(SDL_Event& ev);
+	// MouseHandler interface
+	virtual bool mouse_buttondown(SDL_Event& ev, Coords* ref = nullptr);
+	virtual bool mouse_buttonup(SDL_Event& ev, Coords* ref = nullptr);
+	virtual bool mouse_motion(SDL_Event& ev, Coords* ref = nullptr);
+	virtual bool mouse_drag(SDL_Event& ev, Coords* ref = nullptr);
+	// Sprite Interface
+	virtual void tick();
+	virtual void update(SDL_Event& ev);
+	virtual void render(SDL_Renderer& ren);
+	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent);
+	//IPane interface
+	virtual void on_focus();
+	virtual void off_focus();
+	//Selectable interface	
+	virtual void on_selected();
+	virtual void off_selected();
+	int clicked_pos;
+protected:
+	SDL_Color selected_colour;
+	SDL_Color focused_colour;
+private:
+
+};
+
+
+class VerticalScrollbar : public Viewport, public IMouseListener{
 public:	
 	enum bar_position_e { LEFT,RIGHT };
 	VerticalScrollbar();
@@ -40,7 +71,7 @@ public:
 	//virtual void tick();
 	//virtual void update(SDL_Event& ev);
 	//virtual void render(SDL_Renderer& ren);
-	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent);
+	//virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent);
 	//virtual bool isvisible();
 	//virtual void setvisible(bool value);
 	// Focusable Interface	
@@ -72,7 +103,7 @@ public:
 	//IViewport Interface
 	// IViewport interface	
 	virtual void set_camera_coords(int x, int y, int w, int h);
-	//virtual void set_viewport_coords(int x, int y, int w, int h);
+	virtual void set_viewport_coords(int x, int y, int w, int h);
 	//virtual void set_pixels_per_xunit(unsigned ppu);
 	virtual void set_pixels_per_yunit(unsigned ppu);
 	virtual int viewport_px_x();
@@ -87,9 +118,9 @@ public:
 	//virtual int target_unit_y() = 0;
 	//virtual int target_unit_w() = 0;
 	//virtual int target_unit_h() = 0;
-	virtual void set_camera_px_x(int amount);
+	//virtual void set_camera_px_x(int amount);
 	virtual void set_camera_px_y(int amount);
-	virtual void set_camera_px_w(int value);
+	//virtual void set_camera_px_w(int value);
 	virtual void set_camera_px_h(int value);
 	//virtual unsigned pixels_per_xunit() = 0;
 	//virtual unsigned xunits_per_pixel() = 0;
@@ -99,21 +130,26 @@ public:
 	//virtual bool camera_vert_wrap() = 0;
 	//virtual void set_camera_horiz_wrap(bool value) = 0;
 	//virtual void set_camera_vert_wrap(bool value) = 0;
-	void move_camera_px_x(int amount);
-	void move_camera_px_y(int amount);
-	int camera_unit_x();
-	int camera_unit_y();
-	int camera_unit_w();
-	int camera_unit_h();
+	//void move_camera_px_x(int amount);
+	//void move_camera_px_y(int amount);
+	//int camera_unit_x();
+	//int camera_unit_y();
+	//int camera_unit_w();
+	//int camera_unit_h();
 	//VerticalScrollbar Methods
 	void set_bar_side_position(bar_position_e pos);
+
+	virtual void update_on_mouse_motion(Mouseable* origin, int code, void* data);
+	virtual void update_on_mouse_drag(Mouseable* origin, int code, void* data);
+	virtual void update_on_mouse_buttondown(Mouseable* origin, int code, void* data);
+	virtual void update_on_mouse_buttonup(Mouseable* origin, int code, void* data);
 protected:
 	//int ratio();
 	//int determine_bar_len_from_camera();
 	//void calculate_bar_position_from_camera();//??	
 	Mouse _rel_mouse;
 	Scrollbar_bar _bar;
-	Scrollbar_bar _bar_area;	
+	Scrollbar_bar_area _bar_area;	
 	bar_position_e _bar_side_position;
 	bool _bar_object_is_selected;
 	int _min_bar_px_len;
@@ -130,6 +166,10 @@ protected:
 	int target_px_len();
 	int cam_px_len();
 	int cam_px_pos();
+	void set_bar_px_pos(int value);
+	void set_bar_px_len(int value);
+	void set_cam_px_len(int value);
+	void set_cam_px_pos(int value);
 		
 
 	//IPane* wrappee;

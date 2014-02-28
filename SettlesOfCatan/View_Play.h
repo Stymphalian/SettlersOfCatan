@@ -26,6 +26,7 @@
 #include "Pane.h"
 
 #include "Viewport.h"
+#include "Scrollbar.h"
 
 
 class SelectablePane : public Pane{
@@ -92,9 +93,10 @@ public:
 	//Selectable interface	
 	virtual void on_selected(){}
 	virtual void off_selected(){}
+	Viewport* port;
 private:
 	bool _selected;
-	Viewport* port;
+	
 };
 
 class Page : public SelectablePane, public Mouseable{
@@ -162,6 +164,7 @@ public:
 	SelectablePane* selected_shit;
 	Viewport _viewport;
 	SelectableViewport viewport;
+	VerticalScrollbar scrollbar;
 protected:	
 };
 

@@ -71,6 +71,8 @@ public:
 	virtual void render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent) ;
 	//virtual bool isvisible();
 	//virtual void setvisible(bool value);
+	//virtual Coords& coord();
+	//virtual Collision& hitbox();
 	// Focusable Interface
 	//virtual void on_focus() = 0;
 	//virtual void off_focus() = 0;
@@ -79,6 +81,8 @@ public:
 	// Selectable Interface
 	//virtual void on_selected() = 0;
 	//virtual void off_selected() = 0;
+	//virtual bool is_selected();
+	//virtual void set_selected(bool value);
 	// KeyboardHandler interface
 	virtual bool keyboard_keydown(SDL_Event& ev);
 	//virtual bool keyboard_keyup(SDL_Event& ev) = 0;
@@ -169,9 +173,10 @@ protected:
 	int _yunits_per_pixel;	
 	bool _horiz_wrap;
 	bool _vert_wrap;
+	std::list<IPane*> _viewport_children;
 	// IWrapPane necessary variables
 	bool _visible;
-	bool _focus;
+	bool _focus;	
 
 	//methods
 	inline void make_cam_x_within_bounds();
@@ -179,4 +184,12 @@ protected:
 	inline int camera_row_unit_offset();
 	inline int camera_col_unit_offset();
 	Coords& determine_passing_reference_coords(Coords* ref);
+	void render_viewport_children(SDL_Renderer& ren,int x, int y, SDL_Rect* extent);
+	bool add_viewport_pane(IPane* pane);
+	bool remove_viewport_pane(IPane* pane);
+
+	// IPane Interface
+	//virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);
+	//virtual void determine_focused_child_pane(IMouse* mouse);
+	//virtual IPane* get_focused_child_pane();
 };

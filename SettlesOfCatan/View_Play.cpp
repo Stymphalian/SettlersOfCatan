@@ -41,6 +41,7 @@ SelectableViewport::~SelectableViewport(){}
 Book::Book(int flag)
 : SelectablePane(), Mouseable(), IMouseListener(),
 viewport(&_viewport)
+//viewport(&scrollbar)
 {
 	focused_colour = { 20, 20, 20, 120 };
 	selected_colour = { 80, 20, 10, 140 };
@@ -77,20 +78,30 @@ viewport(&_viewport)
 
 		sub_book = new Book(1);
 		//sub_book->coord().init(0,0, 0, 400, 400);		
-		sub_book->coord().init(150,150, 0, 150, 150);		
+		sub_book->coord().init(150,150, 0, 200, 200);		
 		sub_book->coord().set_relative_w(0.5f);
 		sub_book->coord().set_relative_h(0.5f);
-		sub_book->setvisible(true);
-		add_pane(sub_book);
+		sub_book->setvisible(true);		
 		sub_book->subscribe(this);
+		add_pane(sub_book);
 		
-		_viewport.set_target(sub_book, 1, 1);
-		_viewport.set_camera_coords(0, 0, 90, 90);
-		_viewport.set_viewport_coords(25, 25, 150, 150);		
-		_viewport.setvisible(true);
-		_viewport.coord().set_parent(&this->coord());
+		//_viewport.set_target(sub_book, 1, 1);
+		//_viewport.set_camera_coords(0, 0, 90, 90);
+		//_viewport.set_viewport_coords(25, 25, 150, 150);		
+		//_viewport.setvisible(true);
+		//_viewport.coord().set_parent(&this->coord());
+		//viewport.coord().init(25,25,0, 90, 90);
+		//viewport.setvisible(true);
+		//viewport.subscribe(this);
+		//add_pane(&viewport);
 
-		viewport.coord().init(25,25,0, 90, 90);
+		scrollbar.set_target(sub_book, 1, 1);
+		scrollbar.set_camera_coords(0, 0, 100, 100);
+		scrollbar.set_viewport_coords(25, 25, 100, 100);
+		scrollbar.setvisible(true);
+		scrollbar.coord().set_parent(&this->coord());
+		viewport.port = &scrollbar;
+		viewport.coord().init(25,25,0, 100, 100);
 		viewport.setvisible(true);
 		viewport.subscribe(this);
 		add_pane(&viewport);
