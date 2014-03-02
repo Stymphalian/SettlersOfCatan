@@ -91,7 +91,7 @@ public:
 	virtual void set_focus(bool value){ port->set_focus(value); }
 	virtual void defocus_all_children(){ port->defocus_all_children(); }	
 	//Selectable interface	
-	virtual void on_selected(){}
+	virtual void on_selected() {}
 	virtual void off_selected(){}
 	Viewport* port;
 private:
@@ -164,7 +164,7 @@ public:
 	SelectablePane* selected_shit;
 	Viewport _viewport;
 	SelectableViewport viewport;
-	VerticalScrollbar scrollbar;
+	Scrollbar scrollbar;	
 protected:	
 };
 

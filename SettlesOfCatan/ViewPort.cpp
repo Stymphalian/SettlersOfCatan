@@ -46,6 +46,7 @@ void Viewport::iterator::make_within_bounds(){
 Viewport::Viewport() : IWrapPane(nullptr),IViewport(){
 	this->coord().init(0, 0, 0, 0, 0);
 	this->camera_coords.init(0, 0, 0, 0, 0);
+	this->viewport_coord().init(0, 0, 0, 0, 0);
 
 	this->target = nullptr;
 	this->draw_rect = { 0, 0, 0, 0 };
@@ -58,6 +59,11 @@ Viewport::Viewport() : IWrapPane(nullptr),IViewport(){
 	this->_vert_wrap = false;
 	this->_visible = true;
 	this->_focus = false;	
+
+
+	this->_viewport_children.clear();
+	this->_focused_viewport_child_pane = &NULL_Pane::get();
+	//this->_passing_ref_coords;
 }
 Viewport::~Viewport(){
 	this->target = nullptr;
@@ -86,7 +92,7 @@ Coords& Viewport::determine_passing_reference_coords(Coords* reference){
 		relx = reference->x();
 		rely = reference->y();
 	} else{
-		IMouse& rel_mouse = GMouse::get(&coord());
+		IMouse& rel_mouse = GMouse::get(&viewport_coord());
 		rel_mouse.update();
 		relx = rel_mouse.x();
 		rely = rel_mouse.y();		
@@ -121,9 +127,9 @@ bool Viewport::mouse_drag(SDL_Event& ev, Coords* ref){
 //void Viewport::update(SDL_Event& ev);
 void Viewport::render(SDL_Renderer& ren){
 	SDL_Rect rect = {
-		0,0,coord().w(),coord().h()
+		0,0,viewport_coord().w(),viewport_coord().h()
 	};
-	render(ren, coord().disp_x(),coord().disp_y(),&rect);
+	render(ren, viewport_coord().disp_x(),viewport_coord().disp_y(),&rect);
 }
 void Viewport::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_Rect old_clip;
@@ -148,8 +154,8 @@ void Viewport::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_Rect rect = {
 		x - extent->x,
 		y - extent->y,
-		coord().w(),
-		coord().h()
+		viewport_coord().w(),
+		viewport_coord().h()
 	};
 	if(has_focus()){
 		Util::render_rectangle(&ren, &rect, Util::colour_orange());
@@ -166,20 +172,25 @@ void Viewport::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 //	_visible = value;
 //	wrappee->setvisible(value);
 //}
-//void Viewport::on_focus(){}
-//void Viewport::off_focus(){}
-//bool Viewport::has_focus(){
-//	return _focus && wrappee->has_focus();
-//}
-//void Viewport::set_focus(bool value){	
-//	if(value == true){
-//		if(_focus == false){ on_focus(); }
-//	} else{
-//		if(_focus == true){ off_focus(); }
-//	}
-//	_focus = value;
-//	wrappee->set_focus(value);
-//}
+void Viewport::on_focus(){
+	this->wrappee->on_focus();
+}
+void Viewport::off_focus(){
+	this->wrappee->off_focus();
+	defocus_all_viewport_children();
+}
+bool Viewport::has_focus(){
+	return _focus && wrappee->has_focus();
+}
+void Viewport::set_focus(bool value){	
+	if(value == true){
+		if(_focus == false){ on_focus(); }
+	} else{
+		if(_focus == true){ off_focus(); }
+	}
+	_focus = value;
+	wrappee->set_focus(value);
+}
 
 void Viewport::defocus_all_children(){
 	wrappee->defocus_all_children();
@@ -205,6 +216,7 @@ void Viewport::set_camera_coords(int x, int y, int w, int h){
 }
 void Viewport::set_viewport_coords(int x, int y, int w, int h){
 	coord().init(x, y,0, w, h);
+	viewport_coord().init(x, y, 0, w, h);
 }
 void Viewport::set_pixels_per_yunit(unsigned pixels_per_unit){
 	if(pixels_per_unit > 0){
@@ -226,10 +238,10 @@ void Viewport::set_pixels_per_xunit(unsigned pixels_per_unit){
 	}
 }
 
-int Viewport::viewport_px_x(){ return coord().x(); }
-int Viewport::viewport_px_y(){ return coord().y(); }
-int Viewport::viewport_px_w(){ return coord().w(); }
-int Viewport::viewport_px_h(){ return coord().h(); }
+int Viewport::viewport_px_x(){ return viewport_coord().x(); }
+int Viewport::viewport_px_y(){ return viewport_coord().y(); }
+int Viewport::viewport_px_w(){ return viewport_coord().w(); }
+int Viewport::viewport_px_h(){ return viewport_coord().h(); }
 
 int Viewport::camera_px_x(){return camera_coords.x();}
 int Viewport::camera_px_y(){return camera_coords.y();}
@@ -320,7 +332,7 @@ SDL_Rect* Viewport::camera_unit_draw_rect_unmod(int col, int row){
 	}
 	// handle px offset between 'units
 	draw_rect_unmod.x -= camera_coords.x() % (int)_pixels_per_xunit;
-	draw_rect_unmod.x += coord().x();
+	draw_rect_unmod.x += viewport_coord().x();
 
 	if(_vert_wrap && row < camera_unit_y()){
 		draw_rect_unmod.y = (row + target_unit_h() - camera_unit_y())*(int)_pixels_per_yunit;
@@ -328,7 +340,7 @@ SDL_Rect* Viewport::camera_unit_draw_rect_unmod(int col, int row){
 		draw_rect_unmod.y = (row - camera_unit_y())*(int)_pixels_per_yunit;				
 	}	
 	draw_rect_unmod.y -= camera_coords.y() % (int)_pixels_per_yunit;
-	draw_rect_unmod.y += coord().y();	
+	draw_rect_unmod.y += viewport_coord().y();	
 
 	draw_rect_unmod.w = (int)_pixels_per_xunit;
 	draw_rect_unmod.h = (int)_pixels_per_yunit;
@@ -344,19 +356,19 @@ SDL_Rect* Viewport::camera_unit_draw_rect(int col, int row){
 	draw_rect = *camera_unit_draw_rect_unmod(col, row);
 
 	// only happens to the first columns
-	if(draw_rect.x < coord().x()){
-		draw_rect.x = coord().x();
+	if(draw_rect.x < viewport_coord().x()){
+		draw_rect.x = viewport_coord().x();
 	}
 	// only happens to the last columns
-	if(draw_rect.x + draw_rect.w - coord().x() >= camera_coords.w()){
-		draw_rect.w -= draw_rect.x + draw_rect.w - coord().x() - camera_coords.w();
+	if(draw_rect.x + draw_rect.w - viewport_coord().x() >= camera_coords.w()){
+		draw_rect.w -= draw_rect.x + draw_rect.w - viewport_coord().x() - camera_coords.w();
 	}
 
-	if(draw_rect.y < coord().y()){
-		draw_rect.y = coord().y();
+	if(draw_rect.y < viewport_coord().y()){
+		draw_rect.y = viewport_coord().y();
 	}
-	if(draw_rect.y + draw_rect.h - coord().y() >= camera_coords.h()){
-		draw_rect.h -= draw_rect.y + draw_rect.h - coord().y() - camera_coords.h();
+	if(draw_rect.y + draw_rect.h - viewport_coord().y() >= camera_coords.h()){
+		draw_rect.h -= draw_rect.y + draw_rect.h - viewport_coord().y() - camera_coords.h();
 	}
 
 	return &this->draw_rect;
@@ -411,8 +423,9 @@ void Viewport::render_viewport_children(SDL_Renderer& ren, int x, int y, SDL_Rec
 
 	SDL_Rect intersection;
 	SDL_Rect B;
-	std::list<IPane*>::iterator it;
-	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+	std::list<IPane*>::reverse_iterator it;
+	for(it = _viewport_children.rbegin(); it != _viewport_children.rend(); ++it){
+		if((*it)->isvisible() == false){ continue; }
 		// B is the full extent of the child
 		// coordinates are relative to 'this'.
 		B = {
@@ -447,9 +460,21 @@ bool Viewport::add_viewport_pane(IPane* pane){
 	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
 		if((*it) == pane){ return false; }
 	}
-	_viewport_children.push_back(pane);
-	//pack();
-	pane->coord().set_parent(&Sprite::coord());	
+
+	// add the pane in the appropriate place
+	bool added = false;
+	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+		if(IPane::compare_IPane(pane, *it)){
+			_viewport_children.insert(it, pane);
+			added = true;
+			break;
+		}
+	}
+	if(added == false){
+		_viewport_children.push_back(pane);
+	}
+
+	pane->coord().set_parent(&this->_coord);	
 	return true;
 }
 
@@ -459,10 +484,54 @@ bool Viewport::remove_viewport_pane(IPane* pane){
 	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
 		if((*it) == pane) {
 			(*it)->coord().set_parent(nullptr);
-			_viewport_children.erase(it);
-			//pack();
+			_viewport_children.erase(it);			
 			return true;
 		}
 	}
 	return false;
+}
+void Viewport::determine_focused_viewport_child_pane(IMouse* rel_mouse){
+	if(rel_mouse == nullptr){ return; }
+	//if(_focused_viewport_child_pane->hitbox().collides(rel_mouse->hitbox())){
+	//	// the currently focused_child still has focus.
+	//	return;
+	//}
+
+	std::list<IPane*>::iterator it;
+	bool done = false;
+	for(it = _viewport_children.begin(); it != _viewport_children.end(); ++it){
+		// make sure that the pane is 'active'
+		if((*it)->isactive() == false){ continue; }
+
+		if((*it)->hitbox().collides(rel_mouse->hitbox())){
+			//the pane is the currently in focus pane
+			if(*it == _focused_viewport_child_pane){
+				done = true;
+				break;
+			}
+
+			// a new pane has gained focus.
+			_focused_viewport_child_pane->set_focus(false);
+			_focused_viewport_child_pane = *it;
+			_focused_viewport_child_pane->set_focus(true);
+			done = true;
+			break;
+		}
+	}
+
+	// no panes were selected.
+	if(done == false){
+		_focused_viewport_child_pane->set_focus(false);
+		_focused_viewport_child_pane = &NULL_Pane::get();
+	} else{
+		get_focused_child_pane()->set_focus(false);
+	}
+}
+IPane* Viewport::get_focused_viewport_child_pane(){
+	return _focused_viewport_child_pane;
+}
+void Viewport::defocus_all_viewport_children(){
+	_focused_viewport_child_pane->defocus_all_children();
+	_focused_viewport_child_pane->set_focus(false);
+	_focused_viewport_child_pane = &NULL_Pane::get();
 }

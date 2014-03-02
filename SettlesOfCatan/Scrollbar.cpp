@@ -5,276 +5,207 @@
 #include "Viewport.h"
 #include "mouse.h"
 #include "Scrollbar.h"
+
 // -------------------------------------------------------------------
-// V E R T I C A L S C R O L L B A R
+// _ S C R O L L B A R
 // -------------------------------------------------------------------
-VerticalScrollbar::VerticalScrollbar(){
-	Sprite::coord().init(0, 0, 0, 1, 1);
-	_min_bar_px_len = 10;
-	_default_bar_area_px_width = 15;
-	_bar_object_is_selected = false;
+_Scrollbar::_Scrollbar(Scrollbar* viewport,type_e type)
+{
+	this->viewport = viewport;
+	this->type = type;	
+	this->min_bar_px_len = 10;
+	this->default_bar_area_px_width = 15;	
+	this->active = false;
+	this->bar.setactive(false);
+	this->bar_area.setactive(false);
+	this->bar.setvisible(false);
+	this->bar_area.setvisible(false);
 	
-	_bar.coord().init(0, 0, 0, _default_bar_area_px_width, _min_bar_px_len);
-	_bar_area.coord().init(0, 0, 0, _default_bar_area_px_width, 1);
+	if(type == _Scrollbar::HORIZONTAL){
+		bar.coord().init(0, 0, 1, min_bar_px_len, default_bar_area_px_width);
+		bar_area.coord().init(0, 0, 0, 1, default_bar_area_px_width);
+		bar_area.coord().set_relative_w(1.0f); // the full length of the viewport?			
+		bar_area.type = _Scrollbar::HORIZONTAL;
+		bar_position = _Scrollbar::BOTTOM;
+	} else if(type == _Scrollbar::VERTICAL){
+		bar.coord().init(0, 0, 1, default_bar_area_px_width, min_bar_px_len);
+		bar_area.coord().init(0, 0, 0, default_bar_area_px_width, 1);
+		bar_area.coord().set_relative_h(1.0f); // the full length of the viewport?	
+		bar_area.type = _Scrollbar::VERTICAL;
+		bar_position = _Scrollbar::RIGHT;
+	}	
+	this->viewport->add_viewport_pane(&bar);
+	this->viewport->add_viewport_pane(&bar_area);
+	this->bar.coord().set_parent(&this->viewport->viewport_coord());
+	this->bar_area.coord().set_parent(&this->viewport->viewport_coord());
 
-	_bar_area.coord().set_relative_h(1.0f); // the full length of the viewport?
-
-	set_bar_side_position(VerticalScrollbar::RIGHT);
-
-	Viewport::add_viewport_pane(&_bar_area);
-	Viewport::add_viewport_pane(&_bar);
-	_bar.subscribe(this);
-	_bar_area.subscribe(this);
+	bar.subscribe(this->viewport);
+	bar_area.subscribe(this->viewport);
 }
-VerticalScrollbar::~VerticalScrollbar(){}
-//void VerticalScrollbar::render(SDL_Renderer& ren){	
-//}
-//void VerticalScrollbar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){	
-//}
-bool VerticalScrollbar::keyboard_keydown(SDL_Event& ev){
-	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
-	if(keyboard[SDL_SCANCODE_UP]){
-		move_camera_px_y(-(int)(pixels_per_yunit()));
-	} else if(keyboard[SDL_SCANCODE_DOWN]){
-		move_camera_px_y(pixels_per_yunit());
-	}
-	return true;	
-}
-bool VerticalScrollbar::mouse_buttondown(SDL_Event& ev, Coords* ref){	
-	if(_bar.has_focus()){
-		//_bar.set_selected(true);		
-		Coords* new_ref = new_coords_from_ref(ref, &_bar.coord());
-		_bar.mouse_buttondown(ev, new_coords_from_ref(ref,&_bar.coord()));		
-	} else if(_bar_area.has_focus()){
-		Coords* new_ref = new_coords_from_ref(ref, &_bar_area.coord());
-		_bar_area.mouse_buttondown(ev);
-	} else{
-		Viewport::mouse_buttondown(ev, ref);
-	}
-	return true;
-}
-bool VerticalScrollbar::mouse_buttonup(SDL_Event& ev, Coords* ref){
-	_bar.set_selected(false);
-	_bar_area.set_selected(false);
-	Viewport::mouse_buttonup(ev, ref);
-	return true;
-}
-bool VerticalScrollbar::mouse_motion(SDL_Event& ev, Coords* ref){	
-	// get a relative mouse to use for intersections.
-	if(ref != nullptr){
-		_rel_mouse.x(ref->x());
-		_rel_mouse.y(ref->y());
-	} else{
-		IMouse& disp_rel_mouse = GMouse::get(&this->coord());
-		_rel_mouse.x(disp_rel_mouse.x());
-		_rel_mouse.y(disp_rel_mouse.y());
-	}
-
-	// check to to see if the scroll bar has focus
-	bool we_have_focus = false;
-	if(_bar.hitbox().collides(_rel_mouse.hitbox())){
-		_bar.set_focus(true);		
-		we_have_focus = true;
-	} else if(_bar_area.hitbox().collides(_rel_mouse.hitbox())){
-		_bar_area.set_focus(true);
-		we_have_focus = true;
-	} else{
-		_bar.set_focus(false);
-		_bar_area.set_focus(false);
-		we_have_focus = false;
-	}
-
-	if(we_have_focus == false){
-		// normal viewport operations
-		Viewport::mouse_motion(ev,ref);
-	}
-	return true;
-}
-bool VerticalScrollbar::mouse_drag(SDL_Event& ev, Coords* ref ){
-	if(_bar.hitbox().collides(_rel_mouse.hitbox())){
-		_bar.set_focus(true);
-	} else if(_bar_area.hitbox().collides(_rel_mouse.hitbox())){
-		_bar_area.set_focus(true);
-	} else{
-		_bar.set_focus(false);
-		_bar_area.set_focus(false);
-	}
-
-
-	if(_bar.is_selected()){		
-		// make sure that the mouse is within the 'acceptable' region
-
-		// drag the mouse bar?
-		Coords* new_ref = new_coords_from_ref(ref, &_bar.coord());
-		_bar.mouse_drag(ev, new_ref);		
-	} else{
-		// normal viewport operations
-		Viewport::mouse_drag(ev, ref);
-	}
-	return true;
-}
-void VerticalScrollbar::set_camera_coords(int x, int y, int w, int h){
-	Viewport::set_camera_coords(x, y, w, h);
-	adjust_bar_dimensions();
-	adjust_bar_position();
-}
-void VerticalScrollbar::set_viewport_coords(int x, int y, int w, int h){
-	Viewport::set_viewport_coords(x,y, w,h);
-	adjust_bar_dimensions();
-	adjust_bar_position();
-}
-//void VerticalScrollbar::set_pixels_per_xunit(unsigned ppu){}
-void VerticalScrollbar::set_pixels_per_yunit(unsigned ppu){
-	Viewport::set_pixels_per_yunit(ppu);	
-}
-int VerticalScrollbar::viewport_px_x(){ return Sprite::coord().x(); }
-int VerticalScrollbar::viewport_px_y(){ return Sprite::coord().y(); }
-int VerticalScrollbar::viewport_px_w(){ return Sprite::coord().w(); }
-int VerticalScrollbar::viewport_px_h(){ return Sprite::coord().h(); }
-int VerticalScrollbar::camera_px_x() {return camera_coords.x();}
-int VerticalScrollbar::camera_px_y() {return camera_coords.y();}
-int VerticalScrollbar::camera_px_w() {return camera_coords.w();}
-int VerticalScrollbar::camera_px_h() {return camera_coords.h();}
-//void VerticalScrollbar::set_camera_px_x(int amount){}
-void VerticalScrollbar::set_camera_px_y(int amount){
-	camera_coords.y(amount);
-	make_cam_y_within_bounds();
-	adjust_bar_position();
-}
-//void VerticalScrollbar::set_camera_px_w(int value){}
-void VerticalScrollbar::set_camera_px_h(int value){
-	camera_coords.h(value);	
-	adjust_bar_dimensions();
-}
-//void VerticalScrollbar::move_camera_px_x(int amount){}
-//void VerticalScrollbar::move_camera_px_y(int amount){}
-//int VerticalScrollbar::camera_unit_x(){return 0;}
-//int VerticalScrollbar::camera_unit_y(){return 0;}
-//int VerticalScrollbar::camera_unit_w(){return 0;}
-//int VerticalScrollbar::camera_unit_h(){return 0;}
-void VerticalScrollbar::update_on_mouse_motion(Mouseable* origin, int code, void* data){
-	//do nothing.
-}
-void VerticalScrollbar::update_on_mouse_drag(Mouseable* origin, int code, void* data){
-	if(data == &_bar){			
-		set_cam_px_pos(cam_px_from_bar_pos());
-		//adjust_bar_position();
-	}
-}
-void VerticalScrollbar::update_on_mouse_buttondown(Mouseable* origin, int code, void* data){
-	if(data == &_bar_area){		
-		int value = _bar_area.clicked_pos - (bar_px_len()/2);
-		set_bar_px_pos(value);
-		set_cam_px_pos(cam_px_from_bar_pos());
-		//adjust_bar_position();
-	}
-}
-void VerticalScrollbar::update_on_mouse_buttonup(Mouseable* origin, int code, void* data){
-	// do nothing?
-}
-
-//-----------------------------------
-void VerticalScrollbar::set_bar_side_position(bar_position_e pos){
-	_bar_side_position = pos;
-	if(pos == VerticalScrollbar::RIGHT){
-		_bar.coord().set_relative_x((int)_bar_area.coord().w());
-		_bar_area.coord().set_relative_x((int)_bar_area.coord().w());
-	} else{
-		_bar.coord().set_relative_x(0.0f);
-		_bar_area.coord().set_relative_x(0.0f);
-	}
-	
-}
-void VerticalScrollbar::adjust_bar_dimensions(){
-	//bar_len / bar_area_total = cam_len / target_len;
-	int len = _min_bar_px_len;
-	if(target_px_len() != 0){
-		len = (cam_px_len()* bar_area_px_len()) / target_px_len();
-	}
-	// FUCK!
-	if(len < _min_bar_px_len){
-		len = _min_bar_px_len;
-	}
-	_bar.coord().h(len);
-}
-void VerticalScrollbar::adjust_bar_position(){
-	int bar_pos = bar_pos_from_cam_px();
-	_bar.coord().y(bar_pos);
-}
-int VerticalScrollbar::cam_px_from_bar_pos(){
+_Scrollbar::~_Scrollbar(){}
+int _Scrollbar::cam_px_from_bar_pos(){
 	// camx/target_len = barpos/bar_are_len
 	if(bar_area_px_len() != 0){
 		return (bar_px_pos()*target_px_len()) / bar_area_px_len();
 	}
 	return 0;
 }
-int VerticalScrollbar::bar_pos_from_cam_px(){
+int _Scrollbar::bar_pos_from_cam_px(){
 	if(target_px_len() != 0){
 		return (cam_px_pos()*bar_area_px_len()) / target_px_len();
 	}
-	return 0;	
+	return 0;
 }
-int VerticalScrollbar::bar_px_pos(){ return _bar.coord().y(); }
-int VerticalScrollbar::bar_px_len(){ return _bar.coord().h(); }
-int VerticalScrollbar::bar_area_px_len(){ return _bar_area.coord().h(); }
-int VerticalScrollbar::target_px_len(){ return target_unit_h()*pixels_per_yunit(); }
-int VerticalScrollbar::cam_px_len(){ return camera_px_h(); }
-int VerticalScrollbar::cam_px_pos(){ return camera_px_y(); }
-void VerticalScrollbar::set_bar_px_pos(int value){
-	_bar.coord().y(value);
-	if(bar_px_pos() < 0){
-		_bar.coord().y(0);
-	} else if(bar_px_pos() + bar_px_len() >= bar_area_px_len()){
-		_bar.coord().y(bar_area_px_len() - bar_px_len());
-	}	
+int _Scrollbar::bar_px_pos(){
+	return  (type == _Scrollbar::VERTICAL) ?
+		bar.coord().y() : bar.coord().x();
 }
-void VerticalScrollbar::set_bar_px_len(int value){
-	if(value < _min_bar_px_len){
-		_bar.coord().h(_min_bar_px_len);
+int _Scrollbar::bar_px_len(){
+	return  (type == _Scrollbar::VERTICAL) ?
+		bar.coord().h() : bar.coord().w();
+}
+int _Scrollbar::bar_area_px_len(){
+	return  (type == _Scrollbar::VERTICAL) ?
+		bar_area.coord().h() : bar_area.coord().w();
+}
+int _Scrollbar::target_px_len(){ 
+	return  (type == _Scrollbar::VERTICAL) ?
+		viewport->target_unit_h()*viewport->pixels_per_yunit() :
+		viewport->target_unit_w()*viewport->pixels_per_xunit();
+}
+int _Scrollbar::cam_px_len(){ 
+	return  (type == _Scrollbar::VERTICAL) ?
+		viewport->camera_px_h() : viewport->camera_px_w(); 
+}
+int _Scrollbar::cam_px_pos(){
+	return  (type == _Scrollbar::VERTICAL) ?
+		viewport->camera_px_y() : viewport->camera_px_x();
+}
+
+void _Scrollbar::set_bar_side_position(bar_position_e pos){	
+	bar_position = pos;
+	if(pos == _Scrollbar::RIGHT){		
+		bar.coord().set_relative_x((int)bar_area.coord().w());
+		bar_area.coord().set_relative_x((int)bar_area.coord().w());		
+	} else if(pos == _Scrollbar::LEFT){		
+		bar.coord().set_relative_x(0.0f);
+		bar_area.coord().set_relative_x(0.0f);	
+	} else if(pos == _Scrollbar::TOP){		
+		bar.coord().set_relative_y(0.0f);
+		bar_area.coord().set_relative_y(0.0f);		
+	} else if(pos == _Scrollbar::BOTTOM){		
+		bar.coord().set_relative_y((int)bar_area.coord().h());
+		bar_area.coord().set_relative_y((int)bar_area.coord().h());		
+	}
+}
+void _Scrollbar::set_type(type_e type){
+	this->type = type;
+	if(this->type == _Scrollbar::VERTICAL){
+		bar_area.type = _Scrollbar::VERTICAL;
+		bar.coord().init(0, 0, 1, default_bar_area_px_width, min_bar_px_len);
+		bar_area.coord().init(0, 0, 0, default_bar_area_px_width, 1);
+		bar_area.coord().set_relative_h(1.0f); // the full length of the viewport?	
+	} else if(this->type == _Scrollbar::HORIZONTAL){
+		bar_area.type = _Scrollbar::HORIZONTAL;
+		bar.coord().init(0, 0, 1, min_bar_px_len, default_bar_area_px_width);
+		bar_area.coord().init(0, 0, 0, 1, default_bar_area_px_width);
+		bar_area.coord().set_relative_w(1.0f); // the full length of the viewport?					
+	}
+}
+void _Scrollbar::adjust_bar_dimensions(){
+	//bar_len / bar_area_total = cam_len / target_len;
+	int len = min_bar_px_len;
+	if(target_px_len() != 0){
+		len = (cam_px_len()* bar_area_px_len()) / target_px_len();
+	}
+	// FUCK!
+	if(len < min_bar_px_len){
+		len = min_bar_px_len;
+	}
+	(type == _Scrollbar::VERTICAL) ? bar.coord().h(len) : bar.coord().w(len);
+}
+void _Scrollbar::adjust_bar_position(){
+	int bar_pos = bar_pos_from_cam_px();
+	(type == _Scrollbar::VERTICAL) ?
+		bar.coord().y(bar_pos) : bar.coord().x(bar_pos);
+}
+void _Scrollbar::set_bar_px_pos(int value){
+	if(type == _Scrollbar::VERTICAL) {
+		bar.coord().y(value);
+		if(bar_px_pos() < 0){
+			bar.coord().y(0);
+		} else if(bar_px_pos() + bar_px_len() >= bar_area_px_len()){
+			bar.coord().y(bar_area_px_len() - bar_px_len());
+		}
+	} else if( type == _Scrollbar::HORIZONTAL){
+		bar.coord().x(value);
+		if(bar_px_pos() < 0){
+			bar.coord().x(0);
+		} else if(bar_px_pos() + bar_px_len() >= bar_area_px_len()){
+			bar.coord().x(bar_area_px_len() - bar_px_len());
+		}
+	}
+}
+void _Scrollbar::set_bar_px_len(int value){
+	if(type == _Scrollbar::VERTICAL) {
+		if(value < min_bar_px_len){
+			bar.coord().h(min_bar_px_len);
+		} else{
+			bar.coord().h(value);
+		}
+	} else if (type == _Scrollbar::HORIZONTAL) {
+		if(value < min_bar_px_len){
+			bar.coord().w(min_bar_px_len);
+		} else{
+			bar.coord().w(value);
+		}
+	}
+}
+void _Scrollbar::set_cam_px_len(int value){
+	if(type == _Scrollbar::VERTICAL) {
+		viewport->set_camera_px_h(value);
 	} else{
-		_bar.coord().y(value);
+		viewport->set_camera_px_w(value);
+	}
+	
+}
+void _Scrollbar::set_cam_px_pos(int value){
+	if(type == _Scrollbar::VERTICAL) {
+		viewport->set_camera_px_y(value);
+	} else{
+		viewport->set_camera_px_x(value);
 	}	
 }
-void VerticalScrollbar::set_cam_px_len(int value){
-	Viewport::set_camera_px_h(value);
-}
-void VerticalScrollbar::set_cam_px_pos(int value){
-	Viewport::set_camera_px_y(value);
-}
-
-
 
 // -------------------------------------------------------------------
 // S C R O L L B A R _ B A R
 // -------------------------------------------------------------------
-Scrollbar_bar::Scrollbar_bar()
+_Scrollbar::Scrollbar_bar::Scrollbar_bar()
 : Pane()
 {
 	focused_colour = { 20, 60, 40, 90 };
 	selected_colour = { 0, 0, 255, 140 };
 }
 
-Scrollbar_bar::~Scrollbar_bar(){ }
-
-bool Scrollbar_bar::keyboard_keydown(SDL_Event& ev){ return false; }
-bool Scrollbar_bar::keyboard_keyup(SDL_Event& ev){ return false; }
-
-bool Scrollbar_bar::mouse_buttondown(SDL_Event& ev, Coords* ref){
+_Scrollbar::Scrollbar_bar::~Scrollbar_bar(){ }
+bool _Scrollbar::Scrollbar_bar::keyboard_keydown(SDL_Event& ev){ return false; }
+bool _Scrollbar::Scrollbar_bar::keyboard_keyup(SDL_Event& ev){ return false; }
+bool _Scrollbar::Scrollbar_bar::mouse_buttondown(SDL_Event& ev, Coords* ref){
 	if(has_focus()){
 		set_selected(true);
 	}
 	//notify_mouse_buttondown(0, (void*)this);
 	return true;
 }
-bool Scrollbar_bar::mouse_buttonup(SDL_Event& ev, Coords* ref){
+bool _Scrollbar::Scrollbar_bar::mouse_buttonup(SDL_Event& ev, Coords* ref){
 	set_selected(false);
 	//notify_mouse_buttonup(0, (void*)this);
 	return true;
 }
-bool Scrollbar_bar::mouse_motion(SDL_Event& ev, Coords* ref){
+bool _Scrollbar::Scrollbar_bar::mouse_motion(SDL_Event& ev, Coords* ref){
 	return true;
 }
-bool Scrollbar_bar::mouse_drag(SDL_Event& ev, Coords* ref){
+bool _Scrollbar::Scrollbar_bar::mouse_drag(SDL_Event& ev, Coords* ref){
 	if(is_selected()){
 		coord().x(coord().x() + ev.motion.xrel);
 		coord().y(coord().y() + ev.motion.yrel);
@@ -283,9 +214,9 @@ bool Scrollbar_bar::mouse_drag(SDL_Event& ev, Coords* ref){
 	notify_mouse_drag(0,this);
 	return true;
 }
-void Scrollbar_bar::tick(){}
-void Scrollbar_bar::update(SDL_Event& ev){}
-void Scrollbar_bar::render(SDL_Renderer& ren){
+void _Scrollbar::Scrollbar_bar::tick(){}
+void _Scrollbar::Scrollbar_bar::update(SDL_Event& ev){}
+void _Scrollbar::Scrollbar_bar::render(SDL_Renderer& ren){
 	SDL_Rect rect = {
 		0, 0,
 		coord().w(),
@@ -293,7 +224,7 @@ void Scrollbar_bar::render(SDL_Renderer& ren){
 	};
 	render(ren, coord().disp_x(), coord().disp_y(), &rect);
 }
-void Scrollbar_bar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
+void _Scrollbar::Scrollbar_bar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_Rect old_clip;
 	SDL_Rect new_clip = {
 		x, y, extent->w, extent->h
@@ -308,7 +239,6 @@ void Scrollbar_bar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	rect.x = x;
 	rect.y = y;
 	Util::render_fill_rectangle(&ren, &rect, focused_colour);
-
 	rect = {
 		x - extent->x,
 		y - extent->y,
@@ -320,18 +250,18 @@ void Scrollbar_bar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_RenderSetClipRect(&ren, &old_clip);
 }
 
-void Scrollbar_bar::on_focus(){
+void _Scrollbar::Scrollbar_bar::on_focus(){
 	focused_colour = { 20, 60, 120, 90 };
 }
-void Scrollbar_bar::off_focus(){
+void _Scrollbar::Scrollbar_bar::off_focus(){
 	focused_colour = { 20, 60, 40, 90 };
 	Pane::defocus_all_children();
 }
-void Scrollbar_bar::on_selected(){
+void _Scrollbar::Scrollbar_bar::on_selected(){
 	selected_colour = { 255, 0, 0, 255 };
 	// do nothing ...
 }
-void Scrollbar_bar::off_selected(){
+void _Scrollbar::Scrollbar_bar::off_selected(){
 	selected_colour = { 0, 0, 255, 255 };
 	// do nothing ...
 }
@@ -339,44 +269,49 @@ void Scrollbar_bar::off_selected(){
 // -------------------------------------------------------------------
 // S C R O L L B A R _ B A R _ A R E A
 // -------------------------------------------------------------------
-Scrollbar_bar_area::Scrollbar_bar_area()
+_Scrollbar::Scrollbar_bar_area::Scrollbar_bar_area()
 : Pane()
 {
 	focused_colour = { 20, 60, 40, 90 };
 	selected_colour = { 0, 0, 255, 140 };
 	clicked_pos = 0;
+//	this->type = _Scrollbar::VERTICAL;
 }
-
-Scrollbar_bar_area::~Scrollbar_bar_area(){ }
-
-bool Scrollbar_bar_area::keyboard_keydown(SDL_Event& ev){ return false; }
-bool Scrollbar_bar_area::keyboard_keyup(SDL_Event& ev){ return false; }
-bool Scrollbar_bar_area::mouse_buttondown(SDL_Event& ev, Coords* ref){
+_Scrollbar::Scrollbar_bar_area::~Scrollbar_bar_area(){ }
+bool _Scrollbar::Scrollbar_bar_area::keyboard_keydown(SDL_Event& ev){ return false; }
+bool _Scrollbar::Scrollbar_bar_area::keyboard_keyup(SDL_Event& ev){ return false; }
+bool _Scrollbar::Scrollbar_bar_area::mouse_buttondown(SDL_Event& ev, Coords* ref){
 	if(has_focus()){
 		set_selected(true);
 	}
+
 	if(ref != nullptr){
 
 	} else{
+		// FUCK THIS SHITS
 		IMouse* mouse = &GMouse::get(&this->coord());
-		clicked_pos = mouse->y();
+		if(type == _Scrollbar::VERTICAL){
+			clicked_pos = mouse->y();
+		} else if(type == _Scrollbar::HORIZONTAL){
+			clicked_pos = mouse->x();
+		}
 	}
-	notify_mouse_buttondown(0,this);	
+	notify_mouse_buttondown(0, this);
 	return true;
 }
-bool Scrollbar_bar_area::mouse_buttonup(SDL_Event& ev, Coords* ref){
+bool _Scrollbar::Scrollbar_bar_area::mouse_buttonup(SDL_Event& ev, Coords* ref){
 	set_selected(false);
 	return true;
 }
-bool Scrollbar_bar_area::mouse_motion(SDL_Event& ev, Coords* ref){
+bool _Scrollbar::Scrollbar_bar_area::mouse_motion(SDL_Event& ev, Coords* ref){
 	return true;
 }
-bool Scrollbar_bar_area::mouse_drag(SDL_Event& ev, Coords* ref){	
+bool _Scrollbar::Scrollbar_bar_area::mouse_drag(SDL_Event& ev, Coords* ref){
 	return true;
 }
-void Scrollbar_bar_area::tick(){}
-void Scrollbar_bar_area::update(SDL_Event& ev){}
-void Scrollbar_bar_area::render(SDL_Renderer& ren){
+void _Scrollbar::Scrollbar_bar_area::tick(){}
+void _Scrollbar::Scrollbar_bar_area::update(SDL_Event& ev){}
+void _Scrollbar::Scrollbar_bar_area::render(SDL_Renderer& ren){
 	SDL_Rect rect = {
 		0, 0,
 		coord().w(),
@@ -384,7 +319,7 @@ void Scrollbar_bar_area::render(SDL_Renderer& ren){
 	};
 	render(ren, coord().disp_x(), coord().disp_y(), &rect);
 }
-void Scrollbar_bar_area::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
+void _Scrollbar::Scrollbar_bar_area::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_Rect old_clip;
 	SDL_Rect new_clip = {
 		x, y, extent->w, extent->h
@@ -400,30 +335,338 @@ void Scrollbar_bar_area::render(SDL_Renderer& ren, int x, int y, SDL_Rect* exten
 	rect.y = y;
 	Util::render_fill_rectangle(&ren, &rect, focused_colour);
 
-	/*
-	rect = {
+	SDL_RenderSetClipRect(&ren, &old_clip);
+}
+
+void _Scrollbar::Scrollbar_bar_area::on_focus(){
+	focused_colour = { 20, 60, 120, 90 };
+}
+void _Scrollbar::Scrollbar_bar_area::off_focus(){
+	focused_colour = { 20, 60, 40, 90 };
+	Pane::defocus_all_children();
+}
+void _Scrollbar::Scrollbar_bar_area::on_selected(){
+	selected_colour = { 255, 0, 0, 255 };
+	// do nothing ...
+}
+void _Scrollbar::Scrollbar_bar_area::off_selected(){
+	selected_colour = { 0, 0, 255, 255 };
+	// do nothing ...
+}
+
+
+
+// -------------------------------------------------------------------
+// S C R O L L B A R
+// -------------------------------------------------------------------
+Scrollbar::Scrollbar()
+:	_horiz_bar(this, _Scrollbar::HORIZONTAL),
+	_vert_bar(this, _Scrollbar::VERTICAL)
+{
+	Sprite::coord().init(0, 0, 0, 1, 1);
+}	
+Scrollbar::~Scrollbar(){}
+
+void Scrollbar::render(SDL_Renderer& ren){
+	SDL_Rect rect = {
+		0, 0, coord().w(), coord().h()
+	};
+	render(ren,
+		coord().disp_x(),
+		coord().disp_y(),
+		&rect);
+}
+void Scrollbar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
+	SDL_Rect old_clip;
+	SDL_Rect new_clip = {
+		x,y,extent->w,extent->h
+	};
+	SDL_RenderGetClipRect(&ren, &old_clip);
+	SDL_RenderSetClipRect(&ren, &new_clip);
+
+	int dispx = x;
+	int dispy = y;
+	int dispw = extent->w;
+	int disph = extent->h;
+	if(_horiz_bar.active){
+		if(_horiz_bar.bar_position == _Scrollbar::TOP){
+			dispy = y + _horiz_bar.default_bar_area_px_width;
+			disph = extent->h - _horiz_bar.default_bar_area_px_width;
+		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM) {
+			disph = extent->h - _horiz_bar.default_bar_area_px_width;
+		}
+	}	
+	if(_vert_bar.active){
+		if(_vert_bar.bar_position == _Scrollbar::LEFT){
+			dispx = x + _vert_bar.default_bar_area_px_width;
+			dispw = extent->w - _vert_bar.default_bar_area_px_width;
+		} else if( _vert_bar.bar_position == _Scrollbar::RIGHT) {
+			dispw = extent->w - _vert_bar.default_bar_area_px_width;
+		}
+	}
+	
+	SDL_Rect target_extent = {
+		camera_coords.x() + extent->x,
+		camera_coords.y() + extent->y,
+		dispw,disph
+	};	
+	this->wrappee->render(ren, dispx, dispy, &target_extent);
+	this->render_viewport_children(ren, x, y, extent);
+
+	SDL_Rect rect = {
 		x - extent->x,
 		y - extent->y,
 		coord().w(),
 		coord().h()
 	};
-	Util::render_rectangle(&ren, &rect, selected_colour);
-	*/
+	if(has_focus()){
+		Util::render_rectangle(&ren, &rect, Util::colour_orange());
+	} else{
+		Util::render_rectangle(&ren, &rect, Util::colour_black());
+	}
 	SDL_RenderSetClipRect(&ren, &old_clip);
 }
 
-void Scrollbar_bar_area::on_focus(){
-	focused_colour = { 20, 60, 120, 90 };
+bool Scrollbar::keyboard_keydown(SDL_Event& ev){
+	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
+	if(keyboard[SDL_SCANCODE_1]){
+		_horiz_bar.adjust_bar_dimensions();
+		_vert_bar.adjust_bar_dimensions();	
+	}
+	if(_vert_bar.active){
+		if(keyboard[SDL_SCANCODE_UP]){
+			move_camera_px_y(-(int)(pixels_per_yunit()));
+		} else if(keyboard[SDL_SCANCODE_DOWN]){
+			move_camera_px_y(pixels_per_yunit());
+		}
+	}
+	if(_horiz_bar.active){
+		if(keyboard[SDL_SCANCODE_LEFT]){
+			move_camera_px_x(-(int)(pixels_per_xunit()));
+		} else if(keyboard[SDL_SCANCODE_RIGHT]){
+			move_camera_px_x(pixels_per_xunit());
+		}
+	}
+
+	Viewport::keyboard_keydown(ev);
+	return true;	
 }
-void Scrollbar_bar_area::off_focus(){
-	focused_colour = { 20, 60, 40, 90 };
-	Pane::defocus_all_children();
+bool Scrollbar::mouse_buttondown(SDL_Event& ev, Coords* ref){	
+	IPane* focused_pane = get_focused_viewport_child_pane();
+	if(NULL_Pane::isDummy(focused_pane) ){
+		Viewport::mouse_buttondown(ev, ref);
+	} else{
+		if(focused_pane->has_focus()){
+			Coords* new_ref = new_coords_from_ref(ref, &focused_pane->coord());
+			focused_pane->mouse_buttondown(ev);
+		}
+	}	
+	return true;
 }
-void Scrollbar_bar_area::on_selected(){
-	selected_colour = { 255, 0, 0, 255 };
-	// do nothing ...
+bool Scrollbar::mouse_buttonup(SDL_Event& ev, Coords* ref){
+	if(_horiz_bar.active){
+		_horiz_bar.bar.set_selected(false);
+		_horiz_bar.bar_area.set_selected(false);
+	}
+	if(_vert_bar.active){
+		_vert_bar.bar.set_selected(false);
+		_vert_bar.bar_area.set_selected(false);
+	}
+	Viewport::mouse_buttonup(ev, ref);
+	return true;
 }
-void Scrollbar_bar_area::off_selected(){
-	selected_colour = { 0, 0, 255, 255 };
-	// do nothing ...
+bool Scrollbar::mouse_motion(SDL_Event& ev, Coords* reference){	
+	// get a relative mouse to use for intersections.
+	IMouse& rel_mouse = GMouse::get(&coord());
+	rel_mouse.update();
+	if(reference != nullptr){
+		rel_mouse.x(reference->x());
+		rel_mouse.y(reference->y());
+	}
+	if(has_focus()){
+		determine_focused_viewport_child_pane(&rel_mouse);
+	}
+
+	IPane* focused_pane = get_focused_viewport_child_pane();
+	if(NULL_Pane::isDummy(focused_pane)){
+		Viewport::mouse_motion(ev, reference);
+	} else{
+		// nothing to do.
+	}
+	
+	return true;
+}
+bool Scrollbar::mouse_drag(SDL_Event& ev, Coords* ref ){
+	IMouse& rel_mouse = GMouse::get(&coord());
+	rel_mouse.update();
+	if(ref != nullptr){
+		rel_mouse.x(ref->x());
+		rel_mouse.y(ref->y());
+	}
+	if(has_focus()){
+		determine_focused_viewport_child_pane(&rel_mouse);
+	}
+
+	bool only_us = true;
+	if(_vert_bar.active){
+		if(_vert_bar.bar.is_selected()){
+			// make sure that the mouse is within the 'acceptable' region
+			// drag the mouse bar?
+			Coords* new_ref = new_coords_from_ref(ref, &_vert_bar.bar.coord());
+			_vert_bar.bar.mouse_drag(ev, new_ref);
+			only_us = false;
+		}
+	} 
+	if(_horiz_bar.active){
+		if(_horiz_bar.bar.is_selected()){
+			// make sure that the mouse is within the 'acceptable' region
+			// drag the mouse bar?
+			Coords* new_ref = new_coords_from_ref(ref, &_horiz_bar.bar.coord());
+			_horiz_bar.bar.mouse_drag(ev, new_ref);
+			only_us = false;
+		}
+	}
+
+	if(only_us){
+		// normal viewport operations
+		Viewport::mouse_drag(ev, ref);
+	}	
+	return true;
+}
+void Scrollbar::set_target(IPane* target, unsigned ppux, unsigned ppuy){
+	Viewport::set_target(target, ppux, ppuy);	
+}
+
+void Scrollbar::set_camera_coords(int x, int y, int w, int h){
+	Viewport::set_camera_coords(x, y, w, h);
+	if(_horiz_bar.active){
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+	if(_vert_bar.active){
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	}	
+}
+void Scrollbar::set_viewport_coords(int x, int y, int w, int h){
+	Viewport::set_viewport_coords(x, y, w, h);
+
+	if(_vert_bar.active){
+		if(_vert_bar.bar_position == _Scrollbar::LEFT){
+			viewport_coord().x(x + _vert_bar.default_bar_area_px_width);
+			viewport_coord().w(viewport_coord().w() - _vert_bar.default_bar_area_px_width);
+		} else if(_vert_bar.bar_position == _Scrollbar::RIGHT){
+			viewport_coord().w(viewport_coord().w() - _vert_bar.default_bar_area_px_width);
+		}
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	}
+	if(_horiz_bar.active){
+		if(_horiz_bar.bar_position == _Scrollbar::TOP){
+			viewport_coord().y(y + _horiz_bar.default_bar_area_px_width);
+			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
+		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM){
+			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
+		}
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+}
+//void Scrollbar::set_pixels_per_xunit(unsigned ppu);
+//void Scrollbar::set_pixels_per_yunit(unsigned ppu);
+int Scrollbar::viewport_px_x(){ return viewport_coord().x(); }
+int Scrollbar::viewport_px_y(){ return viewport_coord().y(); }
+int Scrollbar::viewport_px_w(){ return viewport_coord().w(); }
+int Scrollbar::viewport_px_h(){ return viewport_coord().h(); }
+int Scrollbar::camera_px_x() {return camera_coords.x();}
+int Scrollbar::camera_px_y() {return camera_coords.y();}
+int Scrollbar::camera_px_w() {return camera_coords.w();}
+int Scrollbar::camera_px_h() {return camera_coords.h();}
+void Scrollbar::set_camera_px_x(int amount){
+	camera_coords.x(amount);
+	make_cam_x_within_bounds();
+	_horiz_bar.adjust_bar_position();
+}
+void Scrollbar::set_camera_px_y(int amount){
+	camera_coords.y(amount);
+	make_cam_y_within_bounds();
+	_vert_bar.adjust_bar_position();
+}
+void Scrollbar::set_camera_px_w(int value){
+	camera_coords.w(value);
+	_horiz_bar.adjust_bar_dimensions();
+}
+void Scrollbar::set_camera_px_h(int value){
+	camera_coords.h(value);	
+	_vert_bar.adjust_bar_dimensions();
+}
+//void Scrollbar::move_camera_px_x(int amount){}
+//void Scrollbar::move_camera_px_y(int amount){}
+//int Scrollbar::camera_unit_x(){return 0;}
+//int Scrollbar::camera_unit_y(){return 0;}
+//int Scrollbar::camera_unit_w(){return 0;}
+//int Scrollbar::camera_unit_h(){return 0;}
+void Scrollbar::update_on_mouse_motion(Mouseable* origin, int code, void* data){
+	//do nothing.
+}
+void Scrollbar::update_on_mouse_drag(Mouseable* origin, int code, void* data){
+	if(data == &_vert_bar.bar && _vert_bar.active){		
+		_vert_bar.set_cam_px_pos(_vert_bar.cam_px_from_bar_pos());
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	} else if(data == &_horiz_bar.bar && _horiz_bar.active){
+		_horiz_bar.set_cam_px_pos(_horiz_bar.cam_px_from_bar_pos());
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+}
+void Scrollbar::update_on_mouse_buttondown(Mouseable* origin, int code, void* data){
+	if(data == &_vert_bar.bar_area && _vert_bar.active){
+		int value = _vert_bar.bar_area.clicked_pos - (_vert_bar.bar_px_len()/2);
+		_vert_bar.set_bar_px_pos(value);
+		_vert_bar.set_cam_px_pos(_vert_bar.cam_px_from_bar_pos());
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	} else if(data == &_horiz_bar.bar_area && _horiz_bar.active){
+		int value = _horiz_bar.bar_area.clicked_pos - (_horiz_bar.bar_px_len() / 2);
+		_horiz_bar.set_bar_px_pos(value);
+		_horiz_bar.set_cam_px_pos(_horiz_bar.cam_px_from_bar_pos());
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+}
+void Scrollbar::update_on_mouse_buttonup(Mouseable* origin, int code, void* data){	
+	// do nothing
+}
+
+void Scrollbar::add_horiz_scrollbar(){
+	set_viewport_coords(
+		viewport_coord().x(),
+		viewport_coord().y(),
+		viewport_coord().w(),
+		viewport_coord().h()
+		);
+	_horiz_bar.active = true;
+	_horiz_bar.bar.setactive(true);
+	_horiz_bar.bar_area.setactive(true);
+	_horiz_bar.bar.setvisible(true);
+	_horiz_bar.bar_area.setvisible(true);
+	_horiz_bar.set_type(_Scrollbar::HORIZONTAL);	
+	_horiz_bar.set_bar_side_position(_Scrollbar::BOTTOM);
+}
+
+void Scrollbar::add_vert_scrollbar(){
+	set_viewport_coords(
+		viewport_coord().x(),
+		viewport_coord().y(),
+		viewport_coord().w(),
+		viewport_coord().h()
+		);
+	_vert_bar.active = true;
+	_vert_bar.bar.setactive(true);
+	_vert_bar.bar_area.setactive(true);
+	_vert_bar.bar.setvisible(true);
+	_vert_bar.bar_area.setvisible(true);
+	_vert_bar.set_type(_Scrollbar::VERTICAL);
+	_vert_bar.set_bar_side_position(_Scrollbar::RIGHT);	
 }

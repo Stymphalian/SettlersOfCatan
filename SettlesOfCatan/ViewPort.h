@@ -74,10 +74,10 @@ public:
 	//virtual Coords& coord();
 	//virtual Collision& hitbox();
 	// Focusable Interface
-	//virtual void on_focus() = 0;
-	//virtual void off_focus() = 0;
-	//virtual bool has_focus();
-	//virtual void set_focus(bool value);
+	virtual void on_focus();
+	virtual void off_focus();
+	virtual bool has_focus();
+	virtual void set_focus(bool value);
 	// Selectable Interface
 	//virtual void on_selected() = 0;
 	//virtual void off_selected() = 0;
@@ -162,18 +162,19 @@ public:
 	int camera_unit_h();	
 	SDL_Rect* camera_unit_draw_rect(int col, int row);
 	SDL_Rect* camera_unit_draw_rect_unmod(int col, int row);	
-protected:	
+	Coords& viewport_coord(){ return _viewport_coord; }
+
 	Coords* target;
+protected:	
+	Coords _viewport_coord;	
 	SDL_Rect draw_rect;
-	SDL_Rect draw_rect_unmod;	
-	Coords _passing_ref_coords;
+	SDL_Rect draw_rect_unmod;		
 	int _pixels_per_xunit;
 	int _pixels_per_yunit;
 	int _xunits_per_pixel;
 	int _yunits_per_pixel;	
 	bool _horiz_wrap;
-	bool _vert_wrap;
-	std::list<IPane*> _viewport_children;
+	bool _vert_wrap;	
 	// IWrapPane necessary variables
 	bool _visible;
 	bool _focus;	
@@ -183,10 +184,20 @@ protected:
 	inline void make_cam_y_within_bounds();
 	inline int camera_row_unit_offset();
 	inline int camera_col_unit_offset();
-	Coords& determine_passing_reference_coords(Coords* ref);
+	
+
+	// FUCK THIS SHIT!
+	std::list<IPane*> _viewport_children;
+	IPane* _focused_viewport_child_pane;
+	Coords _passing_ref_coords;
+	//---------
+	Coords& determine_passing_reference_coords(Coords* ref);	
 	void render_viewport_children(SDL_Renderer& ren,int x, int y, SDL_Rect* extent);
 	bool add_viewport_pane(IPane* pane);
 	bool remove_viewport_pane(IPane* pane);
+	void determine_focused_viewport_child_pane(IMouse* mouse);
+	IPane* get_focused_viewport_child_pane();
+	void defocus_all_viewport_children();	
 
 	// IPane Interface
 	//virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);

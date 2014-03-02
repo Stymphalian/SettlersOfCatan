@@ -31,8 +31,7 @@ int main(int argc, char** argv){
 //	png_test();
 //	return 0;
 
-	if(init() == false){ return EXIT_FAILURE; }	
-	assert(false);
+	if(init() == false){ return EXIT_FAILURE; }		
 	Game game(
 		Configuration::title.c_str(),
 		Configuration::DISP_X,
@@ -117,7 +116,7 @@ void png_test(){
 			if(png_image_write_to_file(&image, "data/hex.jordan.png",0, buffer, 0, NULL)){
 				printf("Write was successful. Fuck freeing memory\n");
 				char c;
-				scanf("%c", &c);
+				int rs = scanf("%c", &c);
 				exit(0);
 			}
 		} else{
@@ -132,5 +131,5 @@ void png_test(){
 	
 	printf("You've fucked up\n");
 	char c;
-	scanf("%c", &c);
+	int rs = scanf("%c", &c);
 }

@@ -32,3 +32,9 @@ bool Sprite::isvisible(){ return _visible_flag; }
 void Sprite::setvisible(bool value){_visible_flag = value;}
 Coords& Sprite::coord(){ return _coord; }
 Collision& Sprite::hitbox(){ return _hitbox; }
+
+
+/// I DONT DESERVER TO LIVE.
+// YOU READ THIS AND THEN YOU SHOULD KILL ME
+// POISONING ME IS PROBABLY YOUR BEST BET. 
+// MAKE ME DIE SLOWLY AND IN PAIN. FUCK my existence.

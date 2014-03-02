@@ -49,11 +49,11 @@ viewport(&_viewport)
 	sub_book = nullptr;
 	if(flag == 0){
 		num_panes = 5;
-		pages[0].coord().init(0, 0, 0, 50, 50);
-		pages[1].coord().init(65, 0, 1, 30, 30);
-		pages[2].coord().init(51, 123, 2, 98, 82);
-		pages[3].coord().init(72, 70, 3, 50, 89);
-		pages[4].coord().init(120, 128, 4, 80, 76);
+		pages[0].coord().init(0, 0, 0, 30, 30);
+		pages[1].coord().init(65, 0, 1, 40, 40);
+		pages[2].coord().init(51, 123, 2, 50, 60);
+		pages[3].coord().init(72, 70, 3, 70, 70);
+		pages[4].coord().init(120, 128, 4, 80, 80);
 
 		pages[0].coord().set_relative_x(pages[0].coord().w());
 		pages[1].coord().set_relative_y(pages[1].coord().h());
@@ -63,12 +63,12 @@ viewport(&_viewport)
 		pages[2].setvisible(true);
 		pages[3].setvisible(true);
 		pages[4].setvisible(true);
-
-		add_pane(&pages[0]);
+		
 		add_pane(&pages[1]);
-		add_pane(&pages[2]);
-		add_pane(&pages[3]);
+		add_pane(&pages[3]);		
 		add_pane(&pages[4]);
+		add_pane(&pages[0]);
+		add_pane(&pages[2]);
 				
 		pages[0].subscribe(this);
 		pages[1].subscribe(this);
@@ -86,10 +86,15 @@ viewport(&_viewport)
 		add_pane(sub_book);
 		
 		//_viewport.set_target(sub_book, 1, 1);
-		//_viewport.set_camera_coords(0, 0, 90, 90);
-		//_viewport.set_viewport_coords(25, 25, 150, 150);		
-		//_viewport.setvisible(true);
+		//_viewport.set_camera_coords(0, 0, 100, 100);
+		//_viewport.set_viewport_coords(25, 25,100,100);
+		//_viewport.coord().set_relative_w(1.0f);
+		//_viewport.coord().set_relative_h(1.0f);		
+		//_viewport.viewport_coord().set_relative_w(1.0f);
+		//_viewport.viewport_coord().set_relative_h(1.0f);		
 		//_viewport.coord().set_parent(&this->coord());
+		//_viewport.viewport_coord().set_parent(&this->coord());
+		//_viewport.setvisible(true);
 		//viewport.coord().init(25,25,0, 90, 90);
 		//viewport.setvisible(true);
 		//viewport.subscribe(this);
@@ -98,8 +103,16 @@ viewport(&_viewport)
 		scrollbar.set_target(sub_book, 1, 1);
 		scrollbar.set_camera_coords(0, 0, 100, 100);
 		scrollbar.set_viewport_coords(25, 25, 100, 100);
-		scrollbar.setvisible(true);
+		//vscrollbar.coord().set_relative_w(1.0f);
+		//vscrollbar.coord().set_relative_h(1.0f);
+		//vscrollbar.viewport_coord().set_relative_w(1.0f);
+		//vscrollbar.viewport_coord().set_relative_h(1.0f);
 		scrollbar.coord().set_parent(&this->coord());
+		scrollbar.viewport_coord().set_parent(&this->coord());		
+		scrollbar.add_vert_scrollbar();
+	//	scrollbar.add_horiz_scrollbar();		
+		scrollbar.setvisible(true);
+
 		viewport.port = &scrollbar;
 		viewport.coord().init(25,25,0, 100, 100);
 		viewport.setvisible(true);
@@ -126,9 +139,10 @@ viewport(&_viewport)
 		
 		_viewport.set_target(sub_book, 1, 1);
 		_viewport.set_camera_coords(0, 0, 30, 30);
-		_viewport.set_viewport_coords(5, 55, 30, 30);
+		_viewport.set_viewport_coords(5, 55, 30, 30);		
 		_viewport.setvisible(true);
 		_viewport.coord().set_parent(&this->coord());
+		_viewport.viewport_coord().set_parent(&this->coord());
 
 		viewport.coord().init(5,55,0,30,30);
 		viewport.setvisible(true);

@@ -52,6 +52,8 @@ public:
 	virtual void set_background(SDL_Color colour)=0;		
 	virtual SDL_Color get_background()=0;	
 	virtual void defocus_all_children() = 0;
+
+	static bool compare_IPane(IPane* pane1, IPane* pane2);
 protected:	
 	// IPane Interface
 	friend class IWrapPane;	
@@ -61,15 +63,7 @@ protected:
 
 	//convenience method
 	Coords _new_reference_coords;
-	Coords* new_coords_from_ref(Coords* ref,Coords* target){
-		if(ref != nullptr){
-			_new_reference_coords.x(ref->x() - target->x());
-			_new_reference_coords.y(ref->y() - target->y());			
-			return &_new_reference_coords;
-		}else{
-			return nullptr;
-		}				
-	}
+	Coords* new_coords_from_ref(Coords* ref, Coords* target);
 };
 
 // -----------------------------------------
@@ -156,7 +150,8 @@ public:
 	virtual bool remove_pane(IPane* pane);
 	virtual void set_background(SDL_Color colour);
 	virtual SDL_Color get_background();
-	virtual void defocus_all_children() ;
+	virtual void defocus_all_children();
+
 protected:		
 	//IPane Interface	
 	virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);
@@ -164,9 +159,7 @@ protected:
 	virtual IPane* get_focused_child_pane();
 	
 	// Pane variables and methods
-	std::list<IPane*> children;		
-	void pack();
-	bool operator< (IPane* pane2);	
+	std::list<IPane*> children;
 private:		
 	// Pane variables	
 	SDL_Color _background;	
