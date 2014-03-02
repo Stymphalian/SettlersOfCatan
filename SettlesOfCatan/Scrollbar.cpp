@@ -36,8 +36,8 @@ _Scrollbar::_Scrollbar(Scrollbar* viewport,type_e type)
 	}	
 	this->viewport->add_viewport_pane(&bar);
 	this->viewport->add_viewport_pane(&bar_area);
-	this->bar.coord().set_parent(&this->viewport->viewport_coord());
-	this->bar_area.coord().set_parent(&this->viewport->viewport_coord());
+	//this->bar.coord().set_parent(&this->viewport->viewport_coord());
+	//this->bar_area.coord().set_parent(&this->viewport->viewport_coord());
 
 	bar.subscribe(this->viewport);
 	bar_area.subscribe(this->viewport);
@@ -175,6 +175,26 @@ void _Scrollbar::set_cam_px_pos(int value){
 	} else{
 		viewport->set_camera_px_x(value);
 	}	
+}
+void _Scrollbar::show(type_e type, bar_position_e pos){
+	active = true;
+	bar.setactive(true);
+	bar_area.setactive(true);
+	bar.setvisible(true);
+	bar_area.setvisible(true);
+	set_type(type);
+	set_bar_side_position(pos);
+	//adjust_bar_position();
+	//adjust_bar_dimensions();
+}
+void _Scrollbar::hide(){
+	active = false;
+	bar.setactive(false);
+	bar_area.setactive(false);
+	bar.setvisible(false);
+	bar_area.setvisible(false);	
+	//adjust_bar_position();
+	//adjust_bar_dimensions();
 }
 
 // -------------------------------------------------------------------
@@ -549,8 +569,7 @@ void Scrollbar::set_camera_coords(int x, int y, int w, int h){
 	}	
 }
 void Scrollbar::set_viewport_coords(int x, int y, int w, int h){
-	Viewport::set_viewport_coords(x, y, w, h);
-
+	Viewport::set_viewport_coords(x, y, w, h);	
 	if(_vert_bar.active){
 		if(_vert_bar.bar_position == _Scrollbar::LEFT){
 			viewport_coord().x(x + _vert_bar.default_bar_area_px_width);
@@ -570,7 +589,7 @@ void Scrollbar::set_viewport_coords(int x, int y, int w, int h){
 		}
 		_horiz_bar.adjust_bar_position();
 		_horiz_bar.adjust_bar_dimensions();
-	}
+	}	
 }
 //void Scrollbar::set_pixels_per_xunit(unsigned ppu);
 //void Scrollbar::set_pixels_per_yunit(unsigned ppu);
@@ -639,34 +658,68 @@ void Scrollbar::update_on_mouse_buttonup(Mouseable* origin, int code, void* data
 	// do nothing
 }
 
-void Scrollbar::add_horiz_scrollbar(){
-	set_viewport_coords(
-		viewport_coord().x(),
-		viewport_coord().y(),
-		viewport_coord().w(),
-		viewport_coord().h()
-		);
-	_horiz_bar.active = true;
-	_horiz_bar.bar.setactive(true);
-	_horiz_bar.bar_area.setactive(true);
-	_horiz_bar.bar.setvisible(true);
-	_horiz_bar.bar_area.setvisible(true);
-	_horiz_bar.set_type(_Scrollbar::HORIZONTAL);	
-	_horiz_bar.set_bar_side_position(_Scrollbar::BOTTOM);
-}
 
-void Scrollbar::add_vert_scrollbar(){
-	set_viewport_coords(
-		viewport_coord().x(),
-		viewport_coord().y(),
-		viewport_coord().w(),
-		viewport_coord().h()
-		);
-	_vert_bar.active = true;
-	_vert_bar.bar.setactive(true);
-	_vert_bar.bar_area.setactive(true);
-	_vert_bar.bar.setvisible(true);
-	_vert_bar.bar_area.setvisible(true);
-	_vert_bar.set_type(_Scrollbar::VERTICAL);
-	_vert_bar.set_bar_side_position(_Scrollbar::RIGHT);	
+void Scrollbar::show_horizontal_scrollbar(){
+	_horiz_bar.show(_Scrollbar::HORIZONTAL, _Scrollbar::BOTTOM); 
+	if(_horiz_bar.active){
+		if(_horiz_bar.bar_position == _Scrollbar::TOP){
+			viewport_coord().y(viewport_coord().y() + _horiz_bar.default_bar_area_px_width);
+			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() - _vert_bar.default_bar_area_px_width);
+		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM){
+			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() - _vert_bar.default_bar_area_px_width);
+		}
+
+		if(_vert_bar.active){
+			viewport_coord
+		}
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+}
+void Scrollbar::hide_horizontal_scrollbar(){
+	if(_horiz_bar.active){
+		if(_horiz_bar.bar_position == _Scrollbar::TOP){
+			viewport_coord().y(viewport_coord().y() - _horiz_bar.default_bar_area_px_width);
+			viewport_coord().h(viewport_coord().h() + _horiz_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() + _vert_bar.default_bar_area_px_width);
+		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM){
+			viewport_coord().h(viewport_coord().h() + _horiz_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() + _vert_bar.default_bar_area_px_width);
+		}
+		_horiz_bar.adjust_bar_position();
+		_horiz_bar.adjust_bar_dimensions();
+	}
+	_horiz_bar.hide();	
+}
+void Scrollbar::show_vertical_scrollbar(){
+	_vert_bar.show(_Scrollbar::VERTICAL, _Scrollbar::RIGHT);
+	if(_vert_bar.active){
+		if(_vert_bar.bar_position == _Scrollbar::LEFT){
+			viewport_coord().x(viewport_coord().x() + _vert_bar.default_bar_area_px_width);
+			viewport_coord().w(viewport_coord().w() - _vert_bar.default_bar_area_px_width);
+			camera_coords.w(camera_coords.w() - _vert_bar.default_bar_area_px_width);
+		} else if(_vert_bar.bar_position == _Scrollbar::RIGHT){
+			viewport_coord().w(viewport_coord().w() - _vert_bar.default_bar_area_px_width);
+			camera_coords.w(camera_coords.w() - _vert_bar.default_bar_area_px_width);
+		}
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	}
+}
+void Scrollbar::hide_vertical_scrollbar(){
+	if(_vert_bar.active){
+		if(_vert_bar.bar_position == _Scrollbar::LEFT){
+			viewport_coord().x(viewport_coord().x() - _vert_bar.default_bar_area_px_width);
+			viewport_coord().w(viewport_coord().w() + _vert_bar.default_bar_area_px_width);
+			camera_coords.w(camera_coords.w() + _vert_bar.default_bar_area_px_width);
+		} else if(_vert_bar.bar_position == _Scrollbar::RIGHT){
+			viewport_coord().w(viewport_coord().w() + _vert_bar.default_bar_area_px_width);
+			camera_coords.w(camera_coords.w() + _vert_bar.default_bar_area_px_width);
+		}
+		_vert_bar.adjust_bar_position();
+		_vert_bar.adjust_bar_dimensions();
+	}
+	_vert_bar.hide();	
 }

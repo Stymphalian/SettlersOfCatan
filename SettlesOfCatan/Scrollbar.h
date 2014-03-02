@@ -98,6 +98,10 @@ public:
 	void set_bar_px_len(int value);
 	void set_cam_px_len(int value);
 	void set_cam_px_pos(int value);
+
+	// conveniecne method for showing/hiding scrollbars.
+	void show(_Scrollbar::type_e type,_Scrollbar::bar_position_e pos);
+	void hide();
 };
 
 
@@ -179,16 +183,18 @@ public:
 	virtual void update_on_mouse_drag(Mouseable* origin, int code, void* data);
 	virtual void update_on_mouse_buttondown(Mouseable* origin, int code, void* data);
 	virtual void update_on_mouse_buttonup(Mouseable* origin, int code, void* data);	
-
-	void add_horiz_scrollbar();
-	void add_vert_scrollbar();	
+	
+	void show_horizontal_scrollbar();
+	void show_vertical_scrollbar();
+	void hide_horizontal_scrollbar();
+	void hide_vertical_scrollbar();
 protected:
 	friend class _Scrollbar;
 	Mouse _rel_mouse;	
 	_Scrollbar _horiz_bar;
 	_Scrollbar _vert_bar;	
 	bool add_viewport_pane(IPane* pane){ return Viewport::add_viewport_pane(pane); }		
-			
+				
 	//IPane* wrappee;
 	// IPane Interface	
 	//virtual void render_children(SDL_Renderer& ren, int x, int y, SDL_Rect* extent = nullptr);

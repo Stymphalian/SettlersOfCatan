@@ -163,10 +163,10 @@ public:
 	SDL_Rect* camera_unit_draw_rect(int col, int row);
 	SDL_Rect* camera_unit_draw_rect_unmod(int col, int row);	
 	Coords& viewport_coord(){ return _viewport_coord; }
-
-	Coords* target;
+	
 protected:	
 	Coords _viewport_coord;	
+	Coords* target;
 	SDL_Rect draw_rect;
 	SDL_Rect draw_rect_unmod;		
 	int _pixels_per_xunit;

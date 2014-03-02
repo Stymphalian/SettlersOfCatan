@@ -109,8 +109,12 @@ viewport(&_viewport)
 		//vscrollbar.viewport_coord().set_relative_h(1.0f);
 		scrollbar.coord().set_parent(&this->coord());
 		scrollbar.viewport_coord().set_parent(&this->coord());		
-		scrollbar.add_vert_scrollbar();
-	//	scrollbar.add_horiz_scrollbar();		
+		//scrollbar.add_vert_scrollbar();
+		//scrollbar.add_horiz_scrollbar();		
+		scrollbar.show_vertical_scrollbar();
+		//scrollbar.hide_vertical_scrollbar();
+		scrollbar.show_horizontal_scrollbar();
+		//scrollbar.hide_horizontal_scrollbar();
 		scrollbar.setvisible(true);
 
 		viewport.port = &scrollbar;
