@@ -380,11 +380,11 @@ void _Scrollbar::Scrollbar_bar_area::off_selected(){
 // S C R O L L B A R
 // -------------------------------------------------------------------
 Scrollbar::Scrollbar()
-:	_horiz_bar(this, _Scrollbar::HORIZONTAL),
-	_vert_bar(this, _Scrollbar::VERTICAL)
+: _horiz_bar(this, _Scrollbar::HORIZONTAL),
+_vert_bar(this, _Scrollbar::VERTICAL)
 {
 	Sprite::coord().init(0, 0, 0, 1, 1);
-}	
+}
 Scrollbar::~Scrollbar(){}
 
 void Scrollbar::render(SDL_Renderer& ren){
@@ -399,7 +399,7 @@ void Scrollbar::render(SDL_Renderer& ren){
 void Scrollbar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 	SDL_Rect old_clip;
 	SDL_Rect new_clip = {
-		x,y,extent->w,extent->h
+		x, y, extent->w, extent->h
 	};
 	SDL_RenderGetClipRect(&ren, &old_clip);
 	SDL_RenderSetClipRect(&ren, &new_clip);
@@ -415,21 +415,21 @@ void Scrollbar::render(SDL_Renderer& ren, int x, int y, SDL_Rect* extent){
 		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM) {
 			disph = extent->h - _horiz_bar.default_bar_area_px_width;
 		}
-	}	
+	}
 	if(_vert_bar.active){
 		if(_vert_bar.bar_position == _Scrollbar::LEFT){
 			dispx = x + _vert_bar.default_bar_area_px_width;
 			dispw = extent->w - _vert_bar.default_bar_area_px_width;
-		} else if( _vert_bar.bar_position == _Scrollbar::RIGHT) {
+		} else if(_vert_bar.bar_position == _Scrollbar::RIGHT) {
 			dispw = extent->w - _vert_bar.default_bar_area_px_width;
 		}
 	}
-	
+
 	SDL_Rect target_extent = {
 		camera_coords.x() + extent->x,
 		camera_coords.y() + extent->y,
-		dispw,disph
-	};	
+		dispw, disph
+	};
 	this->wrappee->render(ren, dispx, dispy, &target_extent);
 	this->render_viewport_children(ren, x, y, extent);
 
@@ -451,8 +451,23 @@ bool Scrollbar::keyboard_keydown(SDL_Event& ev){
 	const Uint8* keyboard = SDL_GetKeyboardState(NULL);
 	if(keyboard[SDL_SCANCODE_1]){
 		_horiz_bar.adjust_bar_dimensions();
-		_vert_bar.adjust_bar_dimensions();	
+		_vert_bar.adjust_bar_dimensions();
 	}
+	if(keyboard[SDL_SCANCODE_2]){		
+		if(keyboard[SDL_SCANCODE_LSHIFT]){			
+			hide_vertical_scrollbar();
+		} else{
+			show_vertical_scrollbar();			
+		}
+	}
+	if(keyboard[SDL_SCANCODE_3]){
+		if(keyboard[SDL_SCANCODE_LSHIFT]){
+			hide_horizontal_scrollbar();
+		} else{
+			show_horizontal_scrollbar();			
+		}
+	}
+
 	if(_vert_bar.active){
 		if(keyboard[SDL_SCANCODE_UP]){
 			move_camera_px_y(-(int)(pixels_per_yunit()));
@@ -646,12 +661,16 @@ void Scrollbar::update_on_mouse_buttondown(Mouseable* origin, int code, void* da
 		_vert_bar.set_cam_px_pos(_vert_bar.cam_px_from_bar_pos());
 		_vert_bar.adjust_bar_position();
 		_vert_bar.adjust_bar_dimensions();
+
+		_vert_bar.bar.set_selected(true);
 	} else if(data == &_horiz_bar.bar_area && _horiz_bar.active){
 		int value = _horiz_bar.bar_area.clicked_pos - (_horiz_bar.bar_px_len() / 2);
 		_horiz_bar.set_bar_px_pos(value);
 		_horiz_bar.set_cam_px_pos(_horiz_bar.cam_px_from_bar_pos());
 		_horiz_bar.adjust_bar_position();
 		_horiz_bar.adjust_bar_dimensions();
+
+		_horiz_bar.bar.set_selected(true);
 	}
 }
 void Scrollbar::update_on_mouse_buttonup(Mouseable* origin, int code, void* data){	
@@ -665,15 +684,12 @@ void Scrollbar::show_horizontal_scrollbar(){
 		if(_horiz_bar.bar_position == _Scrollbar::TOP){
 			viewport_coord().y(viewport_coord().y() + _horiz_bar.default_bar_area_px_width);
 			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
-			camera_coords.h(camera_coords.h() - _vert_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() - _horiz_bar.default_bar_area_px_width);
 		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM){
 			viewport_coord().h(viewport_coord().h() - _horiz_bar.default_bar_area_px_width);
-			camera_coords.h(camera_coords.h() - _vert_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() - _horiz_bar.default_bar_area_px_width);
 		}
-
-		if(_vert_bar.active){
-			viewport_coord
-		}
+		
 		_horiz_bar.adjust_bar_position();
 		_horiz_bar.adjust_bar_dimensions();
 	}
@@ -683,10 +699,10 @@ void Scrollbar::hide_horizontal_scrollbar(){
 		if(_horiz_bar.bar_position == _Scrollbar::TOP){
 			viewport_coord().y(viewport_coord().y() - _horiz_bar.default_bar_area_px_width);
 			viewport_coord().h(viewport_coord().h() + _horiz_bar.default_bar_area_px_width);
-			camera_coords.h(camera_coords.h() + _vert_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() + _horiz_bar.default_bar_area_px_width);
 		} else if(_horiz_bar.bar_position == _Scrollbar::BOTTOM){
 			viewport_coord().h(viewport_coord().h() + _horiz_bar.default_bar_area_px_width);
-			camera_coords.h(camera_coords.h() + _vert_bar.default_bar_area_px_width);
+			camera_coords.h(camera_coords.h() + _horiz_bar.default_bar_area_px_width);
 		}
 		_horiz_bar.adjust_bar_position();
 		_horiz_bar.adjust_bar_dimensions();

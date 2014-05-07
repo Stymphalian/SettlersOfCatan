@@ -11,8 +11,8 @@ public:
 };
 class MouseHandler:  public IMouseHandler{
 public:
-	virtual bool mouse_buttondown(SDL_Event& ev, Coords* ref= nullptr) {}
-	virtual bool mouse_buttonup(SDL_Event& ev, Coords* ref= nullptr) 	 {}
-	virtual bool mouse_motion(SDL_Event& ev, Coords* ref= nullptr) 	 {}
-	virtual bool mouse_drag(SDL_Event& ev, Coords* ref= nullptr)		 {}
+	virtual bool mouse_buttondown(SDL_Event& ev, Coords* ref= nullptr) {return false;}
+	virtual bool mouse_buttonup(SDL_Event& ev, Coords* ref= nullptr) 	 {return false;}
+	virtual bool mouse_motion(SDL_Event& ev, Coords* ref= nullptr) 	 {return false;}
+	virtual bool mouse_drag(SDL_Event& ev, Coords* ref= nullptr)		 {return false;}
 };

@@ -141,6 +141,12 @@
     <ClCompile Include="Focusable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="View_Play2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector3d.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Button.h">
@@ -270,6 +276,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Focusable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="View_Play2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3d.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

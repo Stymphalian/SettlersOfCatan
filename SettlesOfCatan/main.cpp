@@ -6,8 +6,6 @@
 #include <cassert>
 #include <cstdio>
 
-
-
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
@@ -53,8 +51,8 @@ bool init(){
 	// initialize the logger.
 	Logger::setLog(Configuration::log_name.c_str());
 	Logger& logger = Logger::getLog();
-	logger.set_level(Logger::DEBUG);
-	logger.set_deepest_level_allowed(Logger::DEBUG);
+	logger.set_level(Logger::NONE);
+	logger.set_deepest_level_allowed(Logger::DEBUG);	
 	logger.log(Logger::DEBUG, "SDL init");
 	
 	// initialize SDL for using modules
